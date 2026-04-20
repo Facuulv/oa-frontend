@@ -3,9 +3,9 @@
 :root {
   --background: #f5f5f5;
   --foreground: #1f2937;
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --primary-light: #818cf8;
+  --primary: #C1121F;
+  --primary-dark: #A10E19;
+  --primary-light: #D6454F;
   --accent: #f59e0b;
   --accent-light: #fbbf24;
   --surface: #ffffff;
@@ -20,6 +20,9 @@
   --color-primary: var(--primary);
   --color-primary-dark: var(--primary-dark);
   --color-primary-light: var(--primary-light);
+  --color-oa-red: var(--primary);
+  --color-oa-red-dark: var(--primary-dark);
+  --color-oa-red-light: var(--primary-light);
   --color-accent: var(--accent);
   --color-accent-light: var(--accent-light);
   --color-surface: var(--surface);

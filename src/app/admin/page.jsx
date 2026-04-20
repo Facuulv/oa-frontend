@@ -4,7 +4,7 @@ import { Package, Grid3X3, ShoppingBag, Tag, Ticket } from "lucide-react";
 import Link from "next/link";
 
 const cards = [
-  { href: "/admin/productos", label: "Productos", icon: Package, color: "bg-blue-50 text-blue-600" },
+  { href: "/admin/productos", label: "Productos", icon: Package, color: "bg-oa-red/10 text-oa-red" },
   { href: "/admin/categorias", label: "Categorías", icon: Grid3X3, color: "bg-purple-50 text-purple-600" },
   { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag, color: "bg-green-50 text-green-600" },
   { href: "/admin/promociones", label: "Promociones", icon: Tag, color: "bg-amber-50 text-amber-600" },

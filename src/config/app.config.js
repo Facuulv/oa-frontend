@@ -5,9 +5,9 @@ const appConfig = {
   url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
 
   theme: {
-    primary: "#6366f1",
-    primaryDark: "#4f46e5",
-    primaryLight: "#818cf8",
+    primary: "#C1121F",
+    primaryDark: "#A10E19",
+    primaryLight: "#D6454F",
     accent: "#f59e0b",
     accentLight: "#fbbf24",
     background: "#f5f5f5",
@@ -38,7 +38,7 @@ const appConfig = {
   },
 
   pwa: {
-    themeColor: "#6366f1",
+    themeColor: "#C1121F",
     backgroundColor: "#f5f5f5",
   },
 };
