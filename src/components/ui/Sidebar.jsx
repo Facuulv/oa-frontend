@@ -10,7 +10,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
-import { useAuthStore, selectIsAuthenticated, selectIsAdmin } from "@/store/useAuthStore";
+import { useAuthStore, selectIsAdminUser, selectIsClienteUser } from "@/store/useAuthStore";
 
 const publicLinks = [
   { href: "/", label: "Inicio", icon: Home },
@@ -27,8 +27,8 @@ const adminLinks = [
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
-  const isAuthenticated = useAuthStore(selectIsAuthenticated);
-  const isAdmin = useAuthStore(selectIsAdmin);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
+  const isAdmin = useAuthStore(selectIsAdminUser);
 
   return (
     <aside

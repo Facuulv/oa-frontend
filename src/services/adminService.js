@@ -1,50 +1,6 @@
 import apiClient from "./apiClient";
 import { apiPaths } from "@/config/apiPaths";
 
-// --- Productos (MANAGER: /products) ---
-
-export async function getAdminProducts(params = {}) {
-  const { data } = await apiClient.get(apiPaths.manager.products, { params });
-  return data?.data ?? data;
-}
-
-export async function createProduct(payload) {
-  const { data } = await apiClient.post(apiPaths.manager.products, payload);
-  return data;
-}
-
-export async function updateProduct(id, payload) {
-  const { data } = await apiClient.put(apiPaths.manager.productById(id), payload);
-  return data;
-}
-
-export async function deleteProduct(id) {
-  const { data } = await apiClient.delete(apiPaths.manager.productById(id));
-  return data;
-}
-
-// --- Categorías (MANAGER: /categories) ---
-
-export async function getAdminCategories() {
-  const { data } = await apiClient.get(apiPaths.manager.categories);
-  return data?.data ?? data;
-}
-
-export async function createCategory(payload) {
-  const { data } = await apiClient.post(apiPaths.manager.categories, payload);
-  return data;
-}
-
-export async function updateCategory(id, payload) {
-  const { data } = await apiClient.put(apiPaths.manager.categoryById(id), payload);
-  return data;
-}
-
-export async function deleteCategory(id) {
-  const { data } = await apiClient.delete(apiPaths.manager.categoryById(id));
-  return data;
-}
-
 // --- Pedidos (MANAGER: /orders) ---
 
 export async function getAdminOrders(params = {}) {

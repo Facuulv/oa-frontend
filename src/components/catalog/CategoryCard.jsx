@@ -2,21 +2,28 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import ImageWithFade from "@/components/ImageWithFade";
 import { PLACEHOLDER_CATEGORY } from "@/constants/images";
-import { buildImageUrl } from "@/lib/imageUtils";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 export default function CategoryCard({ category, index = 0 }) {
-  const bgImage = buildImageUrl(category.imagen_url) || PLACEHOLDER_CATEGORY;
+  const imgSrc =
+    getOptimizedImageUrl(category.imagen_url, { preset: "categoryCard" }) || PLACEHOLDER_CATEGORY;
 
   return (
     <Link
-      href={`/catalogo?categoriaId=${encodeURIComponent(String(category.id))}`}
-      className="card-fade-in group relative flex h-28 items-end overflow-hidden rounded-xl shadow-md"
+      href={`/categoria/${category.slug ?? category.id}`}
+      className="card-fade-in group relative flex h-28 items-end overflow-hidden rounded-2xl shadow-md"
       style={{ animationDelay: `${index * 80}ms` }}
     >
-      <div
-        className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-        style={{ backgroundImage: `url('${bgImage}')` }}
+      <ImageWithFade
+        src={imgSrc}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+        aria-hidden
+        onError={(e) => {
+          e.currentTarget.src = PLACEHOLDER_CATEGORY;
+        }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       <div className="relative z-10 flex w-full items-center justify-between px-4 pb-3">

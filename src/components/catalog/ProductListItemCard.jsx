@@ -3,11 +3,12 @@
 import Link from "next/link";
 import ImageWithFade from "@/components/ImageWithFade";
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
-import { buildImageUrl } from "@/lib/imageUtils";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { formatPrice } from "@/utils/format/price";
 
 export default function ProductListItemCard({ product }) {
-  const imgSrc = buildImageUrl(product.imagen_url) || PLACEHOLDER_PRODUCT_CARD;
+  const imgSrc =
+    getOptimizedImageUrl(product.imagen_url, { preset: "productCard" }) || PLACEHOLDER_PRODUCT_CARD;
 
   return (
     <Link
@@ -17,7 +18,7 @@ export default function ProductListItemCard({ product }) {
       <ImageWithFade
         src={imgSrc}
         alt={product.nombre}
-        className="h-20 w-20 shrink-0 rounded-lg object-cover"
+        className="h-20 w-20 shrink-0 rounded-xl object-cover object-center"
         onError={(e) => { e.currentTarget.src = PLACEHOLDER_PRODUCT_CARD; }}
       />
       <div className="min-w-0 flex-1">
