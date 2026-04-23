@@ -1,9 +1,14 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuthStore, selectIsAdmin } from "@/store/useAuthStore";
+import {
+  useAuthStore,
+  selectAuthSessionGateReady,
+  selectIsAdminUser,
+  selectIsClienteUser,
+} from "@/store/useAuthStore";
 import { toast } from "sonner";
 
 function isValidEmail(value) {
@@ -15,6 +20,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const sessionGateReady = useAuthStore(selectAuthSessionGateReady);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -25,6 +31,42 @@ function LoginForm() {
     if (raw.startsWith("//")) return null;
     return raw;
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!sessionGateReady) return;
+
+    let cancelled = false;
+
+    (async () => {
+      await useAuthStore.getState().refreshProfile();
+      if (cancelled) return;
+
+      const state = useAuthStore.getState();
+      if (!state.isAuthenticated || !state.user) return;
+
+      if (selectIsAdminUser(state)) {
+        const dest = nextPath?.startsWith("/admin") ? nextPath : "/admin";
+        router.replace(dest);
+        return;
+      }
+
+      if (selectIsClienteUser(state)) {
+        if (nextPath?.startsWith("/admin")) {
+          router.replace("/");
+          return;
+        }
+        if (nextPath) {
+          router.replace(nextPath);
+          return;
+        }
+        router.replace("/");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionGateReady, nextPath, router]);
 
   const validate = () => {
     const err = {};
@@ -41,12 +83,26 @@ function LoginForm() {
     try {
       await login({ email: email.trim(), password });
       toast.success("Sesión iniciada");
-      const isAdmin = selectIsAdmin(useAuthStore.getState());
-      if (nextPath) {
-        router.replace(nextPath);
+      const state = useAuthStore.getState();
+      if (!state.isAuthenticated || !state.user) {
+        toast.error("No pudimos iniciar sesión");
         return;
       }
-      router.replace(isAdmin ? "/admin" : "/");
+      if (selectIsAdminUser(state)) {
+        const dest = nextPath?.startsWith("/admin") ? nextPath : "/admin";
+        router.replace(dest);
+        return;
+      }
+      if (selectIsClienteUser(state)) {
+        if (nextPath?.startsWith("/admin")) {
+          toast.error("Esta cuenta no tiene acceso al panel de administración");
+          router.replace("/");
+          return;
+        }
+        router.replace(nextPath || "/");
+        return;
+      }
+      toast.error("Respuesta de sesión no reconocida");
     } catch (err) {
       toast.error(err.message);
     }
@@ -56,7 +112,7 @@ function LoginForm() {
     <div className="rounded-2xl bg-white p-6 shadow-lg">
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-primary">OA!</h1>
-        <p className="mt-1 text-sm text-gray-500">Iniciá sesión en tu cuenta</p>
+        <p className="mt-1 text-sm text-gray-500">Iniciá sesión con tu email</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>

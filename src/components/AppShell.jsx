@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import AppViewport, { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
 import Sidebar from "@/components/ui/Sidebar";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { useCartStore, selectCartTotal, selectCartCount } from "@/store/useCartStore";
@@ -40,9 +41,8 @@ export default function AppShell({ children }) {
   }, [isSidebarOpen]);
 
   return (
-    <div className="min-h-screen w-full bg-background">
-      <div className="relative mx-auto min-h-screen w-full max-w-[480px] overflow-hidden bg-surface">
-        <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
+    <AppViewport innerClassName="overflow-hidden bg-surface ring-1 ring-black/5">
+      <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
 
         <div className="relative min-h-[calc(100dvh-3.25rem)] overflow-hidden">
           <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -70,7 +70,7 @@ export default function AppShell({ children }) {
 
         {hasItems && !isCheckout && !isProductDetail && !isSearch && (
           <div
-            className="fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] transition-all duration-[400ms] ease-out"
+            className={`fixed bottom-0 left-1/2 z-30 w-full ${APP_VIEWPORT_MAX_CLASS} transition-all duration-[400ms] ease-out`}
             style={{
               transform:
                 isDesktop || !isSidebarOpen
@@ -90,7 +90,6 @@ export default function AppShell({ children }) {
             </button>
           </div>
         )}
-      </div>
-    </div>
+    </AppViewport>
   );
 }

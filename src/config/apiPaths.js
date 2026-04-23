@@ -1,9 +1,14 @@
 export const apiPaths = {
+  /** Registro público de cliente (alias histórico; preferir `auth.register`). */
+  clientes: {
+    register: "/clientes/register",
+  },
+
   auth: {
     login: "/auth/login",
+    logout: "/auth/logout",
     register: "/auth/register",
-    /** Current session / profile (Bearer). Alias common names: profile, me. */
-    me: "/auth/profile",
+    me: "/auth/me",
   },
 
   public: {
@@ -17,7 +22,7 @@ export const apiPaths = {
   },
 
   orders: {
-    myList: "/orders/me/list",
+    myList: "/orders/me",
     updateStatus: (id) => `/orders/${encodeURIComponent(id)}/status`,
     list: "/orders",
   },
@@ -36,5 +41,11 @@ export const apiPaths = {
   admin: {
     dashboard: "/admin/dashboard",
     settings: "/admin/settings",
+    categorias: "/admin/categorias",
+    categoriaById: (id) => `/admin/categorias/${encodeURIComponent(id)}`,
+    categoriaEstadoById: (id) => `/admin/categorias/${encodeURIComponent(id)}/estado`,
+    productos: "/admin/productos",
+    productoById: (id) => `/admin/productos/${encodeURIComponent(id)}`,
+    productoEstadoById: (id) => `/admin/productos/${encodeURIComponent(id)}/estado`,
   },
 };

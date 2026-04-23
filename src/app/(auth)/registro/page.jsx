@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuthStore, selectIsAdmin } from "@/store/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { ApiError } from "@/utils/api/apiError";
 import { toast } from "sonner";
 
@@ -50,13 +50,12 @@ export default function RegistroPage() {
         { autoLogin }
       );
       toast.success(autoLogin ? "Cuenta lista" : "Cuenta creada");
-      const isAdmin = selectIsAdmin(useAuthStore.getState());
       const authed = useAuthStore.getState().isAuthenticated;
       if (!authed) {
         router.replace("/login");
         return;
       }
-      router.replace(isAdmin ? "/admin" : "/");
+      router.replace("/");
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fieldErrors).length > 0) {
         setFieldErrors((prev) => ({ ...prev, ...err.fieldErrors }));

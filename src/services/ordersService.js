@@ -1,13 +1,15 @@
 import { apiPaths } from "@/config/apiPaths";
 import { requireApiBaseUrl } from "@/utils/api/baseUrl";
-import { getToken } from "@/utils/auth/token";
 import { logApiRequest } from "@/utils/api/requestLog";
 
-function authHeaders() {
-  const headers = { "Content-Type": "application/json" };
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
+function jsonHeaders() {
+  return { "Content-Type": "application/json" };
+}
+
+function notifyClientUnauthorized(status) {
+  if (status === 401 && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+  }
 }
 
 const PAYMENT_METHOD_MAP = {
@@ -74,20 +76,21 @@ export async function createOrder(payload) {
   logApiRequest("POST", url, { items: body.items?.length });
   const response = await fetch(url, {
     method: "POST",
-    headers: authHeaders(),
+    credentials: "include",
+    headers: jsonHeaders(),
     body: JSON.stringify(body),
   });
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    notifyClientUnauthorized(response.status);
     const validationDetails = Array.isArray(data?.errors) ? data.errors : [];
     const detailMessage =
       validationDetails.length > 0
         ? String(validationDetails[0].message ?? validationDetails[0]).replace(/^[^.]*:\s*/, "")
         : null;
-    const msg =
-      detailMessage ?? data?.message ?? data?.error ?? `Error ${response.status}`;
+    const msg = detailMessage ?? data?.message ?? data?.error ?? `Error ${response.status}`;
     const error = new Error(msg);
     error.details = validationDetails;
     throw error;
@@ -106,16 +109,17 @@ export async function createMercadoPagoCheckout(payload) {
   logApiRequest("POST", url, { items: body.items?.length });
   const response = await fetch(url, {
     method: "POST",
-    headers: authHeaders(),
+    credentials: "include",
+    headers: jsonHeaders(),
     body: JSON.stringify(body),
   });
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    notifyClientUnauthorized(response.status);
     const msg =
-      data?.message ?? data?.error ??
-      "No pudimos iniciar el pago con Mercado Pago. Intentá nuevamente.";
+      data?.message ?? data?.error ?? "No pudimos iniciar el pago con Mercado Pago. Intentá nuevamente.";
     throw new Error(msg);
   }
 
@@ -124,11 +128,6 @@ export async function createMercadoPagoCheckout(payload) {
 
 export async function getPaymentStatus(orderId) {
   if (!orderId) throw new Error("Falta el identificador del pedido.");
-
-  const token = getToken();
-  if (!token) {
-    throw new Error("No pudimos verificar el estado del pago.");
-  }
 
   const data = await getMyOrders();
   const list = Array.isArray(data) ? data : data?.data ?? [];
@@ -151,11 +150,13 @@ export async function getMyOrders() {
   logApiRequest("GET", url);
   const response = await fetch(url, {
     method: "GET",
-    headers: authHeaders(),
+    credentials: "include",
+    headers: jsonHeaders(),
   });
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    notifyClientUnauthorized(response.status);
     throw new Error(data?.message ?? data?.error ?? "Error al obtener pedidos");
   }
   return data;

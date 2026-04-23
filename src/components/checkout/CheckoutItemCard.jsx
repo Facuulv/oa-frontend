@@ -3,12 +3,13 @@
 import { Minus, Plus, Trash2 } from "lucide-react";
 import ImageWithFade from "@/components/ImageWithFade";
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
-import { buildImageUrl } from "@/lib/imageUtils";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { formatPrice } from "@/utils/format/price";
 import { getItemUnitPrice } from "@/store/useCartStore";
 
 export default function CheckoutItemCard({ item, onUpdateQuantity, onRemove }) {
-  const imgSrc = buildImageUrl(item.imagen_url) || PLACEHOLDER_PRODUCT_CARD;
+  const imgSrc =
+    getOptimizedImageUrl(item.imagen_url, { preset: "checkoutLine" }) || PLACEHOLDER_PRODUCT_CARD;
   const unitPrice = getItemUnitPrice(item);
   const cantidad = item.cantidad ?? 1;
 
@@ -17,7 +18,7 @@ export default function CheckoutItemCard({ item, onUpdateQuantity, onRemove }) {
       <ImageWithFade
         src={imgSrc}
         alt={item.nombre}
-        className="h-16 w-16 shrink-0 rounded-lg object-cover"
+        className="h-16 w-16 shrink-0 rounded-xl object-cover object-center"
         onError={(e) => { e.currentTarget.src = PLACEHOLDER_PRODUCT_CARD; }}
       />
 

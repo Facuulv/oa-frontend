@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu, Search, ShoppingCart, X, User } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { useCartStore, selectCartCount } from "@/store/useCartStore";
-import { useAuthStore, selectIsAuthenticated } from "@/store/useAuthStore";
+import { useAuthStore, selectIsClienteUser } from "@/store/useAuthStore";
 
 export default function Navbar({ onMenuClick }) {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function Navbar({ onMenuClick }) {
   const searchQuery = useCartStore((s) => s.searchQuery);
   const setSearchQuery = useCartStore((s) => s.setSearchQuery);
   const clearSearch = useCartStore((s) => s.clearSearch);
-  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
 
@@ -55,9 +56,7 @@ export default function Navbar({ onMenuClick }) {
               >
                 <Menu size={26} />
               </button>
-              <Link href="/" className="text-xl font-bold text-white" aria-label="Inicio">
-                OA!
-              </Link>
+              <BrandLogo priority />
             </div>
 
             <div className="navbar-search-expand relative ml-2 flex h-8 min-w-0 items-center rounded-lg bg-white/95 pl-2 pr-8">
@@ -93,9 +92,7 @@ export default function Navbar({ onMenuClick }) {
               >
                 <Menu size={26} />
               </button>
-              <Link href="/" className="text-xl font-bold text-white" aria-label="Inicio">
-                OA!
-              </Link>
+              <BrandLogo priority />
             </div>
 
             <div className="flex items-center gap-1">

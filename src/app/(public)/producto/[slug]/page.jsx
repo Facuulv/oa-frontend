@@ -9,10 +9,11 @@ import { useProductPricing } from "@/hooks/product/useProductPricing";
 import ImageWithFade from "@/components/ImageWithFade";
 import ProductDetailSkeleton from "@/components/skeletons/ProductDetailSkeleton";
 import { PLACEHOLDER_PRODUCT_DETAIL } from "@/constants/images";
-import { buildImageUrl } from "@/lib/imageUtils";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { formatPrice } from "@/utils/format/price";
 import { ArrowLeft, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
+import { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
@@ -81,7 +82,8 @@ export default function ProductDetailPage() {
 
   if (!product) return null;
 
-  const imgSrc = buildImageUrl(product.imagen_url) || PLACEHOLDER_PRODUCT_DETAIL;
+  const imgSrc =
+    getOptimizedImageUrl(product.imagen_url, { preset: "productDetail" }) || PLACEHOLDER_PRODUCT_DETAIL;
 
   return (
     <div className="pb-24">
@@ -89,7 +91,9 @@ export default function ProductDetailPage() {
         <ImageWithFade
           src={imgSrc}
           alt={product.nombre}
-          className="h-60 w-full object-cover"
+          className="h-60 w-full rounded-b-2xl object-cover object-center"
+          loading="eager"
+          fetchPriority="high"
           onError={(e) => { e.currentTarget.src = PLACEHOLDER_PRODUCT_DETAIL; }}
         />
         <button
@@ -151,7 +155,9 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+      <div
+        className={`fixed bottom-0 left-1/2 z-30 w-full ${APP_VIEWPORT_MAX_CLASS} -translate-x-1/2 border-t bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]`}
+      >
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-2 py-1">
             <button

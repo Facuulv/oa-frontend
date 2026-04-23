@@ -1,17 +1,24 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useClientAuth } from "@/hooks/useClientAuth";
 import { useRouter } from "next/navigation";
 import { User, LogOut, Package, ChevronRight } from "lucide-react";
 
 export default function MiCuentaPage() {
-  const { user, isAuthenticated, logout, authReady } = useAuth({ redirectTo: "/login" });
+  const { user, isAuthenticated, logout, authReady } = useClientAuth({
+    redirectTo: "/login",
+    requireCliente: true,
+  });
   const router = useRouter();
 
   if (!authReady || !isAuthenticated) return null;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // sesión local ya limpia
+    }
     router.push("/");
   };
 

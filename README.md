@@ -13,8 +13,8 @@ Centralizar la experiencia de compra online del negocio (descubrimiento de produ
 - **Catálogo y búsqueda**: inicio, categorías dinámicas (`/categoria/[slug]`), detalle de producto (`/producto/[slug]`), búsqueda.
 - **Promociones**: página pública de promociones.
 - **Carrito y checkout**: carrito persistido, checkout, finalización y página de resultado (integración con preferencias de pago según el backend; en configuración figuran flags para Mercado Pago, efectivo, delivery y retiro).
-- **Cuenta de usuario**: registro, login y área **Mi cuenta** (pedidos y perfil según APIs disponibles).
-- **Administración** (`/admin/*`): dashboard, productos, categorías, promociones, cupones y pedidos (acceso restringido por middleware según rol en el token).
+- **Cuenta de usuario**: registro, **login unificado** en `/login` (misma pantalla para cliente y admin; el backend decide el rol y setea la cookie correspondiente) y área **Mi cuenta** para clientes. La ruta `/admin/login` solo redirige a `/login` por compatibilidad.
+- **Administración** (`/admin/*`): dashboard, productos, categorías, promociones, cupones y pedidos. El **middleware** de Next exige la **cookie de sesión admin** (nombre alineado con el backend; ver variables de entorno); la autorización real sigue en el API.
 - **PWA**: `manifest.json` e iconos en `public/` (metadatos en el layout raíz).
 - **Horarios del local**: flag para activar validación de horarios (la lógica de consulta al backend está preparada para evolucionar; ver sección de consideraciones).
 
@@ -80,6 +80,12 @@ Todas las variables usadas por el código del frontend son **prefijo `NEXT_PUBLI
 | `NEXT_PUBLIC_ENABLE_STORE_HOURS_VALIDATION` | No | Si vale exactamente `true`, se considera activa la rama de validación de horarios en `useStoreStatus`. Cualquier otro valor o ausencia equivale a desactivado. |
 | `NEXT_PUBLIC_APP_URL` | No | URL pública de esta aplicación Next. Definida en `app.config.js` con valor por defecto `http://localhost:3000`. **Nota:** al momento de escribir este README no hay otros módulos que consuman `appConfig.url`; conviene definirla en producción para enlaces canónicos o usos futuros. |
 
+**Middleware `/admin` (solo servidor Next, no va al bundle `NEXT_PUBLIC_*`):**
+
+| Variable | Obligatoria | Descripción |
+|----------|-------------|-------------|
+| `ADMIN_SESSION_COOKIE_NAME` | No | Debe coincidir con la cookie HttpOnly de sesión **admin** que setea el backend tras `POST /auth/login` (por defecto `oa_admin_token`). Si el API usa otro nombre, definilo también en `.env.local` del frontend para que el middleware lea la misma cookie. |
+
 Además, en tiempo de ejecución Node expone `NODE_ENV` (`development` / `production`); el cliente usa `development` para logs extra de errores de API.
 
 ## Ejemplo de `.env.example`
@@ -129,8 +135,8 @@ oa_app/
 │   ├── constants/
 │   ├── hooks/              # Hooks (auth, checkout, producto, store status…)
 │   ├── lib/                # Utilidades (cn, imágenes, scroll, mappers)
-│   ├── services/           # Capa de API (axios): auth, catálogo, admin, pedidos, promos
-│   ├── store/              # Zustand: auth, carrito, catálogo
+│   ├── services/           # API: axios (catálogo, admin, pedidos…), `authSessionService` (login/sesión con fetch + cookies)
+│   ├── store/              # Zustand: `useAuthStore`, carrito, catálogo
 │   └── utils/              # API (baseUrl, errores, logs), auth (token, JWT), checkout
 ├── eslint.config.mjs
 ├── jsconfig.json           # Alias `@/*` → `./src/*`
@@ -142,10 +148,10 @@ oa_app/
 ## Arquitectura general del frontend
 
 - **Routing**: Next.js App Router con grupos de rutas `(public)` y `(auth)`, rutas dinámicas `[slug]`, y segmento `admin/`.
-- **Estado global**: **Zustand** — `useAuthStore` (sesión y usuario, persistido parcialmente), `useCartStore` (carrito en `localStorage` con clave configurable en `app.config`), `useCatalogStore` (caché de catálogo con TTL en memoria).
-- **Cliente HTTP**: instancia única **Axios** (`src/services/apiClient.js`) con `baseURL` desde `app.config`, timeout 15 s, cabecera JSON e **interceptor** que adjunta `Authorization: Bearer <token>` si existe.
-- **Token**: guardado en **`localStorage`** y replicado en **cookie** (misma clave que en constantes) para que el **middleware** de Next pueda leer la sesión en el servidor en rutas `/admin/*`. `AuthSessionProvider` sincroniza token → cookie y refresca el perfil tras hidratar Zustand.
-- **Autenticación y guards**: el **middleware** (`src/middleware.js`) protege `/admin/*`: redirige a `/login` si no hay token; si el JWT (parseo best-effort del payload, sin verificar firma en el edge) no indica rol admin, redirige al inicio con `error=forbidden`. Los **401** en API disparan el evento personalizado `auth:unauthorized` para que la UI reaccione.
+- **Estado global**: **Zustand** — `useAuthStore` (usuario actual y flags de carga; **sin `persist`**: la sesión vive en cookies **HttpOnly** del API y se reconstruye con `GET /auth/me`), `useCartStore` (carrito en `localStorage` con clave configurable en `app.config`), `useCatalogStore` (caché de catálogo con TTL en memoria).
+- **Cliente HTTP**: instancia **Axios** (`src/services/apiClient.js`) con `baseURL` desde `app.config`, `withCredentials: true`, timeout 15 s y cabecera JSON. El login y la resolución de perfil usan **`fetch` + `credentials: 'include'`** en `src/services/authSessionService.js` para las rutas `/auth/*` (mismo modelo de cookies que Axios en llamadas al mismo origen del API).
+- **Sesión y cookies**: el backend setea **una** de dos cookies HttpOnly según el rol tras `POST /auth/login` (p. ej. `oa_admin_token` u `oa_client_token`, nombres configurables en el API). El navegador las envía solas en peticiones credenciales al dominio del backend. El **middleware** de Next solo puede leer la cookie **admin** (no HttpOnly del cliente) para una comprobación UX en `/admin/*`: ausencia de cookie o JWT cuyo payload no sugiere rol **ADMIN** → redirección a `/login` o al inicio con `error=forbidden`. **`AuthSessionProvider`** al montar la app llama a `GET /auth/me` y puebla `useAuthStore`.
+- **Autenticación y guards**: panel admin (`src/app/admin/(panel)/layout.jsx` + `useAdminAuth`) exige sesión **admin** en cliente; rutas de cliente (`useClientAuth`, p. ej. **Mi cuenta**) tratan como “logueado” solo `usuario.origen === 'CLIENTE'`. Los **401** en Axios u órdenes disparan el evento **`auth:unauthorized`**; el provider vuelve a ejecutar `GET /auth/me` para alinear estado.
 - **Formularios**: React Hook Form + Zod en flujos que lo requieran (checkout, auth, etc.).
 - **UI**: componentes propios con Tailwind; modales, sidebar, skeletons de carga.
 - **Imágenes**: `next/image` con dominios permitidos en `next.config.mjs`; helper `buildImageUrl` concatena rutas relativas del API con la base configurada cuando corresponde.
@@ -154,12 +160,13 @@ oa_app/
 
 - La **URL base** del API es **`NEXT_PUBLIC_API_BASE_URL`**, leída en `src/config/app.config.js` y aplicada en `apiClient` e imágenes relativas.
 - Los paths relativos están centralizados en **`src/config/apiPaths.js`**, por ejemplo:
-  - **Auth**: `/auth/login`, `/auth/register`, `/auth/profile`
+  - **Auth (unificado)**: `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/register`
+  - **Clientes (compat.)**: `POST /clientes/register` (misma semántica que registro en `/auth/register` si el backend lo mantiene)
   - **Público**: categorías, productos, promociones, validación de cupones, órdenes, preferencia de checkout
   - **Usuario**: listado de pedidos del cliente, actualización de estado
   - **Manager/admin API**: CRUD de productos, categorías, promociones, cupones; endpoints bajo `/admin/...` para dashboard y settings
-- El backend debe exponer las mismas rutas (o un proxy compatible) y habilitar **CORS** para el origen del frontend (p. ej. `http://localhost:3000` en desarrollo).
-- La **autorización real** de cada operación debe implementarse en el servidor; el middleware del frontend es solo una capa UX basada en el token.
+- El backend debe exponer las mismas rutas (o un proxy compatible) y habilitar **CORS con credenciales** si front y API son orígenes distintos (`Access-Control-Allow-Credentials: true` y origen explícito, no `*`).
+- La **autorización real** de cada operación debe implementarse en el servidor; el middleware del frontend es solo una capa UX basada en la presencia de la cookie admin y un **hint** de rol desde el payload JWT (sin verificar firma en el edge).
 
 ## Ejecución en desarrollo
 
@@ -197,9 +204,9 @@ Variables `NEXT_PUBLIC_*` deben estar definidas **en el momento del build** en l
 |---------|----------------|-------------|
 | Errores de red o `baseURL` vacío | API no configurada | `NEXT_PUBLIC_API_BASE_URL` en `.env.local` y reinicio de `npm run dev` |
 | CORS bloqueado | Origen del front no permitido en el API | Configuración CORS del backend; URL y puerto exactos |
-| `/admin` redirige a login | Sin cookie/token | Iniciar sesión; comprobar que `setToken` ejecutó (localStorage + cookie) |
+| `/admin` redirige a login | Sin cookie de sesión admin | Iniciar sesión con una cuenta **admin** desde `/login`; comprobar nombre de cookie (`ADMIN_SESSION_COOKIE_NAME`) alineado con el backend |
 | Imágenes rotas desde el API | Host no permitido en Next Image | `next.config.mjs` → `images.remotePatterns` |
-| 401 repetidos | Token expirado o inválido | Cerrar sesión y volver a loguear; revisar respuestas del `/auth/profile` |
+| 401 repetidos | Sesión expirada o cookie no enviada | Cerrar sesión, volver a loguear; CORS y `withCredentials` / `credentials: 'include'`; revisar `GET /auth/me` en red |
 
 ## Mejoras futuras
 

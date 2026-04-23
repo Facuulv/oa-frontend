@@ -2,32 +2,42 @@
 
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { getToken, syncTokenToCookie } from "@/utils/auth/token";
+
+let authBootstrapPromise = null;
+
+function startAuthBootstrap() {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (useAuthStore.getState().sessionGateReady) return Promise.resolve();
+  if (authBootstrapPromise) return authBootstrapPromise;
+
+  authBootstrapPromise = (async () => {
+    try {
+      await useAuthStore.getState().refreshProfile();
+    } finally {
+      useAuthStore.setState({ sessionGateReady: true });
+      authBootstrapPromise = null;
+    }
+  })();
+
+  return authBootstrapPromise;
+}
 
 /**
- * Sincroniza token → cookie (middleware) y refresca el perfil tras rehidratar el store.
+ * Restaura sesión con `GET /auth/me` (cookie admin o cliente).
  */
 export default function AuthSessionProvider({ children }) {
   useEffect(() => {
-    syncTokenToCookie();
+    void startAuthBootstrap();
   }, []);
 
   useEffect(() => {
-    const bootstrap = () => {
-      syncTokenToCookie();
-      if (getToken()) {
-        void useAuthStore.getState().refreshProfile();
-      }
+    const onUnauthorized = () => {
+      void useAuthStore.getState().refreshProfile();
     };
-
-    if (useAuthStore.persist.hasHydrated()) {
-      bootstrap();
-      return undefined;
-    }
-
-    return useAuthStore.persist.onFinishHydration(() => {
-      bootstrap();
-    });
+    window.addEventListener("auth:unauthorized", onUnauthorized);
+    return () => {
+      window.removeEventListener("auth:unauthorized", onUnauthorized);
+    };
   }, []);
 
   return children;

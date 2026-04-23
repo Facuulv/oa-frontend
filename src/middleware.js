@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AUTH_TOKEN_KEY } from "@/utils/auth/constants";
+import { ADMIN_SESSION_COOKIE_NAME } from "@/utils/auth/constants";
 import { jwtRoleIsAdmin } from "@/utils/auth/jwtPayload";
 
 export function middleware(request) {
@@ -8,7 +8,16 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  const raw = request.cookies.get(AUTH_TOKEN_KEY)?.value ?? "";
+  if (pathname === "/admin/login" || pathname.startsWith("/admin/login/")) {
+    return NextResponse.next();
+  }
+
+  const cookieName = (
+    process.env.ADMIN_SESSION_COOKIE_NAME ||
+    process.env.AUTH_SESSION_COOKIE_NAME ||
+    ADMIN_SESSION_COOKIE_NAME
+  ).trim();
+  const raw = request.cookies.get(cookieName)?.value ?? "";
   let token = raw;
   try {
     token = raw ? decodeURIComponent(raw) : "";
