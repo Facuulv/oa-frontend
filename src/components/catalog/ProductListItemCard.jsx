@@ -12,7 +12,7 @@ export default function ProductListItemCard({ product }) {
   return (
     <Link
       href={`/producto/${product.slug ?? product.id}`}
-      className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm transition hover:shadow-md"
+      className="flex items-center gap-4 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md active:shadow-md"
     >
       <ImageWithFade
         src={imgSrc}
@@ -21,13 +21,20 @@ export default function ProductListItemCard({ product }) {
         onError={(e) => { e.currentTarget.src = PLACEHOLDER_PRODUCT_CARD; }}
       />
       <div className="min-w-0 flex-1">
-        <p className="product-name">{product.nombre}</p>
+        {product.categoria_nombre ? (
+          <span className="inline-flex bg-neutral-100 text-neutral-700 text-xs px-2 py-1 rounded-full">
+            {product.categoria_nombre}
+          </span>
+        ) : null}
+        <p className="mt-1 line-clamp-2 font-semibold text-neutral-900">
+          {product.nombre}
+        </p>
         {product.descripcion && (
-          <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+          <p className="mt-1 line-clamp-2 text-xs text-neutral-600">
             {product.descripcion}
           </p>
         )}
-        <p className="product-price mt-1 text-sm text-primary">
+        <p className="product-price mt-1 text-lg font-bold text-[#C1121F]">
           {formatPrice(product.precio)}
         </p>
       </div>

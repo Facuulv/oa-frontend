@@ -9,9 +9,18 @@ export async function getCategories() {
 export async function getProductsByCategory(categoryId) {
   const params = {};
   if (categoryId != null && categoryId !== "") {
-    params.categoryId = categoryId;
+    params.categoriaId = categoryId;
   }
   const { data } = await apiClient.get(apiPaths.public.products, { params });
+  const list = Array.isArray(data) ? data : data?.data ?? [];
+  return list;
+}
+
+/** Productos con destacado = 1 (carrusel de inicio). */
+export async function getFeaturedProducts() {
+  const { data } = await apiClient.get(apiPaths.public.products, {
+    params: { destacado: 1 },
+  });
   const list = Array.isArray(data) ? data : data?.data ?? [];
   return list;
 }

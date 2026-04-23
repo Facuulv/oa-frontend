@@ -10,7 +10,7 @@ export default function CategoryCard({ category, index = 0 }) {
 
   return (
     <Link
-      href={`/categoria/${category.slug ?? category.id}`}
+      href={`/catalogo?categoriaId=${encodeURIComponent(String(category.id))}`}
       className="card-fade-in group relative flex h-28 items-end overflow-hidden rounded-xl shadow-md"
       style={{ animationDelay: `${index * 80}ms` }}
     >
