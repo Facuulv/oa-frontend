@@ -1,21 +1,44 @@
 "use client";
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
-import { useCatalogStore, selectProductsForCategory, selectProductsLoading, selectProductsError } from "@/store/useCatalogStore";
+import { Suspense, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  useCatalogStore,
+  selectCategories,
+  selectProductsForCategory,
+  selectProductsLoading,
+  selectProductsError,
+} from "@/store/useCatalogStore";
 import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 import ProductListItemCard from "@/components/catalog/ProductListItemCard";
 import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
 import { AlertCircle, RotateCcw } from "lucide-react";
 
-export default function CategoryPage() {
-  const { slug } = useParams();
-  const categoryId = slug === "all" ? null : slug;
+function CatalogContent() {
+  const searchParams = useSearchParams();
+  const categoriaIdParam = searchParams.get("categoriaId");
+  const categoryId =
+    categoriaIdParam != null && String(categoriaIdParam).trim() !== ""
+      ? String(categoriaIdParam).trim()
+      : null;
+
+  const fetchCategories = useCatalogStore((s) => s.fetchCategories);
   const fetchProducts = useCatalogStore((s) => s.fetchProductsByCategory);
+  const categories = useCatalogStore(selectCategories);
   const products = useCatalogStore((s) => selectProductsForCategory(s, categoryId));
   const isLoading = useCatalogStore((s) => selectProductsLoading(s, categoryId));
   const error = useCatalogStore((s) => selectProductsError(s, categoryId));
   const showSkeleton = useDelayedLoading(isLoading);
+
+  const title = useMemo(() => {
+    if (!categoryId) return "Todos los productos";
+    const cat = categories.find((c) => String(c.id) === String(categoryId));
+    return cat?.nombre ? cat.nombre : "Productos";
+  }, [categories, categoryId]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   useEffect(() => {
     fetchProducts(categoryId);
@@ -25,7 +48,7 @@ export default function CategoryPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+      <div className="flex min-h-[50vh] flex-col items-center justify-center bg-[#FFF1F2] px-6 py-16 text-center">
         <AlertCircle size={40} className="mb-3 text-red-400" />
         <p className="mb-4 text-sm text-gray-600">{error}</p>
         <button
@@ -41,10 +64,8 @@ export default function CategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-red-50 px-4 py-4">
-      <h1 className="mb-4 text-lg font-bold text-neutral-900">
-        {slug === "all" ? "Todos los productos" : `Categoría`}
-      </h1>
+    <div className="min-h-screen bg-[#FFF1F2] px-4 py-4">
+      <h1 className="mb-4 text-lg font-bold text-neutral-900">{title}</h1>
 
       {products.length > 0 ? (
         <div className="space-y-3">
@@ -53,10 +74,16 @@ export default function CategoryPage() {
           ))}
         </div>
       ) : (
-        <p className="py-12 text-center text-sm text-gray-400">
-          No hay productos en esta categoría
-        </p>
+        <p className="py-12 text-center text-sm text-gray-500">No hay productos en esta categoría</p>
       )}
     </div>
+  );
+}
+
+export default function CatalogoPage() {
+  return (
+    <Suspense fallback={<ProductCardSkeleton />}>
+      <CatalogContent />
+    </Suspense>
   );
 }

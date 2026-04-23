@@ -174,7 +174,7 @@ export default function ProductDetailPage() {
           <button
             type="button"
             onClick={handleAddToCart}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-white transition hover:brightness-110"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-black py-2.5 text-sm font-medium text-white transition active:bg-gray-900"
           >
             <Plus size={16} />
             Agregar {formatPrice(pricing.total * cantidad)}

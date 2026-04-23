@@ -26,10 +26,10 @@ function SearchResults() {
   if (showSkeleton) return <ProductCardSkeleton />;
 
   return (
-    <div className="px-4 py-4">
+    <div className="min-h-screen bg-red-50 px-4 py-4">
       <div className="mb-4 flex items-center gap-2">
-        <Search size={18} className="text-gray-400" />
-        <h1 className="text-base font-semibold text-gray-700">
+        <Search size={18} className="text-neutral-500" />
+        <h1 className="text-base font-semibold text-neutral-900">
           {query ? `Resultados para "${query}"` : "Buscar productos"}
         </h1>
       </div>

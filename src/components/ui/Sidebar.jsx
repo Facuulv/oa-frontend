@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   Home,
-  Grid3X3,
   ShoppingCart,
   Tag,
   User,
@@ -15,7 +14,6 @@ import { useAuthStore, selectIsAuthenticated, selectIsAdmin } from "@/store/useA
 
 const publicLinks = [
   { href: "/", label: "Inicio", icon: Home },
-  { href: "/categoria/all", label: "Catálogo", icon: Grid3X3 },
   { href: "/promociones", label: "Promociones", icon: Tag },
   { href: "/checkout", label: "Mi carrito", icon: ShoppingCart },
 ];

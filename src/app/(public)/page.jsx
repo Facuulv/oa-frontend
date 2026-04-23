@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useCatalogStore, selectCategories, selectCategoriesLoading } from "@/store/useCatalogStore";
 import { useDelayedLoading } from "@/hooks/useDelayedLoading";
-import HeroSlider from "@/components/catalog/HeroSlider";
+import FeaturedPromoCarousel from "@/components/catalog/FeaturedPromoCarousel";
 import CategoryCard from "@/components/catalog/CategoryCard";
 import HomeSkeleton from "@/components/skeletons/HomeSkeleton";
 
@@ -20,10 +20,10 @@ export default function HomePage() {
   if (showSkeleton) return <HomeSkeleton />;
 
   return (
-    <div className="pb-16">
-      <HeroSlider images={[]} />
+    <div className="min-h-[calc(100dvh-3.25rem)] bg-[#FFF1F2] pb-16">
+      <FeaturedPromoCarousel />
 
-      <section className="px-4 pt-5">
+      <section className="px-4 pt-6">
         <h2 className="mb-3 text-lg font-bold text-gray-800">Categorías</h2>
         <div className="grid grid-cols-2 gap-3">
           {categories.map((cat, i) => (
