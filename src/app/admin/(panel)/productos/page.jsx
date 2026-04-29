@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -24,6 +24,8 @@ import AdminProductForm, {
   mapProductoToForm,
   PRODUCT_FORM_SERVER_FIELDS,
 } from "@/components/admin/AdminProductForm";
+import AdminProductosFiltersBar from "@/components/admin/AdminProductosFiltersBar";
+import AdminProductosListSortBar from "@/components/admin/AdminProductosListSortBar";
 import { getCategorias } from "@/services/adminCategoriasService";
 import {
   createProducto,
@@ -32,6 +34,7 @@ import {
   ADMIN_PRODUCTO_CODES,
 } from "@/services/adminProductosService";
 import { useAdminProductosList } from "@/hooks/admin/useAdminProductosList";
+import { TIPO_PRODUCTO } from "@/constants/tipoProducto";
 import { ApiError } from "@/utils/api/apiError";
 import { buildImageUrl } from "@/lib/imageUtils";
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
@@ -180,7 +183,23 @@ export default function AdminProductosPage() {
     filtroDestacado,
     filtroDisponible,
     ordenar,
+    tipoProducto: TIPO_PRODUCTO.PRODUCTO,
   });
+
+  const limit = pagination.limit || PAGE_SIZE;
+  const totalPages =
+    pagination.total > 0 ? Math.max(1, Math.ceil(pagination.total / limit)) : 1;
+
+  useEffect(() => {
+    if (loadingInitial || loadError) return;
+    if (pagination.total > 0 && page > totalPages) {
+      setPage(totalPages);
+      return;
+    }
+    if (pagination.total === 0 && page !== 1) {
+      setPage(1);
+    }
+  }, [loadingInitial, loadError, page, pagination.total, totalPages]);
 
   const loadErrorMessage = loadError ? humanLoadError(loadError) : null;
 
@@ -207,7 +226,7 @@ export default function AdminProductosPage() {
   const vacioPorFiltros =
     !loadingInitial && !loadError && items.length === 0 && !catalogoSinNingunProducto;
 
-  const restablecerFiltros = () => {
+  const limpiarFiltros = () => {
     setBusquedaInput("");
     setBusqueda("");
     setFiltroCategoria("");
@@ -217,6 +236,12 @@ export default function AdminProductosPage() {
     setOrdenar("orden_asc");
     setPage(1);
   };
+
+  /** Vacío inmediato: evita esperar el debounce de `busqueda` (chips / borrado total). */
+  const handleBusquedaInputChange = useCallback((value) => {
+    setBusquedaInput(value);
+    if (!value.trim()) setBusqueda("");
+  }, []);
 
   const form = useForm({
     resolver: zodResolver(productFormSchema),
@@ -392,14 +417,16 @@ export default function AdminProductosPage() {
     }
   };
 
-  const limit = pagination.limit || PAGE_SIZE;
-  const totalPages = Math.max(1, Math.ceil(pagination.total / limit));
   const canPrev = page > 1;
   const canNext = page < totalPages;
   const rangoListado =
     items.length > 0 && pagination.total > 0
       ? `${(page - 1) * limit + 1}–${Math.min(page * limit, pagination.total)}`
       : null;
+
+  const modalBusy = saving || imageUploading;
+  const primarySubmitLabel =
+    imageUploading && !saving ? "Esperá la imagen…" : editing ? "Guardar cambios" : "Crear producto";
 
   return (
     <div className="flex flex-col gap-6 pb-4">
@@ -419,7 +446,7 @@ export default function AdminProductosPage() {
           type="button"
           onClick={openCreate}
           disabled={categoriasActivasCount === 0}
-          className="inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm transition-[transform,background-color,box-shadow] duration-200 ease-out will-change-transform enabled:hover:brightness-105 enabled:active:brightness-95 enabled:active:scale-[0.985] disabled:pointer-events-none disabled:opacity-45 sm:w-auto sm:min-w-[200px]"
+          className="admin-pressable inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:w-auto sm:min-w-[200px]"
         >
           <Plus size={20} strokeWidth={2.25} aria-hidden />
           Nuevo producto
@@ -439,110 +466,32 @@ export default function AdminProductosPage() {
         </div>
       )}
 
-      <div className="admin-quick-card-enter flex flex-col gap-3 rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm ring-1 ring-zinc-200/50 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3">
-        <div className="min-w-0 flex-1 sm:min-w-[12rem]">
-          <label htmlFor="prod-busqueda" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Buscar por nombre
-          </label>
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
-              aria-hidden
-            />
-            <input
-              id="prod-busqueda"
-              type="search"
-              value={busquedaInput}
-              onChange={(e) => setBusquedaInput(e.target.value)}
-              placeholder="Ej. gin, cola…"
-              className="min-h-11 w-full rounded-xl border border-zinc-200 py-2.5 pl-9 pr-3 text-base outline-none ring-primary ring-offset-2 ring-offset-white focus:ring-2"
-              autoComplete="off"
-            />
-          </div>
-        </div>
-        <div className="w-full min-w-0 sm:w-44">
-          <label htmlFor="prod-f-cat" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Categoría
-          </label>
-          <select
-            id="prod-f-cat"
-            value={filtroCategoria}
-            onChange={(e) => setFiltroCategoria(e.target.value)}
-            className="min-h-11 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm font-medium text-zinc-800 outline-none ring-primary focus:ring-2"
-          >
-            <option value="">Todas</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={String(c.id)}>
-                {c.nombre}
-                {!c.activo ? " (inactiva)" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-0 sm:flex-row sm:flex-wrap sm:gap-3">
-          <div className="min-w-0 flex-1 sm:min-w-[9.5rem]">
-            <label htmlFor="prod-f-act" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Catálogo
-            </label>
-            <select
-              id="prod-f-act"
-              value={filtroActivo}
-              onChange={(e) => setFiltroActivo(e.target.value)}
-              className="min-h-11 w-full rounded-xl border border-zinc-200 px-2 py-2.5 text-sm font-medium text-zinc-800 outline-none ring-primary focus:ring-2"
-            >
-              <option value="all">Activos e inactivos</option>
-              <option value="true">Solo activos</option>
-              <option value="false">Solo inactivos</option>
-            </select>
-          </div>
-          <div className="min-w-0 flex-1 sm:min-w-[9.5rem]">
-            <label htmlFor="prod-f-dest" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Destacado
-            </label>
-            <select
-              id="prod-f-dest"
-              value={filtroDestacado}
-              onChange={(e) => setFiltroDestacado(e.target.value)}
-              className="min-h-11 w-full rounded-xl border border-zinc-200 px-2 py-2.5 text-sm font-medium text-zinc-800 outline-none ring-primary focus:ring-2"
-            >
-              <option value="all">Todos</option>
-              <option value="true">Solo destacados</option>
-              <option value="false">Sin destacar</option>
-            </select>
-          </div>
-          <div className="min-w-0 flex-1 sm:min-w-[9.5rem]">
-            <label htmlFor="prod-f-disp" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Venta
-            </label>
-            <select
-              id="prod-f-disp"
-              value={filtroDisponible}
-              onChange={(e) => setFiltroDisponible(e.target.value)}
-              className="min-h-11 w-full rounded-xl border border-zinc-200 px-2 py-2.5 text-sm font-medium text-zinc-800 outline-none ring-primary focus:ring-2"
-            >
-              <option value="all">Todos</option>
-              <option value="true">Disponibles para venta</option>
-              <option value="false">No disponibles</option>
-            </select>
-          </div>
-        </div>
-        <div className="w-full min-w-0 sm:w-52">
-          <label htmlFor="prod-ordenar" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Ordenar por
-          </label>
-          <select
-            id="prod-ordenar"
+      <div className="flex flex-col gap-3">
+        <AdminProductosFiltersBar
+          categorias={categorias}
+          busquedaInput={busquedaInput}
+          onBusquedaInputChange={handleBusquedaInputChange}
+          filtroCategoria={filtroCategoria}
+          onFiltroCategoriaChange={setFiltroCategoria}
+          filtroActivo={filtroActivo}
+          onFiltroActivoChange={setFiltroActivo}
+          filtroDestacado={filtroDestacado}
+          onFiltroDestacadoChange={setFiltroDestacado}
+          filtroDisponible={filtroDisponible}
+          onFiltroDisponibleChange={setFiltroDisponible}
+          filtrosPredeterminados={filtrosPredeterminados}
+          onLimpiarFiltros={limpiarFiltros}
+          listRefreshing={listRefreshing}
+        />
+
+        {!loadError && (
+          <AdminProductosListSortBar
             value={ordenar}
-            onChange={(e) => setOrdenar(e.target.value)}
-            className="min-h-11 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm font-medium text-zinc-800 outline-none ring-primary focus:ring-2"
-          >
-            {ORDENAR_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
+            onChange={setOrdenar}
+            options={ORDENAR_OPTIONS}
+            disabled={listRefreshing}
+          />
+        )}
       </div>
 
       {loadingInitial && (
@@ -595,9 +544,23 @@ export default function AdminProductosPage() {
               </div>
               <p className="mt-5 text-base font-semibold text-zinc-900">Todavía no hay productos cargados</p>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
-                Cuando agregues el primero, vas a verlo acá con imagen, precio, stock y estado. Usá el botón
-                «Nuevo producto» arriba a la derecha para empezar.
+                Cuando agregues el primero, vas a verlo acá con imagen, precio, stock y estado. El listado se
+                actualiza solo y la paginación se adapta al total del catálogo.
               </p>
+              <button
+                type="button"
+                onClick={openCreate}
+                disabled={categoriasActivasCount === 0}
+                className="admin-pressable mt-6 inline-flex min-h-12 w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:w-auto"
+              >
+                <Plus size={20} strokeWidth={2.25} aria-hidden />
+                Nuevo producto
+              </button>
+              {categoriasActivasCount === 0 ? (
+                <p className="mt-3 max-w-md text-xs text-zinc-500">
+                  Activá una categoría en «Categorías» para habilitar el alta.
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -608,15 +571,15 @@ export default function AdminProductosPage() {
               </div>
               <p className="mt-5 text-base font-semibold text-zinc-900">No hay productos con estos filtros</p>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
-                Probá otra búsqueda o ajustá categoría, catálogo, destacado o venta. También podés restablecer
-                todo y volver al listado completo.
+                Probá otra búsqueda o ajustá categoría, estado, destacado o venta. También podés usar «Limpiar
+                filtros» y volver al listado completo.
               </p>
               <button
                 type="button"
-                onClick={restablecerFiltros}
+                onClick={limpiarFiltros}
                 className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-50"
               >
-                Restablecer filtros
+                Limpiar filtros
               </button>
             </div>
           )}
@@ -637,6 +600,7 @@ export default function AdminProductosPage() {
               const stockLabel = String(row.stock ?? 0);
               const sinStock =
                 Number(row.stock) === 0 && row.disponible !== false && row.disponible !== 0;
+              const descripcionTrim = (row.descripcion || "").trim();
               return (
                 <li
                   key={row.id}
@@ -657,70 +621,68 @@ export default function AdminProductosPage() {
                         ev.currentTarget.src = PLACEHOLDER_PRODUCT_CARD;
                       }}
                     />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <p
-                          className={`text-base font-semibold leading-snug ${row.activo ? "text-zinc-900" : "text-zinc-600"}`}
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <p
+                        className={`text-base font-semibold leading-snug ${row.activo ? "text-zinc-900" : "text-zinc-600"}`}
+                      >
+                        {row.nombre}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            row.activo
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "border border-zinc-300/80 bg-zinc-200/90 text-zinc-800"
+                          }`}
                         >
-                          {row.nombre}
-                          {!row.activo ? (
-                            <span className="ml-2 align-middle text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                              (inactivo)
-                            </span>
-                          ) : null}
-                        </p>
-                        <div className="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1.5">
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                              row.activo
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "border border-zinc-300/80 bg-zinc-200/90 text-zinc-800"
-                            }`}
-                          >
-                            {row.activo ? "Activo" : "Inactivo"}
+                          {row.activo ? "Activo" : "Inactivo"}
+                        </span>
+                        {row.destacado ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300/60 bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-950">
+                            <Star size={12} className="shrink-0 text-amber-900" fill="currentColor" aria-hidden />
+                            Destacado
                           </span>
-                          {row.destacado ? (
-                            <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300/60 bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-950">
-                              <Star size={12} className="shrink-0 text-amber-900" fill="currentColor" aria-hidden />
-                              Destacado
-                            </span>
-                          ) : null}
-                          {row.disponible === false || row.disponible === 0 ? (
-                            <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-900">
-                              No disponible
-                            </span>
-                          ) : null}
-                          {sinStock ? (
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-900 ring-1 ring-rose-200/80">
-                              <AlertTriangle size={12} className="shrink-0" aria-hidden />
-                              Sin stock
-                            </span>
-                          ) : null}
-                        </div>
+                        ) : null}
+                        {row.disponible === false || row.disponible === 0 ? (
+                          <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-900">
+                            No disponible
+                          </span>
+                        ) : null}
+                        {sinStock ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-900 ring-1 ring-rose-200/80">
+                            <AlertTriangle size={12} className="shrink-0" aria-hidden />
+                            Sin stock
+                          </span>
+                        ) : null}
                       </div>
-                      <p className="mt-1 text-sm text-zinc-600">
-                        <span className={catMissing ? "font-medium text-amber-800" : "font-medium text-zinc-700"}>
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                        <span className="text-lg font-bold tracking-tight text-zinc-900 sm:text-xl">
+                          {formatPrecioLista(row.precio)}
+                        </span>
+                        <span className="text-sm text-zinc-600">
+                          Stock{" "}
+                          <span
+                            className={`font-semibold tabular-nums ${Number(row.stock) === 0 ? "text-rose-800" : "text-zinc-800"}`}
+                          >
+                            {stockLabel}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
+                        <span
+                          className={`max-w-full shrink-0 font-medium ${catMissing ? "text-amber-800" : "text-zinc-700"}`}
+                        >
                           {catNombre}
                         </span>
-                        <span className="mx-1.5 text-zinc-300" aria-hidden>
-                          ·
-                        </span>
-                        <span className="font-semibold text-zinc-900">{formatPrecioLista(row.precio)}</span>
-                        <span className="mx-1.5 text-zinc-300" aria-hidden>
-                          ·
-                        </span>
-                        Stock:{" "}
-                        <span
-                          className={`font-medium ${Number(row.stock) === 0 ? "text-rose-800" : "text-zinc-800"}`}
-                        >
-                          {stockLabel}
-                        </span>
-                      </p>
-                      {row.descripcion ? (
-                        <p className="mt-2 line-clamp-2 text-sm text-zinc-500">{row.descripcion}</p>
-                      ) : (
-                        <p className="mt-2 text-sm italic text-zinc-400">Sin descripción</p>
-                      )}
+                        {descripcionTrim ? (
+                          <>
+                            <span className="shrink-0 text-zinc-300" aria-hidden>
+                              ·
+                            </span>
+                            <p className="min-w-0 flex-1 basis-[12rem] text-zinc-500 line-clamp-1">{descripcionTrim}</p>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
 
@@ -762,6 +724,8 @@ export default function AdminProductosPage() {
           )}
 
           <div
+            role="navigation"
+            aria-label="Paginación del listado de productos"
             className={`flex flex-col items-center justify-between gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 text-sm text-zinc-700 shadow-sm ring-1 ring-zinc-200/50 sm:flex-row ${listRefreshing ? "opacity-60" : ""}`}
           >
             <p className="text-center sm:text-left">
@@ -769,9 +733,12 @@ export default function AdminProductosPage() {
               <span className="font-semibold text-zinc-900">{totalPages}</span>
               <span className="text-zinc-500">
                 {" "}
-                · {pagination.total} {pagination.total === 1 ? "producto" : "productos"}
+                · {pagination.total}{" "}
+                {pagination.total === 1 ? "producto en total" : "productos en total"}
                 {rangoListado ? (
                   <span className="text-zinc-400"> (mostrando {rangoListado})</span>
+                ) : pagination.total === 0 ? (
+                  <span className="text-zinc-400"> (sin filas en esta página)</span>
                 ) : null}
               </span>
             </p>
@@ -803,16 +770,44 @@ export default function AdminProductosPage() {
         isOpen={formModalOpen}
         onClose={closeFormModal}
         title={editing ? "Editar producto" : "Nuevo producto"}
-        closeDisabled={saving || imageUploading}
+        closeDisabled={modalBusy}
+        maxWidthClass="w-full max-w-lg sm:max-w-xl"
+        closeOnBackdrop={false}
+        animatePanelPop
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <button
+              type="button"
+              onClick={closeFormModal}
+              disabled={modalBusy}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-800 outline-none ring-primary transition-colors hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 sm:min-w-[7.5rem] sm:w-auto"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              form="admin-product-form"
+              disabled={modalBusy}
+              aria-busy={saving}
+              className="admin-pressable inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm outline-none ring-primary hover:brightness-105 focus-visible:ring-2 focus-visible:ring-offset-2 active:shadow-[0_1px_4px_rgba(0,0,0,0.18)] disabled:pointer-events-none disabled:opacity-60 sm:min-w-[11rem] sm:w-auto"
+            >
+              {modalBusy ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />
+              ) : null}
+              {primarySubmitLabel}
+            </button>
+          </div>
+        }
       >
         <AdminProductForm
+          formId="admin-product-form"
+          showFooter={false}
           form={form}
           categoriasOptions={categoriasOptionsForm}
           onSubmit={onSubmit}
           saving={saving}
           imageUploading={imageUploading}
           onImageUploadingChange={setImageUploading}
-          onCancel={closeFormModal}
         />
       </Modal>
     </div>

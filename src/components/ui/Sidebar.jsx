@@ -10,7 +10,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
-import { useAuthStore, selectIsAdminUser, selectIsClienteUser } from "@/store/useAuthStore";
+import { useAuthStore, selectCanAccessAdminPanel, selectIsClienteUser } from "@/store/useAuthStore";
 
 const publicLinks = [
   { href: "/", label: "Inicio", icon: Home },
@@ -28,7 +28,7 @@ const adminLinks = [
 
 export default function Sidebar({ isOpen, onClose }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
-  const isAdmin = useAuthStore(selectIsAdminUser);
+  const canAccessAdminPanel = useAuthStore(selectCanAccessAdminPanel);
 
   return (
     <aside
@@ -77,7 +77,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   {label}
                 </Link>
               ))}
-              {isAdmin &&
+              {canAccessAdminPanel &&
                 adminLinks.map(({ href, label, icon: Icon }) => (
                   <Link
                     key={href}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listProductos } from "@/services/adminProductosService";
+import { TIPO_PRODUCTO } from "@/constants/tipoProducto";
 
 const defaultPagination = (pageSize) => ({
   page: 1,
@@ -19,6 +20,8 @@ const defaultPagination = (pageSize) => ({
  * @param {string} opts.filtroDestacado
  * @param {string} opts.filtroDisponible
  * @param {string} opts.ordenar
+ * @param {string} [opts.tipoProducto] PRODUCTO | PROMOCION
+ * @param {(params: Record<string, unknown>) => Promise<{ productos: object[], pagination: object }>} [opts.listFn]
  */
 export function useAdminProductosList({
   page,
@@ -29,18 +32,22 @@ export function useAdminProductosList({
   filtroDestacado,
   filtroDisponible,
   ordenar,
+  tipoProducto = TIPO_PRODUCTO.PRODUCTO,
+  listFn = listProductos,
 }) {
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(() => defaultPagination(pageSize));
   const [loadError, setLoadError] = useState(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [listRefreshing, setListRefreshing] = useState(false);
-  const firstLoadPendingRef = useRef(true);
+  const fetchSeqRef = useRef(0);
+  const completedOnceRef = useRef(false);
 
   const load = useCallback(async () => {
+    const seq = ++fetchSeqRef.current;
+
     setLoadError(null);
-    const isFirst = firstLoadPendingRef.current;
-    if (isFirst) setLoadingInitial(true);
+    if (!completedOnceRef.current) setLoadingInitial(true);
     else setListRefreshing(true);
 
     try {
@@ -57,17 +64,27 @@ export function useAdminProductosList({
       if (filtroDestacado === "false") params.destacado = false;
       if (filtroDisponible === "true") params.disponible = true;
       if (filtroDisponible === "false") params.disponible = false;
+      if (tipoProducto && listFn === listProductos) params.tipo_producto = tipoProducto;
 
-      const { productos, pagination: pag } = await listProductos(params);
-      setItems(productos);
-      setPagination(pag);
+      const { productos, pagination: pag } = await listFn(params);
+      if (seq !== fetchSeqRef.current) return;
+      let rows = Array.isArray(productos) ? productos : [];
+      if (tipoProducto) {
+        rows = rows.filter((p) => (p?.tipo_producto ?? TIPO_PRODUCTO.PRODUCTO) === tipoProducto);
+      }
+      setItems(rows);
+      setPagination({
+        page: Number(pag?.page) > 0 ? Number(pag.page) : page,
+        limit: Number(pag?.limit) > 0 ? Number(pag.limit) : pageSize,
+        total: Number.isFinite(Number(pag?.total)) && Number(pag.total) >= 0 ? Number(pag.total) : 0,
+      });
     } catch (e) {
+      if (seq !== fetchSeqRef.current) return;
       setLoadError(e);
     } finally {
-      if (isFirst) {
-        firstLoadPendingRef.current = false;
-        setLoadingInitial(false);
-      }
+      if (seq !== fetchSeqRef.current) return;
+      completedOnceRef.current = true;
+      setLoadingInitial(false);
       setListRefreshing(false);
     }
   }, [
@@ -79,6 +96,8 @@ export function useAdminProductosList({
     filtroDestacado,
     filtroDisponible,
     ordenar,
+    tipoProducto,
+    listFn,
   ]);
 
   useEffect(() => {

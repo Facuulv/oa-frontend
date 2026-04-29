@@ -87,12 +87,38 @@ body {
 }
 
 /* Modal animations */
+@keyframes modal-overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.modal-overlay-enter {
+  animation: modal-overlay-fade-in 200ms ease-out forwards;
+}
+
 @keyframes modal-slide-down {
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .modal-slide-down {
   animation: modal-slide-down 260ms ease-out forwards;
+}
+
+@keyframes modal-panel-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.modal-panel-pop {
+  animation: modal-panel-pop 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes modal-sheet-up {
@@ -138,6 +164,34 @@ body {
   animation: cardFadeIn 0.26s ease-out both;
 }
 
+/**
+ * Panel admin: feedback táctil (transform + sombra), ~180ms.
+ * Usar en cards de acceso rápido y CTAs; sin JS; respeta `prefers-reduced-motion`.
+ */
+.admin-pressable {
+  -webkit-tap-highlight-color: transparent;
+  /* Incluye transform para que `scale(0.97)` en :active no quede sin transición si hay otras utilidades `transition-*` en el mismo nodo. */
+  transition-property: transform, box-shadow, filter, background-color, color, border-color, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-pressable {
+    transition-duration: 0ms;
+  }
+
+  .admin-pressable:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .admin-pressable:active {
+    transform: scale(0.97);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-quick-card-enter {
     animation: none;
@@ -145,7 +199,9 @@ body {
     transform: none;
   }
   .modal-slide-down,
-  .modal-sheet-panel {
+  .modal-sheet-panel,
+  .modal-overlay-enter,
+  .modal-panel-pop {
     animation: none;
     opacity: 1;
     transform: none;

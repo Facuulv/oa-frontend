@@ -25,6 +25,20 @@ async function request(fn) {
 }
 
 /**
+ * @param {Record<string, unknown>} obj
+ * @returns {object[]}
+ */
+function firstArrayFromObject(obj) {
+  if (!obj || typeof obj !== "object") return [];
+  const keys = ["data", "items", "productos", "rows", "list", "results", "content", "records"];
+  for (const k of keys) {
+    const v = obj[k];
+    if (Array.isArray(v)) return v;
+  }
+  return [];
+}
+
+/**
  * @param {unknown} body cuerpo JSON del API (sin envoltorio axios)
  * @param {{ page?: number, limit?: number }} [requestParams] query enviada (fallbacks de paginación)
  * @returns {{ productos: object[], pagination: { page: number, limit: number, total: number } }}
@@ -32,47 +46,91 @@ async function request(fn) {
 export function normalizeProductosListBody(body, requestParams = {}) {
   const reqLimit = Number(requestParams?.limit);
   const reqPage = Number(requestParams?.page);
+  const fallbackLimit = Number.isFinite(reqLimit) && reqLimit > 0 ? reqLimit : 20;
+  const fallbackPage = Number.isFinite(reqPage) && reqPage > 0 ? reqPage : 1;
 
-  /** @type {unknown} */
-  const root = body && typeof body === "object" ? body : {};
-  const d = /** @type {Record<string, unknown>} */ (root).data;
+  // Respuesta legacy: array plano (sin meta). Se asume un solo bloque; total = cantidad devuelta.
+  if (Array.isArray(body)) {
+    return {
+      productos: body,
+      pagination: {
+        page: fallbackPage,
+        limit: fallbackLimit,
+        total: body.length,
+      },
+    };
+  }
+
+  const root = body && typeof body === "object" ? /** @type {Record<string, unknown>} */ (body) : {};
+  const d = root.data;
 
   let items = [];
   if (Array.isArray(d)) {
     items = d;
   } else if (d && typeof d === "object") {
-    const obj = /** @type {Record<string, unknown>} */ (d);
-    if (Array.isArray(obj.data)) items = obj.data;
-    else if (Array.isArray(obj.items)) items = obj.items;
-    else if (Array.isArray(obj.productos)) items = obj.productos;
-    else if (Array.isArray(obj.rows)) items = obj.rows;
-    else if (Array.isArray(obj.list)) items = obj.list;
+    items = firstArrayFromObject(/** @type {Record<string, unknown>} */ (d));
   }
   if (items.length === 0) {
-    const o = /** @type {Record<string, unknown>} */ (root);
-    if (Array.isArray(o.items)) items = o.items;
-    else if (Array.isArray(o.productos)) items = o.productos;
+    items = firstArrayFromObject(root);
   }
 
+  const innerObj = d && typeof d === "object" && !Array.isArray(d) ? /** @type {Record<string, unknown>} */ (d) : null;
+
   const rawPag =
-    /** @type {Record<string, unknown>} */ (root).pagination ??
-    /** @type {Record<string, unknown>} */ (root).meta ??
-    (d && typeof d === "object" && !Array.isArray(d)
-      ? /** @type {Record<string, unknown>} */ (d).pagination ??
-        /** @type {Record<string, unknown>} */ (d).meta
-      : undefined);
+    root.pagination ??
+    root.meta ??
+    (innerObj ? innerObj.pagination ?? innerObj.meta : undefined);
 
   const pag = rawPag && typeof rawPag === "object" ? /** @type {Record<string, unknown>} */ (rawPag) : {};
 
-  const limitRaw = pag.limit ?? pag.per_page ?? pag.pageSize ?? (Number.isFinite(reqLimit) && reqLimit > 0 ? reqLimit : 20);
+  const limitRaw =
+    pag.limit ??
+    pag.per_page ??
+    pag.pageSize ??
+    pag.size ??
+    (innerObj && Number(innerObj.limit) > 0 ? innerObj.limit : null) ??
+    (Number.isFinite(reqLimit) && reqLimit > 0 ? reqLimit : 20);
   let limit = Number(limitRaw);
   if (!Number.isFinite(limit) || limit <= 0) limit = 20;
 
-  let total = Number(pag.total ?? pag.total_count ?? pag.count ?? pag.totalItems);
+  // total explícito (varios backends)
+  let total = Number(
+    pag.total ??
+      pag.total_count ??
+      pag.count ??
+      pag.totalItems ??
+      pag.total_elements ??
+      pag.totalElements,
+  );
+  if (innerObj != null) {
+    if (!Number.isFinite(total) || total < 0) {
+      total = Number(
+        innerObj.total ??
+          innerObj.total_count ??
+          innerObj.totalCount ??
+          innerObj.total_items ??
+          innerObj.totalItems,
+      );
+    }
+  }
   if (!Number.isFinite(total) || total < 0) total = 0;
 
-  let page = Number(pag.page ?? pag.current_page);
-  if (!Number.isFinite(page) || page < 1) page = Number.isFinite(reqPage) && reqPage > 0 ? reqPage : 1;
+  // Spring Data / estilo "number" 0-based
+  let page = Number(pag.page ?? pag.current_page ?? pag.currentPage);
+  if (pag.number != null && Number.isFinite(Number(pag.number))) {
+    page = Number(pag.number) + 1;
+  }
+  if (!Number.isFinite(page) || page < 1) page = fallbackPage;
+
+  const totalPagesHint = Number(pag.total_pages ?? pag.totalPages ?? pag.last_page ?? pag.lastPage);
+  if ((!Number.isFinite(total) || total <= 0) && Number.isFinite(totalPagesHint) && totalPagesHint > 0 && limit > 0) {
+    total = totalPagesHint * limit;
+  }
+
+  // Hay filas en la página pero el backend no mandó total: estimación mínima coherente con la página pedida
+  if (items.length > 0 && total === 0 && limit > 0) {
+    total = Math.max(items.length, (fallbackPage - 1) * limit + items.length);
+  }
 
   return {
     productos: items,
@@ -82,7 +140,7 @@ export function normalizeProductosListBody(body, requestParams = {}) {
 
 /**
  * Listado paginado (admin).
- * @param {Record<string, unknown>} [params] busqueda, categoria_id, activo, destacado, disponible, ordenar, page, limit
+ * @param {Record<string, unknown>} [params] busqueda, categoria_id, activo, destacado, disponible, ordenar, page, limit, tipo_producto (PRODUCTO | PROMOCION)
  * @returns {Promise<{ productos: object[], pagination: { page: number, limit: number, total: number } }>}
  */
 export async function listProductos(params = {}) {

@@ -47,5 +47,13 @@ export const apiPaths = {
     productos: "/admin/productos",
     productoById: (id) => `/admin/productos/${encodeURIComponent(id)}`,
     productoEstadoById: (id) => `/admin/productos/${encodeURIComponent(id)}/estado`,
+    /** Combos: productos `tipo_producto = PROMOCION` + `productos_componentes`. */
+    promocionesProducto: "/admin/promociones-producto",
+    promocionProductoById: (id) => `/admin/promociones-producto/${encodeURIComponent(id)}`,
+    promocionProductoEstadoById: (id) => `/admin/promociones-producto/${encodeURIComponent(id)}/estado`,
+    /** Personal del panel (`usuarios` en backend). Base `/users`. */
+    usuarios: "/users",
+    usuarioById: (id) => `/users/${encodeURIComponent(id)}`,
+    usuarioPasswordById: (id) => `/users/${encodeURIComponent(id)}/password`,
   },
 };

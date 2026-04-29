@@ -12,7 +12,7 @@ export default function AdminCuponesPage() {
         </div>
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:brightness-110"
+          className="admin-pressable flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:brightness-110 active:shadow-[0_1px_4px_rgba(0,0,0,0.18)]"
         >
           <Plus size={16} />
           Nuevo cupón

@@ -158,7 +158,7 @@ export default function ImageUploader({
           type="button"
           onClick={openPicker}
           disabled={blocked || uploading}
-          className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white transition enabled:active:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+          className="admin-pressable inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.18)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Camera className="h-5 w-5 shrink-0" aria-hidden />
           {value || localPreview ? "Reemplazar imagen" : "Elegir imagen"}
@@ -168,7 +168,7 @@ export default function ImageUploader({
             type="button"
             onClick={handleRemove}
             disabled={blocked}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-zinc-300 bg-white px-4 text-base font-semibold text-zinc-800 transition enabled:active:bg-zinc-50 disabled:opacity-50"
+            className="admin-pressable inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-zinc-300 bg-white px-4 text-base font-semibold text-zinc-800 shadow-sm enabled:active:bg-zinc-50 active:shadow-[0_1px_2px_rgba(0,0,0,0.08)] disabled:opacity-50"
           >
             <Trash2 className="h-5 w-5" aria-hidden />
             Quitar

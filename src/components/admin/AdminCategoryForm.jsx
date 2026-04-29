@@ -38,6 +38,11 @@ export function mapCategoriaToForm(row) {
 
 const FORM_FIELDS = ["nombre", "descripcion", "imagen_url", "orden"];
 
+const fieldBase =
+  "min-h-12 w-full rounded-xl border px-3 py-3 text-base text-zinc-900 outline-none transition-shadow ring-primary ring-offset-2 ring-offset-white focus:ring-2";
+const fieldOk = "border-zinc-200 bg-white";
+const fieldErr = "border-red-300 bg-red-50/30 ring-red-200/60";
+
 /**
  * Campos create/edit categoría (react-hook-form).
  * El estado activo/inactivo se gestiona solo desde la card (toggle), no desde este formulario.
@@ -47,7 +52,9 @@ const FORM_FIELDS = ["nombre", "descripcion", "imagen_url", "orden"];
  *   saving: boolean,
  *   imageUploading: boolean,
  *   onImageUploadingChange: (v: boolean) => void,
- *   onCancel: () => void,
+ *   onCancel?: () => void,
+ *   formId?: string,
+ *   showFooter?: boolean,
  * }} props
  */
 export default function AdminCategoryForm({
@@ -57,67 +64,70 @@ export default function AdminCategoryForm({
   imageUploading,
   onImageUploadingChange,
   onCancel,
+  formId = "admin-category-form",
+  showFooter = true,
 }) {
   const busy = saving || imageUploading;
   const rootMsg = form.formState.errors.root?.message;
+  const errs = form.formState.errors;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col">
-      <div className="space-y-3 px-1 pb-2 sm:space-y-4 sm:px-0.5">
+    <form id={formId} onSubmit={onSubmit} className="flex flex-col" noValidate>
+      <div className="space-y-4 sm:space-y-5">
         {rootMsg && (
           <p
-            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm leading-snug text-red-800"
             role="alert"
           >
             {rootMsg}
           </p>
         )}
 
-        <div>
-          <label htmlFor="cat-nombre" className="mb-1 block text-sm font-medium text-zinc-800">
+        <div className="space-y-1.5">
+          <label htmlFor="cat-nombre" className="block text-sm font-semibold text-zinc-800">
             Nombre <span className="text-red-600">*</span>
           </label>
           <input
             id="cat-nombre"
+            data-modal-initial-focus
             autoComplete="off"
-            className="min-h-12 w-full rounded-xl border border-zinc-200 px-3 py-3 text-base outline-none ring-primary ring-offset-2 ring-offset-white focus:ring-2"
+            placeholder="Ej. Bebidas, Promos…"
+            className={`${fieldBase} ${errs.nombre ? fieldErr : fieldOk}`}
             {...form.register("nombre")}
           />
-          {form.formState.errors.nombre && (
-            <p className="mt-1 text-xs text-red-600">{form.formState.errors.nombre.message}</p>
-          )}
+          {errs.nombre && <p className="text-xs font-medium text-red-600">{errs.nombre.message}</p>}
         </div>
 
-        <div>
-          <label htmlFor="cat-desc" className="mb-1 block text-sm font-medium text-zinc-800">
+        <div className="space-y-1.5">
+          <label htmlFor="cat-desc" className="block text-sm font-semibold text-zinc-800">
             Descripción
           </label>
           <textarea
             id="cat-desc"
             rows={3}
-            className="w-full resize-none rounded-xl border border-zinc-200 px-3 py-3 text-base outline-none ring-primary ring-offset-2 ring-offset-white focus:ring-2"
+            placeholder="Opcional · ayuda interna o en vitrinas"
+            className={`w-full resize-none rounded-xl border px-3 py-3 text-base text-zinc-900 outline-none transition-shadow ring-primary ring-offset-2 ring-offset-white focus:ring-2 ${errs.descripcion ? fieldErr : fieldOk} ${errs.descripcion ? "" : "border-zinc-200 bg-white"}`}
             {...form.register("descripcion")}
           />
-          {form.formState.errors.descripcion && (
-            <p className="mt-1 text-xs text-red-600">{form.formState.errors.descripcion.message}</p>
+          {errs.descripcion && (
+            <p className="text-xs font-medium text-red-600">{errs.descripcion.message}</p>
           )}
         </div>
 
-        <div>
-          <label htmlFor="cat-orden" className="mb-1 block text-sm font-medium text-zinc-800">
-            Orden
+        <div className="space-y-1.5">
+          <label htmlFor="cat-orden" className="block text-sm font-semibold text-zinc-800">
+            Orden en listados
           </label>
           <input
             id="cat-orden"
             type="number"
             inputMode="numeric"
             min={0}
-            className="min-h-12 w-full rounded-xl border border-zinc-200 px-3 py-3 text-base outline-none ring-primary ring-offset-2 ring-offset-white focus:ring-2"
+            className={`${fieldBase} ${errs.orden ? fieldErr : fieldOk}`}
             {...form.register("orden")}
           />
-          {form.formState.errors.orden && (
-            <p className="mt-1 text-xs text-red-600">{form.formState.errors.orden.message}</p>
-          )}
+          <p className="text-[11px] leading-snug text-zinc-500">Menor número = más arriba cuando se ordena por orden.</p>
+          {errs.orden && <p className="text-xs font-medium text-red-600">{errs.orden.message}</p>}
         </div>
 
         <Controller
@@ -129,35 +139,39 @@ export default function AdminCategoryForm({
               value={field.value || ""}
               onChange={field.onChange}
               onBlur={field.onBlur}
-              disabled={saving}
+              disabled={busy}
               onUploadingChange={onImageUploadingChange}
-              helperText="Subida a Cloudinary; al guardar se persiste imagen_url."
             />
           )}
         />
-        {form.formState.errors.imagen_url && (
-          <p className="text-xs text-red-600">{form.formState.errors.imagen_url.message}</p>
+        {errs.imagen_url && (
+          <p className="text-xs font-medium text-red-600">{errs.imagen_url.message}</p>
         )}
       </div>
 
-      <div className="mt-3 flex shrink-0 flex-row gap-2 border-t border-zinc-100 pt-3 sm:mt-4 sm:pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={busy}
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white py-2.5 text-sm font-semibold text-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-12 sm:py-3"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={busy}
-          className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white disabled:opacity-60 sm:min-h-12 sm:py-3"
-        >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          Guardar
-        </button>
-      </div>
+      {showFooter ? (
+        <div className="mt-5 flex shrink-0 flex-row gap-2 border-t border-zinc-200/90 pt-4 sm:mt-6 sm:pt-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="min-h-12 min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white py-2.5 text-sm font-semibold text-zinc-800 outline-none ring-primary transition-colors hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:py-3"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={busy}
+            aria-busy={saving}
+            className="admin-pressable inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-sm outline-none ring-primary hover:brightness-105 focus-visible:ring-2 focus-visible:ring-offset-2 active:shadow-[0_1px_4px_rgba(0,0,0,0.18)] disabled:pointer-events-none disabled:opacity-60 sm:py-3"
+          >
+            {(saving || imageUploading) && (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />
+            )}
+            {imageUploading && !saving ? "Esperá la imagen…" : "Guardar"}
+          </button>
+        </div>
+      ) : null}
     </form>
   );
 }

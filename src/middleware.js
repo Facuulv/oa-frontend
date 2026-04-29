@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ADMIN_SESSION_COOKIE_NAME } from "@/utils/auth/constants";
-import { jwtRoleIsAdmin } from "@/utils/auth/jwtPayload";
+import { jwtAllowsAdminPanel } from "@/utils/auth/jwtPayload";
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -32,8 +32,8 @@ export function middleware(request) {
     return NextResponse.redirect(url);
   }
 
-  const adminHint = jwtRoleIsAdmin(token);
-  if (adminHint === false) {
+  const panelHint = jwtAllowsAdminPanel(token);
+  if (panelHint === false) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.searchParams.set("error", "forbidden");

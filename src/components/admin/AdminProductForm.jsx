@@ -4,6 +4,7 @@ import { Controller } from "react-hook-form";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import ImageUploader from "@/components/admin/ImageUploader";
+import AppSelect from "@/components/ui/AppSelect";
 
 export const emptyToNull = (v) => (v === "" || v === undefined ? null : v);
 
@@ -101,13 +102,15 @@ export const PRODUCT_FORM_SERVER_FIELDS = [
  *   saving: boolean,
  *   imageUploading: boolean,
  *   onImageUploadingChange: (v: boolean) => void,
- *   onCancel: () => void,
+ *   onCancel?: () => void,
+ *   formId?: string,
+ *   showFooter?: boolean,
  * }} props
  */
 const fieldBase =
-  "min-h-12 w-full rounded-xl border px-3 py-3 text-base outline-none ring-primary ring-offset-2 ring-offset-white focus:ring-2";
-const fieldOk = "border-zinc-200";
-const fieldErr = "border-red-300 ring-red-200/60";
+  "min-h-12 w-full rounded-xl border px-3 py-3 text-base text-zinc-900 outline-none transition-shadow ring-primary ring-offset-2 ring-offset-white focus:ring-2";
+const fieldOk = "border-zinc-200 bg-white";
+const fieldErr = "border-red-300 bg-red-50/30 ring-red-200/60";
 
 export default function AdminProductForm({
   form,
@@ -117,55 +120,59 @@ export default function AdminProductForm({
   imageUploading,
   onImageUploadingChange,
   onCancel,
+  formId = "admin-product-form",
+  showFooter = true,
 }) {
   const busy = saving || imageUploading;
   const rootMsg = form.formState.errors.root?.message;
   const errs = form.formState.errors;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col" noValidate>
-      <div className="max-h-[min(70dvh,32rem)] space-y-3 overflow-y-auto px-1 pb-2 sm:space-y-4 sm:px-0.5">
+    <form id={formId} onSubmit={onSubmit} className="flex flex-col" noValidate>
+      <div className="space-y-4 sm:space-y-5">
         {rootMsg && (
           <p
-            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm leading-snug text-red-800"
             role="alert"
           >
             {rootMsg}
           </p>
         )}
 
-        <div>
-          <label htmlFor="prod-categoria" className="mb-1 block text-sm font-medium text-zinc-800">
+        <div className="space-y-1.5">
+          <label htmlFor="prod-categoria" className="block text-sm font-semibold text-zinc-800">
             Categoría <span className="text-red-600">*</span>
           </label>
-          <select
-            id="prod-categoria"
-            className={`${fieldBase} ${errs.categoria_id ? fieldErr : fieldOk}`}
-            {...form.register("categoria_id", {
-              setValueAs: (v) => {
-                if (v === "" || v == null) return undefined;
-                const n = Number(v);
-                return Number.isFinite(n) ? n : undefined;
-              },
-            })}
-          >
-            <option value="" disabled>
-              Seleccioná…
-            </option>
-            {categoriasOptions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-                {c.activo === false ? " (inactiva)" : ""}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="categoria_id"
+            control={form.control}
+            render={({ field }) => (
+              <AppSelect
+                id="prod-categoria"
+                modalInitialFocus
+                value={field.value != null ? String(field.value) : undefined}
+                onValueChange={(v) => {
+                  const n = Number(v);
+                  field.onChange(Number.isFinite(n) ? n : undefined);
+                }}
+                onBlur={field.onBlur}
+                disabled={busy}
+                error={Boolean(errs.categoria_id)}
+                placeholder="Seleccioná…"
+                options={categoriasOptions.map((c) => ({
+                  value: String(c.id),
+                  label: `${c.nombre}${c.activo === false ? " (inactiva)" : ""}`,
+                }))}
+              />
+            )}
+          />
           {form.formState.errors.categoria_id && (
-            <p className="mt-1 text-xs text-red-600">{form.formState.errors.categoria_id.message}</p>
+            <p className="text-xs font-medium text-red-600">{form.formState.errors.categoria_id.message}</p>
           )}
         </div>
 
-        <div>
-          <label htmlFor="prod-nombre" className="mb-1 block text-sm font-medium text-zinc-800">
+        <div className="space-y-1.5">
+          <label htmlFor="prod-nombre" className="block text-sm font-semibold text-zinc-800">
             Nombre <span className="text-red-600">*</span>
           </label>
           <input
@@ -176,29 +183,29 @@ export default function AdminProductForm({
             {...form.register("nombre")}
           />
           {form.formState.errors.nombre && (
-            <p className="mt-1 text-xs text-red-600">{form.formState.errors.nombre.message}</p>
+            <p className="text-xs font-medium text-red-600">{form.formState.errors.nombre.message}</p>
           )}
         </div>
 
-        <div>
-          <label htmlFor="prod-descripcion" className="mb-1 block text-sm font-medium text-zinc-800">
+        <div className="space-y-1.5">
+          <label htmlFor="prod-descripcion" className="block text-sm font-semibold text-zinc-800">
             Descripción
           </label>
           <textarea
             id="prod-descripcion"
             rows={3}
-            placeholder="Opcional. Se muestra en la ficha del producto."
-            className={`w-full resize-none rounded-xl border px-3 py-3 text-base outline-none ring-primary ring-offset-2 ring-offset-white focus:ring-2 ${errs.descripcion ? fieldErr : fieldOk}`}
+            placeholder="Opcional · se muestra en la ficha"
+            className={`w-full resize-none rounded-xl border px-3 py-3 text-base text-zinc-900 outline-none transition-shadow ring-primary ring-offset-2 ring-offset-white focus:ring-2 ${errs.descripcion ? fieldErr : fieldOk} ${errs.descripcion ? "" : "border-zinc-200 bg-white"}`}
             {...form.register("descripcion")}
           />
           {form.formState.errors.descripcion && (
-            <p className="mt-1 text-xs text-red-600">{form.formState.errors.descripcion.message}</p>
+            <p className="text-xs font-medium text-red-600">{form.formState.errors.descripcion.message}</p>
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label htmlFor="prod-precio" className="mb-1 block text-sm font-medium text-zinc-800">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4">
+          <div className="space-y-1.5">
+            <label htmlFor="prod-precio" className="block text-sm font-semibold text-zinc-800">
               Precio <span className="text-red-600">*</span>
             </label>
             <input
@@ -206,17 +213,17 @@ export default function AdminProductForm({
               type="text"
               inputMode="decimal"
               autoComplete="off"
-              placeholder="0 o con decimales (ej. 1500 o 1500,50)"
+              placeholder="1500 o 1500,50"
               className={`${fieldBase} ${errs.precio ? fieldErr : fieldOk}`}
               {...form.register("precio")}
             />
             {form.formState.errors.precio && (
-              <p className="mt-1 text-xs text-red-600">{form.formState.errors.precio.message}</p>
+              <p className="text-xs font-medium text-red-600">{form.formState.errors.precio.message}</p>
             )}
-            <p className="mt-1 text-xs text-zinc-500">Usá coma o punto decimal. Podés dejar $0 para promos o cortesías.</p>
+            <p className="text-[11px] leading-snug text-zinc-500">Coma o punto decimal. $0 = gratis o promo.</p>
           </div>
-          <div>
-            <label htmlFor="prod-stock" className="mb-1 block text-sm font-medium text-zinc-800">
+          <div className="space-y-1.5">
+            <label htmlFor="prod-stock" className="block text-sm font-semibold text-zinc-800">
               Stock
             </label>
             <input
@@ -234,17 +241,17 @@ export default function AdminProductForm({
                 },
               })}
             />
-            <p className="mt-1 text-xs text-zinc-500" id="prod-stock-hint">
-              Unidades disponibles; en 0 podés marcar «No disponible» si no querés venderlo.
+            <p className="text-[11px] leading-snug text-zinc-500" id="prod-stock-hint">
+              Unidades. Con stock 0 podés marcar «No disponible» abajo.
             </p>
             {form.formState.errors.stock && (
-              <p className="mt-1 text-xs text-red-600">{form.formState.errors.stock.message}</p>
+              <p className="text-xs font-medium text-red-600">{form.formState.errors.stock.message}</p>
             )}
           </div>
         </div>
 
-        <div>
-          <label htmlFor="prod-orden" className="mb-1 block text-sm font-medium text-zinc-800">
+        <div className="space-y-1.5">
+          <label htmlFor="prod-orden" className="block text-sm font-semibold text-zinc-800">
             Orden en catálogo
           </label>
           <input
@@ -261,34 +268,45 @@ export default function AdminProductForm({
               },
             })}
           />
-          <p className="mt-1 text-xs text-zinc-500">Menor número = más arriba en listados ordenados por «orden».</p>
+          <p className="text-[11px] leading-snug text-zinc-500">Menor número = más arriba cuando el listado ordena por «orden».</p>
           {form.formState.errors.orden && (
-            <p className="mt-1 text-xs text-red-600">{form.formState.errors.orden.message}</p>
+            <p className="text-xs font-medium text-red-600">{form.formState.errors.orden.message}</p>
           )}
         </div>
 
-        <div className="space-y-2 rounded-xl border border-zinc-100 bg-zinc-50/80 px-3 py-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-800">
-              <input type="checkbox" className="h-4 w-4 rounded border-zinc-300" {...form.register("activo")} />
+        <fieldset className="space-y-2 rounded-xl border border-zinc-200/90 bg-zinc-50/90 px-3 py-3 sm:px-4 sm:py-3.5">
+          <legend className="sr-only">Visibilidad y venta</legend>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-zinc-800 transition-colors hover:bg-white/70 focus-within:rounded-lg focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-zinc-50">
+              <input
+                type="checkbox"
+                className="h-4 w-4 shrink-0 cursor-pointer rounded border-zinc-300 accent-primary"
+                {...form.register("activo")}
+              />
               Activo en catálogo
             </label>
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-800">
-              <input type="checkbox" className="h-4 w-4 rounded border-zinc-300" {...form.register("disponible")} />
+            <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-zinc-800 transition-colors hover:bg-white/70 focus-within:rounded-lg focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-zinc-50">
+              <input
+                type="checkbox"
+                className="h-4 w-4 shrink-0 cursor-pointer rounded border-zinc-300 accent-primary"
+                {...form.register("disponible")}
+              />
               Disponible para venta
             </label>
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-800">
-              <input type="checkbox" className="h-4 w-4 rounded border-zinc-300" {...form.register("destacado")} />
-              Destacado
+            <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-zinc-800 sm:col-span-2 focus-within:rounded-lg focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-zinc-50">
+              <input
+                type="checkbox"
+                className="h-4 w-4 shrink-0 cursor-pointer rounded border-zinc-300 accent-primary"
+                {...form.register("destacado")}
+              />
+              Destacado (vitrinas / promos)
             </label>
           </div>
-          <p className="text-xs leading-relaxed text-zinc-600">
-            <span className="font-semibold text-zinc-700">Activo</span> define si el producto existe en el catálogo
-            interno. <span className="font-semibold text-zinc-700">Disponible para venta</span> es lo que más adelante
-            usarán pedidos y la carta pública. <span className="font-semibold text-zinc-700">Destacado</span> sirve
-            para destacarlo en vitrinas o promos.
+          <p className="text-[11px] leading-relaxed text-zinc-600">
+            <span className="font-semibold text-zinc-700">Activo</span>: figura en el catálogo admin.{" "}
+            <span className="font-semibold text-zinc-700">Disponible</span>: apto para venta en carta y pedidos.
           </p>
-        </div>
+        </fieldset>
 
         <Controller
           name="imagen_url"
@@ -301,34 +319,35 @@ export default function AdminProductForm({
               onBlur={field.onBlur}
               disabled={busy}
               onUploadingChange={onImageUploadingChange}
-              helperText="Subida a Cloudinary; al guardar se persiste imagen_url."
             />
           )}
         />
         {form.formState.errors.imagen_url && (
-          <p className="text-xs text-red-600">{form.formState.errors.imagen_url.message}</p>
+          <p className="text-xs font-medium text-red-600">{form.formState.errors.imagen_url.message}</p>
         )}
       </div>
 
-      <div className="mt-3 flex shrink-0 flex-row gap-2 border-t border-zinc-100 pt-3 sm:mt-4 sm:pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={busy}
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white py-2.5 text-sm font-semibold text-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-12 sm:py-3"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={busy}
-          aria-busy={saving}
-          className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white disabled:opacity-60 sm:min-h-12 sm:py-3"
-        >
-          {(saving || imageUploading) && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          {imageUploading && !saving ? "Esperá la imagen…" : "Guardar"}
-        </button>
-      </div>
+      {showFooter ? (
+        <div className="mt-5 flex shrink-0 flex-row gap-2 border-t border-zinc-200/90 pt-4 sm:mt-6 sm:pt-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="min-h-12 min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white py-2.5 text-sm font-semibold text-zinc-800 outline-none ring-primary transition-colors hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:py-3"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={busy}
+            aria-busy={saving}
+            className="admin-pressable inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-sm outline-none ring-primary hover:brightness-105 focus-visible:ring-2 focus-visible:ring-offset-2 active:shadow-[0_1px_4px_rgba(0,0,0,0.18)] disabled:pointer-events-none disabled:opacity-60 sm:py-3"
+          >
+            {(saving || imageUploading) && <Loader2 className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />}
+            {imageUploading && !saving ? "Esperá la imagen…" : "Guardar"}
+          </button>
+        </div>
+      ) : null}
     </form>
   );
 }

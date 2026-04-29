@@ -6,7 +6,8 @@ import Link from "next/link";
 import {
   useAuthStore,
   selectAuthSessionGateReady,
-  selectIsAdminUser,
+  selectCanAccessAdminPanel,
+  selectIsPanelStaffUser,
   selectIsClienteUser,
 } from "@/store/useAuthStore";
 import { toast } from "sonner";
@@ -44,9 +45,14 @@ function LoginForm() {
       const state = useAuthStore.getState();
       if (!state.isAuthenticated || !state.user) return;
 
-      if (selectIsAdminUser(state)) {
+      if (selectCanAccessAdminPanel(state)) {
         const dest = nextPath?.startsWith("/admin") ? nextPath : "/admin";
         router.replace(dest);
+        return;
+      }
+
+      if (selectIsPanelStaffUser(state)) {
+        router.replace("/");
         return;
       }
 
@@ -82,15 +88,21 @@ function LoginForm() {
     if (!validate()) return;
     try {
       await login({ email: email.trim(), password });
-      toast.success("Sesión iniciada");
       const state = useAuthStore.getState();
       if (!state.isAuthenticated || !state.user) {
         toast.error("No pudimos iniciar sesión");
         return;
       }
-      if (selectIsAdminUser(state)) {
+      if (selectCanAccessAdminPanel(state)) {
+        toast.success("Sesión iniciada");
         const dest = nextPath?.startsWith("/admin") ? nextPath : "/admin";
         router.replace(dest);
+        return;
+      }
+
+      if (selectIsPanelStaffUser(state)) {
+        toast.error("Tu rol no tiene acceso al panel de administración.");
+        router.replace("/");
         return;
       }
       if (selectIsClienteUser(state)) {
@@ -99,12 +111,13 @@ function LoginForm() {
           router.replace("/");
           return;
         }
+        toast.success("Sesión iniciada");
         router.replace(nextPath || "/");
         return;
       }
       toast.error("Respuesta de sesión no reconocida");
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err?.message || "No pudimos iniciar sesión");
     }
   };
 

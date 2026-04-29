@@ -7,12 +7,22 @@ function usuarioFromPayload(data) {
   return data.usuario ?? data.user ?? null;
 }
 
+/** Nunca persistir datos sensibles del backend en el store. */
+function sanitizeSessionUser(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const out = { ...raw };
+  delete out.password_hash;
+  delete out.username;
+  return out;
+}
+
 function applyUsuario(set, user) {
-  if (!user) {
+  const safe = sanitizeSessionUser(user);
+  if (!safe) {
     set({ user: null, isAuthenticated: false });
     return;
   }
-  set({ user, isAuthenticated: true });
+  set({ user: safe, isAuthenticated: true });
 }
 
 export const useAuthStore = create((set, get) => ({
@@ -33,14 +43,27 @@ export const useAuthStore = create((set, get) => ({
     try {
       const data = await authLogin({ email, password });
       clearLegacyClientToken();
-      const user = usuarioFromPayload(data);
+
+      let user = sanitizeSessionUser(usuarioFromPayload(data));
+
+      if (!user && data?.ok === true) {
+        await get().refreshProfile();
+        user = sanitizeSessionUser(get().user);
+      }
+
+      if (user && user.activo === false) {
+        get().clearSession();
+        throw new Error("Cuenta inactiva");
+      }
+
       if (user) {
         set({ user, isAuthenticated: true, isLoading: false, error: null });
-      } else {
-        await get().refreshProfile();
-        set({ isLoading: false, error: null });
+        return data;
       }
-      return data;
+
+      set({ isLoading: false, error: null });
+      get().clearSession();
+      throw new Error("No pudimos iniciar sesión");
     } catch (err) {
       set({ isLoading: false, error: err.message });
       throw err;
@@ -57,7 +80,7 @@ export const useAuthStore = create((set, get) => ({
     try {
       const data = await authRegisterCliente({ ...payload, useCookie: autoLogin });
       clearLegacyClientToken();
-      const user = usuarioFromPayload(data);
+      const user = sanitizeSessionUser(usuarioFromPayload(data));
       if (autoLogin && user) {
         set({ user, isAuthenticated: true, isLoading: false, error: null });
         return data;
@@ -99,12 +122,47 @@ export const selectAuthUser = (state) => state.user;
 export const selectIsAuthenticated = (state) => state.isAuthenticated;
 export const selectAuthSessionGateReady = (state) => state.sessionGateReady;
 
+/**
+ * Personal interno (`usuarios`): sesión con `origen: "ADMIN"` (ADMIN, ENCARGADO o VENDEDOR).
+ */
+export function selectIsPanelStaffUser(state) {
+  return state.user?.origen === "ADMIN";
+}
+
+/** Rol de panel en mayúsculas o cadena vacía. */
+export function selectAdminPanelRole(state) {
+  const r = state.user?.rol ?? state.user?.role;
+  return r ? String(r).toUpperCase() : "";
+}
+
+/**
+ * Puede usar rutas `/admin/*`: solo ADMIN o ENCARGADO (VENDEDOR excluido).
+ */
+export function selectCanAccessAdminPanel(state) {
+  if (!selectIsPanelStaffUser(state)) return false;
+  const role = selectAdminPanelRole(state);
+  return role === "ADMIN" || role === "ENCARGADO";
+}
+
+/**
+ * Puede gestionar el módulo Usuarios (`/users`): solo rol ADMIN.
+ */
+export function selectCanManageUsers(state) {
+  return selectIsPanelStaffUser(state) && selectAdminPanelRole(state) === "ADMIN";
+}
+
+/**
+ * Rol ADMIN (APIs que siguen exigiendo administrador en backend).
+ */
+export function selectIsAdminRole(state) {
+  return selectIsPanelStaffUser(state) && selectAdminPanelRole(state) === "ADMIN";
+}
+
+/**
+ * @deprecated Usar `selectCanAccessAdminPanel`.
+ */
 export function selectIsAdminUser(state) {
-  const u = state.user;
-  if (!u || u.origen !== "ADMIN") return false;
-  const role = u.rol ?? u.role;
-  if (!role) return false;
-  return String(role).toUpperCase() === "ADMIN";
+  return selectCanAccessAdminPanel(state);
 }
 
 export function selectIsClienteUser(state) {

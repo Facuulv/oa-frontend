@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import AppViewport from "@/components/layout/AppViewport";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthStore, selectCanManageUsers } from "@/store/useAuthStore";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 
 /** Misma anchura que el menú lateral público (`Sidebar` + `AppShell`). */
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   { href: "/admin/usuarios", label: "Usuarios", icon: Users },
 ];
 
-const [PANEL_ITEM, ...NAV_ITEMS_REST] = NAV_ITEMS;
+const [PANEL_ITEM, ...NAV_ITEMS_REST_ALL] = NAV_ITEMS;
 
 function navItemActive(pathname, href) {
   if (href === "/admin") return pathname === "/admin";
@@ -41,7 +41,16 @@ export default function AdminAppShell({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
+  const canManageUsers = useAuthStore(selectCanManageUsers);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const navItemsRest = useMemo(
+    () =>
+      NAV_ITEMS_REST_ALL.filter(
+        (item) => item.href !== "/admin/usuarios" || canManageUsers
+      ),
+    [canManageUsers]
+  );
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -81,7 +90,7 @@ export default function AdminAppShell({ children }) {
           <button
             type="button"
             onClick={() => setDrawerOpen((prev) => !prev)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-zinc-800 transition active:bg-zinc-100"
+            className="admin-pressable flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-zinc-800 shadow-sm active:bg-zinc-100 active:shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
             aria-label={drawerOpen ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={drawerOpen}
             aria-controls="admin-drawer"
@@ -93,7 +102,7 @@ export default function AdminAppShell({ children }) {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-zinc-600 transition active:bg-zinc-100"
+          className="admin-pressable flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-zinc-600 shadow-sm active:bg-zinc-100 active:shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
           aria-label="Cerrar sesión"
         >
           <LogOut size={20} strokeWidth={2.25} />
@@ -114,9 +123,9 @@ export default function AdminAppShell({ children }) {
               <Link
                 href={PANEL_ITEM.href}
                 onClick={closeDrawer}
-                className={`inline-flex max-w-[calc(100%-3.25rem)] min-h-11 min-w-0 items-center gap-2.5 rounded-xl py-2 text-base font-medium transition active:scale-[0.99] ${
+                className={`admin-pressable inline-flex max-w-[calc(100%-3.25rem)] min-h-11 min-w-0 items-center gap-2.5 rounded-xl py-2 text-base font-medium shadow-sm active:shadow-[0_1px_2px_rgba(0,0,0,0.08)] ${
                   navItemActive(pathname, PANEL_ITEM.href)
-                    ? "min-w-[10.25rem] bg-primary px-4 text-white shadow-sm"
+                    ? "min-w-[10.25rem] bg-primary px-4 text-white active:shadow-[0_1px_4px_rgba(0,0,0,0.18)]"
                     : "bg-zinc-50 px-3 text-zinc-800 active:bg-zinc-100"
                 }`}
               >
@@ -126,7 +135,7 @@ export default function AdminAppShell({ children }) {
               <button
                 type="button"
                 onClick={closeDrawer}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-zinc-900 transition active:bg-zinc-200/80"
+                className="admin-pressable flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-zinc-900 shadow-sm active:bg-zinc-200/80 active:shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
                 aria-label="Cerrar menú"
               >
                 <X size={26} strokeWidth={2.25} />
@@ -137,15 +146,17 @@ export default function AdminAppShell({ children }) {
               className="admin-shell-scroll flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3 pt-2"
               aria-label="Administración"
             >
-              {NAV_ITEMS_REST.map(({ href, label, icon: Icon }) => {
+              {navItemsRest.map(({ href, label, icon: Icon }) => {
                 const active = navItemActive(pathname, href);
                 return (
                   <Link
                     key={href}
                     href={href}
                     onClick={closeDrawer}
-                    className={`flex min-h-12 items-center gap-3 rounded-xl px-3.5 py-3 text-base font-medium transition active:scale-[0.99] ${
-                      active ? "bg-primary text-white shadow-sm" : "bg-zinc-50 text-zinc-800 active:bg-zinc-100"
+                    className={`admin-pressable flex min-h-12 items-center gap-3 rounded-xl px-3.5 py-3 text-base font-medium shadow-sm active:shadow-[0_1px_2px_rgba(0,0,0,0.08)] ${
+                      active
+                        ? "bg-primary text-white active:shadow-[0_1px_4px_rgba(0,0,0,0.18)]"
+                        : "bg-zinc-50 text-zinc-800 active:bg-zinc-100"
                     }`}
                   >
                     <Icon size={22} strokeWidth={2} className="shrink-0 opacity-90" />
@@ -159,7 +170,7 @@ export default function AdminAppShell({ children }) {
               <Link
                 href="/"
                 onClick={closeDrawer}
-                className="mb-2 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-3 text-base font-medium text-zinc-700 active:bg-zinc-50"
+                className="admin-pressable mb-2 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-3 text-base font-medium text-zinc-700 shadow-sm active:bg-zinc-50 active:shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               >
                 <Store size={20} />
                 Ir a la tienda
@@ -167,7 +178,7 @@ export default function AdminAppShell({ children }) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-3 py-3 text-base font-medium text-white active:bg-zinc-800"
+                className="admin-pressable flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-3 py-3 text-base font-medium text-white shadow-sm active:bg-zinc-800 active:shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
               >
                 <LogOut size={20} />
                 Cerrar sesión

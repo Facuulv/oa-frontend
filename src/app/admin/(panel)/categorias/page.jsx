@@ -137,6 +137,7 @@ export default function AdminCategoriasPage() {
   };
 
   const closeFormModal = () => {
+    form.clearErrors();
     setFormModalOpen(false);
     setEditing(null);
   };
@@ -241,6 +242,10 @@ export default function AdminCategoriasPage() {
     }
   };
 
+  const modalBusy = saving || imageUploading;
+  const primarySubmitLabel =
+    imageUploading && !saving ? "Esperá la imagen…" : editing ? "Guardar cambios" : "Crear categoría";
+
   return (
     <div className="flex flex-col gap-6 pb-4">
       <header className="admin-quick-card-enter flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -257,7 +262,7 @@ export default function AdminCategoriasPage() {
           type="button"
           onClick={openCreate}
           disabled={Boolean(loading || loadError)}
-          className="inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm transition-[transform,background-color,box-shadow] duration-200 ease-out will-change-transform enabled:hover:brightness-105 enabled:active:brightness-95 enabled:active:scale-[0.985] disabled:pointer-events-none disabled:opacity-45 sm:w-auto sm:min-w-[200px]"
+          className="admin-pressable inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:w-auto sm:min-w-[200px]"
         >
           <Plus size={20} strokeWidth={2.25} aria-hidden />
           Nueva categoría
@@ -392,15 +397,43 @@ export default function AdminCategoriasPage() {
         isOpen={formModalOpen}
         onClose={closeFormModal}
         title={editing ? "Editar categoría" : "Nueva categoría"}
-        closeDisabled={saving || imageUploading}
+        closeDisabled={modalBusy}
+        maxWidthClass="w-full max-w-lg sm:max-w-xl"
+        closeOnBackdrop={false}
+        animatePanelPop
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <button
+              type="button"
+              onClick={closeFormModal}
+              disabled={modalBusy}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-800 outline-none ring-primary transition-colors hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 sm:min-w-[7.5rem] sm:w-auto"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              form="admin-category-form"
+              disabled={modalBusy}
+              aria-busy={saving}
+              className="admin-pressable inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm outline-none ring-primary hover:brightness-105 focus-visible:ring-2 focus-visible:ring-offset-2 active:shadow-[0_1px_4px_rgba(0,0,0,0.18)] disabled:pointer-events-none disabled:opacity-60 sm:min-w-[11rem] sm:w-auto"
+            >
+              {modalBusy ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />
+              ) : null}
+              {primarySubmitLabel}
+            </button>
+          </div>
+        }
       >
         <AdminCategoryForm
+          formId="admin-category-form"
+          showFooter={false}
           form={form}
           onSubmit={onSubmit}
           saving={saving}
           imageUploading={imageUploading}
           onImageUploadingChange={setImageUploading}
-          onCancel={closeFormModal}
         />
       </Modal>
     </div>

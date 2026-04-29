@@ -22,6 +22,10 @@ export async function authLogin({ email, password }) {
     throw new Error(apiErrorMessage(data, "Credenciales inválidas"));
   }
 
+  if (!data || data.ok !== true) {
+    throw new Error(apiErrorMessage(data, "No pudimos iniciar sesión"));
+  }
+
   return data;
 }
 
