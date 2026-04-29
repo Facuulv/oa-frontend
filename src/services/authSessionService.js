@@ -43,7 +43,10 @@ export async function authMe() {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(apiErrorMessage(data, "Error al obtener perfil"));
+    throw new ApiError(apiErrorMessage(data, "Error al obtener perfil"), {
+      status: response.status,
+      body: data,
+    });
   }
 
   return data;

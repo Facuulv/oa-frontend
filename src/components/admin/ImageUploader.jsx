@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ImagePlus, Loader2, Trash2, Camera } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { uploadImageToCloudinary, isCloudinaryUploadConfigured } from "@/lib/cloudinaryUpload";
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
 

@@ -18,6 +18,7 @@ import BrandLogo from "@/components/BrandLogo";
 import AppViewport from "@/components/layout/AppViewport";
 import { useAuthStore, selectCanManageUsers } from "@/store/useAuthStore";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
+import { toast } from "@/lib/toast";
 
 /** Misma anchura que el menú lateral público (`Sidebar` + `AppShell`). */
 const DRAWER_WIDTH_CLASS = "w-64";
@@ -73,7 +74,8 @@ export default function AdminAppShell({ children }) {
     } catch {
       // el store igual limpia sesión local
     }
-    router.replace("/login");
+    toast.success("Sesión cerrada");
+    router.replace("/");
   };
 
   /** Área bajo el header: flex + min-h-0 para que `main` sea el único scroll (rueda del mouse / touch). */
@@ -203,7 +205,9 @@ export default function AdminAppShell({ children }) {
           }`}
         >
           <main className={mainScrollClass}>
-            <div className="flex flex-col px-4 pb-8 pt-5">{children}</div>
+            <div className="flex flex-col px-4 pb-8 pt-5">
+              {children}
+            </div>
           </main>
         </div>
       </div>

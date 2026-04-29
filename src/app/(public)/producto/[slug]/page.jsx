@@ -12,7 +12,7 @@ import { PLACEHOLDER_PRODUCT_DETAIL } from "@/constants/images";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { formatPrice } from "@/utils/format/price";
 import { ArrowLeft, Plus, Check } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
 
 export default function ProductDetailPage() {

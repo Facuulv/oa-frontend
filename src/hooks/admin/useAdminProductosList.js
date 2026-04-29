@@ -72,11 +72,29 @@ export function useAdminProductosList({
       if (tipoProducto) {
         rows = rows.filter((p) => (p?.tipo_producto ?? TIPO_PRODUCTO.PRODUCTO) === tipoProducto);
       }
+
+      const lim =
+        Number.isFinite(Number(pag?.limit)) && Number(pag.limit) > 0 ? Number(pag.limit) : pageSize;
+      let total =
+        Number.isFinite(Number(pag?.total)) && Number(pag.total) >= 0 ? Number(pag.total) : 0;
+      let resolvedPage =
+        Number.isFinite(Number(pag?.page)) && Number(pag.page) > 0 ? Number(pag.page) : page;
+
+      /** Backend devolvió más filas que el límite pedido: paginación en cliente (legacy / sin offset). */
+      if (rows.length > lim) {
+        total = Math.max(total, rows.length);
+        resolvedPage = page;
+        const start = (page - 1) * lim;
+        rows = rows.slice(start, start + lim);
+      } else if (rows.length > 0 && total === 0) {
+        total = rows.length;
+      }
+
       setItems(rows);
       setPagination({
-        page: Number(pag?.page) > 0 ? Number(pag.page) : page,
-        limit: Number(pag?.limit) > 0 ? Number(pag.limit) : pageSize,
-        total: Number.isFinite(Number(pag?.total)) && Number(pag.total) >= 0 ? Number(pag.total) : 0,
+        page: resolvedPage,
+        limit: lim,
+        total,
       });
     } catch (e) {
       if (seq !== fetchSeqRef.current) return;

@@ -7,7 +7,7 @@ import {
   selectAuthUser,
   selectCanAccessAdminPanel,
   selectIsAuthenticated,
-  selectAuthSessionGateReady,
+  selectAuthLoading,
 } from "@/store/useAuthStore";
 
 export function useAdminAuth({ redirectTo = null, requireAdmin = false } = {}) {
@@ -17,17 +17,17 @@ export function useAdminAuth({ redirectTo = null, requireAdmin = false } = {}) {
   /** ADMIN o ENCARGADO (VENDEDOR no entra al panel). */
   const isAdmin = useAuthStore(selectCanAccessAdminPanel);
   const logout = useAuthStore((s) => s.logout);
-  const authReady = useAuthStore(selectAuthSessionGateReady);
+  const loading = useAuthStore(selectAuthLoading);
 
   useEffect(() => {
-    if (!authReady) return;
+    if (loading) return;
     if (redirectTo && !isAuthenticated) {
       router.replace(redirectTo);
     }
     if (requireAdmin && isAuthenticated && !isAdmin) {
       router.replace("/");
     }
-  }, [authReady, isAuthenticated, isAdmin, redirectTo, requireAdmin, router]);
+  }, [loading, isAuthenticated, isAdmin, redirectTo, requireAdmin, router]);
 
-  return { user, isAuthenticated, isAdmin, logout, authReady };
+  return { user, isAuthenticated, isAdmin, logout, loading };
 }

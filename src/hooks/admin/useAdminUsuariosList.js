@@ -66,11 +66,29 @@ export function useAdminUsuariosList({
 
       const { usuarios, pagination: pag } = await listFn(params);
       if (seq !== fetchSeqRef.current) return;
-      setItems(Array.isArray(usuarios) ? usuarios : []);
+      let list = Array.isArray(usuarios) ? usuarios : [];
+
+      const lim =
+        Number.isFinite(Number(pag?.limit)) && Number(pag.limit) > 0 ? Number(pag.limit) : pageSize;
+      let total =
+        Number.isFinite(Number(pag?.total)) && Number(pag.total) >= 0 ? Number(pag.total) : 0;
+      let resolvedPage =
+        Number.isFinite(Number(pag?.page)) && Number(pag.page) > 0 ? Number(pag.page) : page;
+
+      if (list.length > lim) {
+        total = Math.max(total, list.length);
+        resolvedPage = page;
+        const start = (page - 1) * lim;
+        list = list.slice(start, start + lim);
+      } else if (list.length > 0 && total === 0) {
+        total = list.length;
+      }
+
+      setItems(list);
       setPagination({
-        page: Number(pag?.page) > 0 ? Number(pag.page) : page,
-        limit: Number(pag?.limit) > 0 ? Number(pag.limit) : pageSize,
-        total: Number.isFinite(Number(pag?.total)) && Number(pag.total) >= 0 ? Number(pag.total) : 0,
+        page: resolvedPage,
+        limit: lim,
+        total,
       });
     } catch (e) {
       if (seq !== fetchSeqRef.current) return;

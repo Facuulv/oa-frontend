@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ChevronLeft,
-  ChevronRight,
+  ArrowLeft,
   KeyRound,
   Loader2,
   Pencil,
@@ -17,9 +17,12 @@ import {
   Users,
 } from "lucide-react";
 import { z } from "zod";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import Modal from "@/components/ui/Modal";
 import AppSelect from "@/components/ui/AppSelect";
+import AdminListPagination from "@/components/admin/AdminListPagination";
+import FiltersPanel from "@/components/common/FiltersPanel";
+import { useScrollListTopOnPagination } from "@/hooks/admin/useScrollIntoViewOnPageChange";
 import { useAuthStore, selectCanManageUsers } from "@/store/useAuthStore";
 import { useAdminUsuariosList } from "@/hooks/admin/useAdminUsuariosList";
 import {
@@ -30,10 +33,19 @@ import {
   deactivateUsuario,
 } from "@/services/adminUsuariosService";
 import { ApiError } from "@/utils/api/apiError";
+import {
+  validateDni,
+  validateEmail,
+  validateLastName,
+  validateName,
+  validatePhone,
+} from "@/lib/validations";
 
 const LIST_STAGGER_MS = 48;
-const PAGE_SIZE = 20;
+/** Listado admin mobile-first: 1 card por fila, 4 por página. */
+const PAGE_SIZE = 4;
 const SEARCH_DEBOUNCE_MS = 350;
+const ROLE_FILTER_ALL = "__all__";
 
 const ROLES = ["ADMIN", "ENCARGADO", "VENDEDOR"];
 
@@ -53,11 +65,47 @@ const staffRoleEnum = z.enum(["ADMIN", "ENCARGADO", "VENDEDOR"]);
 
 const createUserFormSchema = z
   .object({
-    nombre: z.string().min(2, "El nombre es obligatorio (mínimo 2 caracteres)").max(100),
-    apellido: z.string().min(2, "El apellido es obligatorio (mínimo 2 caracteres)").max(100),
-    dni: z.string().max(32).optional().or(z.literal("")),
-    email: z.string().min(1, "El email es obligatorio").email("Email inválido"),
-    telefono: z.string().max(20).optional().or(z.literal("")),
+    nombre: z
+      .string()
+      .min(2, "El nombre es obligatorio (mínimo 2 caracteres)")
+      .max(100)
+      .superRefine((value, ctx) => {
+        const r = validateName(value);
+        if (!r.valid) ctx.addIssue(r.message);
+      }),
+    apellido: z
+      .string()
+      .min(2, "El apellido es obligatorio (mínimo 2 caracteres)")
+      .max(100)
+      .superRefine((value, ctx) => {
+        const r = validateLastName(value);
+        if (!r.valid) ctx.addIssue(r.message);
+      }),
+    dni: z
+      .string()
+      .max(32)
+      .optional()
+      .or(z.literal(""))
+      .superRefine((value, ctx) => {
+        const r = validateDni(value, { required: false });
+        if (!r.valid) ctx.addIssue(r.message);
+      }),
+    email: z
+      .string()
+      .min(1, "El email es obligatorio")
+      .superRefine((value, ctx) => {
+        const r = validateEmail(value, { required: true });
+        if (!r.valid) ctx.addIssue(r.message);
+      }),
+    telefono: z
+      .string()
+      .max(20)
+      .optional()
+      .or(z.literal(""))
+      .superRefine((value, ctx) => {
+        const r = validatePhone(value, { required: false });
+        if (!r.valid) ctx.addIssue(r.message);
+      }),
     rol: staffRoleEnum,
     password: z.string().min(1, "La contraseña es obligatoria").min(6, "Mínimo 6 caracteres").max(128),
     confirmPassword: z.string().min(1, "Confirmá la contraseña"),
@@ -68,11 +116,47 @@ const createUserFormSchema = z
   });
 
 const editUserFormSchema = z.object({
-  nombre: z.string().min(2, "El nombre es obligatorio (mínimo 2 caracteres)").max(100),
-  apellido: z.string().min(2, "El apellido es obligatorio (mínimo 2 caracteres)").max(100),
-  dni: z.string().max(32).optional().or(z.literal("")),
-  email: z.string().min(1, "El email es obligatorio").email("Email inválido"),
-  telefono: z.string().max(20).optional().or(z.literal("")),
+  nombre: z
+    .string()
+    .min(2, "El nombre es obligatorio (mínimo 2 caracteres)")
+    .max(100)
+    .superRefine((value, ctx) => {
+      const r = validateName(value);
+      if (!r.valid) ctx.addIssue(r.message);
+    }),
+  apellido: z
+    .string()
+    .min(2, "El apellido es obligatorio (mínimo 2 caracteres)")
+    .max(100)
+    .superRefine((value, ctx) => {
+      const r = validateLastName(value);
+      if (!r.valid) ctx.addIssue(r.message);
+    }),
+  dni: z
+    .string()
+    .max(32)
+    .optional()
+    .or(z.literal(""))
+    .superRefine((value, ctx) => {
+      const r = validateDni(value, { required: false });
+      if (!r.valid) ctx.addIssue(r.message);
+    }),
+  email: z
+    .string()
+    .min(1, "El email es obligatorio")
+    .superRefine((value, ctx) => {
+      const r = validateEmail(value, { required: true });
+      if (!r.valid) ctx.addIssue(r.message);
+    }),
+  telefono: z
+    .string()
+    .max(20)
+    .optional()
+    .or(z.literal(""))
+    .superRefine((value, ctx) => {
+      const r = validatePhone(value, { required: false });
+      if (!r.valid) ctx.addIssue(r.message);
+    }),
   rol: staffRoleEnum,
   activo: z.coerce.boolean(),
 });
@@ -185,6 +269,7 @@ export default function AdminUsuariosPage() {
   const currentUserId = currentUser?.id != null ? Number(currentUser.id) : null;
 
   const [page, setPage] = useState(1);
+  const listTopRef = useRef(null);
   const [searchDraft, setSearchDraft] = useState("");
   const [q, setQ] = useState("");
   const [rolFiltro, setRolFiltro] = useState("");
@@ -208,6 +293,15 @@ export default function AdminUsuariosPage() {
     enabled: canManageUsers,
   });
 
+  useScrollListTopOnPagination({
+    listRef: listTopRef,
+    page,
+    waitForRefresh: true,
+    listRefreshing,
+    loadingInitial,
+    loadError,
+  });
+
   const loadErrorMessage = loadError ? humanLoadError(loadError) : "";
 
   const hasActiveFilters = Boolean(q.trim()) || Boolean(rolFiltro) || estadoFiltro !== "all";
@@ -215,16 +309,20 @@ export default function AdminUsuariosPage() {
   const catalogoVacio = !loadingInitial && !loadError && items.length === 0 && !hasActiveFilters;
   const vacioPorFiltros = !loadingInitial && !loadError && items.length === 0 && hasActiveFilters;
 
-  const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.limit) || 1);
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
+  const lim = Math.max(1, pagination.limit || PAGE_SIZE);
+  const totalPages =
+    pagination.total > 0 ? Math.max(1, Math.ceil(pagination.total / lim)) : 1;
 
-  const rangoListado = useMemo(() => {
-    if (pagination.total <= 0) return null;
-    const start = (pagination.page - 1) * pagination.limit + 1;
-    const end = Math.min(pagination.page * pagination.limit, pagination.total);
-    return `${start}–${end}`;
-  }, [pagination]);
+  useEffect(() => {
+    if (loadingInitial || loadError || !canManageUsers) return;
+    if (pagination.total > 0 && page > totalPages) {
+      setPage(totalPages);
+      return;
+    }
+    if (pagination.total === 0 && page !== 1) {
+      setPage(1);
+    }
+  }, [loadingInitial, loadError, canManageUsers, page, pagination.total, totalPages]);
 
   const limpiarFiltros = () => {
     setSearchDraft("");
@@ -235,6 +333,65 @@ export default function AdminUsuariosPage() {
   };
 
   const filtrosPredeterminados = !searchDraft.trim() && !rolFiltro && estadoFiltro === "all";
+
+  const filtersValues = useMemo(
+    () => ({
+      busqueda: searchDraft,
+      rol: rolFiltro || ROLE_FILTER_ALL,
+      estado: estadoFiltro,
+    }),
+    [searchDraft, rolFiltro, estadoFiltro],
+  );
+
+  const filtersConfig = useMemo(
+    () => [
+      {
+        type: "search",
+        name: "busqueda",
+        label: "Buscar",
+        placeholder: "Nombre, apellido, email, DNI o teléfono…",
+        defaultValue: "",
+      },
+      {
+        type: "select",
+        name: "rol",
+        label: "Rol",
+        defaultValue: ROLE_FILTER_ALL,
+        options: [
+          { value: ROLE_FILTER_ALL, label: "Todos los roles" },
+          ...ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] })),
+        ],
+      },
+      {
+        type: "select",
+        name: "estado",
+        label: "Estado",
+        defaultValue: "all",
+        options: [
+          { value: "all", label: "Todos" },
+          { value: "true", label: "Activos" },
+          { value: "false", label: "Inactivos" },
+        ],
+      },
+    ],
+    [],
+  );
+
+  const handleFiltersChange = useCallback((name, value) => {
+    switch (name) {
+      case "busqueda":
+        setSearchDraft(String(value));
+        break;
+      case "rol":
+        setRolFiltro(value === ROLE_FILTER_ALL ? "" : String(value));
+        break;
+      case "estado":
+        setEstadoFiltro(String(value));
+        break;
+      default:
+        break;
+    }
+  }, []);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -357,6 +514,8 @@ export default function AdminUsuariosPage() {
     } finally {
       setSavingCreate(false);
     }
+  }, () => {
+    toast.error("Revisá los campos marcados.");
   });
 
   const onSubmitEdit = editForm.handleSubmit(async (values) => {
@@ -420,6 +579,8 @@ export default function AdminUsuariosPage() {
     } finally {
       setSavingEdit(false);
     }
+  }, () => {
+    toast.error("Revisá los campos marcados.");
   });
 
   const onSubmitPassword = passwordForm.handleSubmit(async (values) => {
@@ -517,11 +678,16 @@ export default function AdminUsuariosPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-4">
-      <header className="admin-quick-card-enter flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <header className="admin-quick-card-enter flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 transition-transform duration-200 ease-out motion-safe:active:scale-95">
-            <Users size={22} strokeWidth={2} className="shrink-0" aria-hidden />
-          </div>
+          <Link
+            href="/admin"
+            className="admin-pressable inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 active:bg-zinc-100"
+            aria-label="Volver al panel"
+            title="Volver al panel"
+          >
+            <ArrowLeft size={18} strokeWidth={2.25} aria-hidden />
+          </Link>
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold tracking-tight text-zinc-900">Usuarios</h2>
             <p className="mt-0.5 text-xs font-medium text-zinc-500">Gestioná los usuarios con acceso al panel.</p>
@@ -531,77 +697,21 @@ export default function AdminUsuariosPage() {
           type="button"
           onClick={openCreate}
           disabled={listBusy}
-          className="admin-pressable inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:w-auto sm:min-w-[200px]"
+          className="admin-pressable inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:min-w-[200px]"
         >
           <UserPlus size={20} strokeWidth={2.25} aria-hidden />
           Nuevo usuario
         </button>
       </header>
 
-      <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-3.5 shadow-sm ring-1 ring-zinc-200/50 sm:p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Filtros</p>
-        <div className="flex flex-col gap-3.5">
-          <div className="min-w-0">
-            <label htmlFor="usuarios-busqueda" className="mb-1 block text-xs font-semibold text-zinc-600">
-              Buscar
-            </label>
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
-                aria-hidden
-              />
-              <input
-                id="usuarios-busqueda"
-                type="search"
-                value={searchDraft}
-                onChange={(e) => setSearchDraft(e.target.value)}
-                placeholder="Nombre, apellido, email, DNI o teléfono…"
-                className="min-h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50/80 py-3 pl-10 pr-3 text-base text-zinc-900 outline-none ring-primary focus:bg-white focus:ring-2"
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="usuarios-filtro-rol" className="mb-1.5 block text-sm font-semibold text-zinc-700">
-              Rol
-            </label>
-            <AppSelect
-              id="usuarios-filtro-rol"
-              value={rolFiltro ? rolFiltro : "__all__"}
-              onValueChange={(v) => setRolFiltro(v === "__all__" ? "" : v)}
-              options={[
-                { value: "__all__", label: "Todos los roles" },
-                ...ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] })),
-              ]}
-              placeholder="Todos los roles"
-            />
-          </div>
-          <div>
-            <label htmlFor="usuarios-filtro-estado" className="mb-1.5 block text-sm font-semibold text-zinc-700">
-              Estado
-            </label>
-            <AppSelect
-              id="usuarios-filtro-estado"
-              value={estadoFiltro}
-              onValueChange={setEstadoFiltro}
-              options={[
-                { value: "all", label: "Todos" },
-                { value: "true", label: "Activos" },
-                { value: "false", label: "Inactivos" },
-              ]}
-              placeholder="Estado"
-            />
-          </div>
-        </div>
-        {!filtrosPredeterminados && (
-          <button
-            type="button"
-            onClick={limpiarFiltros}
-            className="self-start text-sm font-semibold text-violet-700 underline-offset-2 hover:underline"
-          >
-            Limpiar filtros
-          </button>
-        )}
-      </div>
+      <FiltersPanel
+        filters={filtersConfig}
+        values={filtersValues}
+        onChange={handleFiltersChange}
+        onClear={limpiarFiltros}
+        disabled={listRefreshing}
+        clearDisabled={filtrosPredeterminados || listRefreshing}
+      />
 
       {loadingInitial && (
         <div className="flex flex-col gap-3" aria-busy="true" aria-label="Cargando usuarios">
@@ -663,7 +773,9 @@ export default function AdminUsuariosPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400">
                 <Search size={26} strokeWidth={1.75} aria-hidden />
               </div>
-              <p className="mt-5 text-base font-semibold text-zinc-900">No se encontraron usuarios con esos filtros.</p>
+              <p className="mt-5 text-base font-semibold text-zinc-900">
+                No se encontraron resultados con esos filtros.
+              </p>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500">Probá otra búsqueda o limpiá los filtros.</p>
               <button
                 type="button"
@@ -678,7 +790,8 @@ export default function AdminUsuariosPage() {
           {items.length > 0 && (
             <>
               <ul
-                className={`flex flex-col gap-3 transition-opacity duration-200 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
+                ref={listTopRef}
+                className={`scroll-mt-4 flex flex-col gap-3 transition-opacity duration-200 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
                 aria-busy={listRefreshing}
               >
                 {items.map((row, index) => {
@@ -774,46 +887,14 @@ export default function AdminUsuariosPage() {
                 })}
               </ul>
 
-              <div
-                role="navigation"
-                aria-label="Paginación del listado de usuarios"
-                className={`flex flex-col items-center justify-between gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 text-sm text-zinc-700 shadow-sm ring-1 ring-zinc-200/50 sm:flex-row ${listRefreshing ? "opacity-60" : ""}`}
-              >
-                <p className="text-center sm:text-left">
-                  Página <span className="font-semibold text-zinc-900">{page}</span> de{" "}
-                  <span className="font-semibold text-zinc-900">{totalPages}</span>
-                  <span className="text-zinc-500">
-                    {" "}
-                    · {pagination.total}{" "}
-                    {pagination.total === 1 ? "usuario en total" : "usuarios en total"}
-                    {rangoListado ? (
-                      <span className="text-zinc-400"> (mostrando {rangoListado})</span>
-                    ) : pagination.total === 0 ? (
-                      <span className="text-zinc-400"> (sin filas en esta página)</span>
-                    ) : null}
-                  </span>
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={!canPrev || listRefreshing}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 disabled:pointer-events-none disabled:opacity-40"
-                  >
-                    <ChevronLeft size={18} aria-hidden />
-                    Anterior
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!canNext || listRefreshing}
-                    onClick={() => setPage((p) => p + 1)}
-                    className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 disabled:pointer-events-none disabled:opacity-40"
-                  >
-                    Siguiente
-                    <ChevronRight size={18} aria-hidden />
-                  </button>
-                </div>
-              </div>
+              <AdminListPagination
+                page={page}
+                totalPages={totalPages}
+                busy={listRefreshing}
+                onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                ariaLabel="Paginación del listado de usuarios"
+              />
             </>
           )}
         </>

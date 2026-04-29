@@ -5,6 +5,13 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import ImageUploader from "@/components/admin/ImageUploader";
 import AppSelect from "@/components/ui/AppSelect";
+import {
+  normalizeDecimal,
+  validateDescription,
+  validatePrice,
+  validateProductLikeName,
+  validateStock,
+} from "@/lib/validations";
 
 export const emptyToNull = (v) => (v === "" || v === undefined ? null : v);
 
@@ -13,26 +20,48 @@ const PRECIO_MAX = 99_999_999.99;
 const precioField = z
   .string({ required_error: "Ingresá el precio" })
   .min(1, "Ingresá el precio")
-  .transform((s) => Number.parseFloat(String(s).replace(",", ".")))
-  .refine((n) => !Number.isNaN(n) && Number.isFinite(n), "El precio no es válido")
+  .superRefine((s, ctx) => {
+    const r = validatePrice(s);
+    if (!r.valid) ctx.addIssue(r.message);
+  })
+  .transform((s) => Number.parseFloat(normalizeDecimal(s)))
   .refine((n) => n >= 0, "El precio no puede ser negativo")
   .refine((n) => n <= PRECIO_MAX, "El precio es demasiado alto");
 
 export const productFormSchema = z.object({
   categoria_id: z.coerce.number().int().positive("Elegí una categoría"),
-  nombre: z.string().min(1, "El nombre es obligatorio").max(150),
+  nombre: z
+    .string()
+    .min(1, "El nombre es obligatorio")
+    .max(150)
+    .superRefine((value, ctx) => {
+      const r = validateProductLikeName(value);
+      if (!r.valid) ctx.addIssue(r.message);
+    }),
   descripcion: z
     .union([z.string().max(500), z.literal("")])
     .optional()
+    .superRefine((value, ctx) => {
+      const r = validateDescription(value ?? "");
+      if (!r.valid) ctx.addIssue(r.message);
+    })
     .transform((v) => (v === "" || v == null ? null : v)),
   precio: precioField,
   stock: z.preprocess(
     (v) => {
       if (v === "" || v === null || v === undefined) return 0;
       if (typeof v === "number" && Number.isNaN(v)) return 0;
+      if (typeof v === "string") return normalizeDecimal(v);
       return v;
     },
-    z.coerce.number().int().min(0, "El stock no puede ser negativo"),
+    z
+      .union([z.string(), z.number()])
+      .superRefine((value, ctx) => {
+        const r = validateStock(String(value ?? ""), { allowDecimal: false });
+        if (!r.valid) ctx.addIssue(r.message);
+      })
+      .transform((value) => Number.parseInt(String(value), 10))
+      .refine((n) => Number.isFinite(n) && n >= 0, "El stock no puede ser negativo"),
   ),
   imagen_url: z.preprocess(
     emptyToNull,
@@ -56,7 +85,7 @@ export const defaultProductFormValues = {
   nombre: "",
   descripcion: "",
   precio: "",
-  stock: 0,
+  stock: "",
   imagen_url: "",
   destacado: false,
   disponible: true,
@@ -72,7 +101,7 @@ export function mapProductoToForm(row) {
     nombre: row.nombre ?? "",
     descripcion: row.descripcion ?? "",
     precio: precio != null && precio !== "" ? String(precio) : "",
-    stock: row.stock ?? 0,
+    stock: row.stock != null ? String(row.stock) : "",
     imagen_url: row.imagen_url ?? "",
     destacado: Boolean(row.destacado),
     disponible: row.disponible !== false && row.disponible !== 0,
@@ -235,9 +264,8 @@ export default function AdminProductForm({
               className={`${fieldBase} ${errs.stock ? fieldErr : fieldOk}`}
               {...form.register("stock", {
                 setValueAs: (v) => {
-                  if (v === "" || v == null) return 0;
-                  const n = Number(v);
-                  return Number.isFinite(n) ? Math.trunc(n) : 0;
+                  if (v === "" || v == null) return "";
+                  return String(v);
                 },
               })}
             />

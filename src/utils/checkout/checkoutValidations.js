@@ -1,17 +1,7 @@
+import { validateEmail, validateName, validatePhone } from "@/lib/validations";
+
 function required(value) {
   return value != null && String(value).trim().length > 0;
-}
-
-function minLength(value, min) {
-  return String(value).trim().length >= min;
-}
-
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
-}
-
-function isValidPhone(value) {
-  return /^\+?[\d\s\-()]{7,20}$/.test(String(value).trim());
 }
 
 export function validateCheckoutForm(values) {
@@ -19,18 +9,21 @@ export function validateCheckoutForm(values) {
 
   if (!required(values.nombre)) {
     errors.nombre = "Ingresá tu nombre";
-  } else if (!minLength(values.nombre, 2)) {
-    errors.nombre = "El nombre debe tener al menos 2 caracteres";
+  } else {
+    const nameValidation = validateName(values.nombre);
+    if (!nameValidation.valid) errors.nombre = nameValidation.message;
   }
 
   if (!required(values.telefono)) {
     errors.telefono = "Ingresá tu teléfono";
-  } else if (!isValidPhone(values.telefono)) {
-    errors.telefono = "El teléfono no es válido";
+  } else {
+    const phoneValidation = validatePhone(values.telefono, { required: true });
+    if (!phoneValidation.valid) errors.telefono = phoneValidation.message;
   }
 
-  if (values.email && !isValidEmail(values.email)) {
-    errors.email = "El email no es válido";
+  if (values.email) {
+    const emailValidation = validateEmail(values.email, { required: false });
+    if (!emailValidation.valid) errors.email = emailValidation.message;
   }
 
   if (values.deliveryType === "DELIVERY" && !required(values.direccion)) {

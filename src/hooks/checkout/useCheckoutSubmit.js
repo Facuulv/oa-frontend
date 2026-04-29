@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { createOrder, createMercadoPagoCheckout } from "@/services/ordersService";
 import { validateCheckoutForm } from "@/utils/checkout/checkoutValidations";
 import {
@@ -28,11 +28,11 @@ export function useCheckoutSubmit({
 
     setFieldErrors({});
 
-    const { ok, errors, firstError, normalized } = validateCheckoutForm(formValues);
+    const { ok, errors, normalized } = validateCheckoutForm(formValues);
 
     if (!ok) {
       setFieldErrors(errors);
-      toast.error(firstError);
+      toast.error("Revisá los campos marcados.");
       const firstKey = Object.keys(errors)[0];
       const el = document.getElementById(`checkout-${firstKey}`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });

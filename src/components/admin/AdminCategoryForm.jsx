@@ -4,14 +4,26 @@ import { Controller } from "react-hook-form";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import ImageUploader from "@/components/admin/ImageUploader";
+import { validateDescription, validateProductLikeName } from "@/lib/validations";
 
 export const emptyToNull = (v) => (v === "" || v === undefined ? null : v);
 
 export const categoryFormSchema = z.object({
-  nombre: z.string().min(1, "El nombre es obligatorio").max(100),
+  nombre: z
+    .string()
+    .min(1, "El nombre es obligatorio")
+    .max(100)
+    .superRefine((value, ctx) => {
+      const r = validateProductLikeName(value);
+      if (!r.valid) ctx.addIssue(r.message);
+    }),
   descripcion: z
     .union([z.string().max(255), z.literal("")])
     .optional()
+    .superRefine((value, ctx) => {
+      const r = validateDescription(value ?? "");
+      if (!r.valid) ctx.addIssue(r.message);
+    })
     .transform((v) => (v === "" || v == null ? null : v)),
   imagen_url: z.preprocess(
     emptyToNull,

@@ -1,7 +1,7 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
-import { Toaster } from "sonner";
 import AuthSessionProvider from "@/components/AuthSessionProvider";
+import ToastProvider from "@/components/ToastProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,12 +28,7 @@ export default function RootLayout({ children }) {
     <html lang="es">
       <body className={`bg-background ${inter.variable}`}>
         <AuthSessionProvider>{children}</AuthSessionProvider>
-        <Toaster
-          position="top-center"
-          richColors
-          closeButton
-          toastOptions={{ duration: 3500 }}
-        />
+        <ToastProvider />
       </body>
     </html>
   );

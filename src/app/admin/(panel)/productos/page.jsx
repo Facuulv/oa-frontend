@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ChevronLeft,
-  ChevronRight,
+  ArrowLeft,
   Loader2,
   Package,
   Pencil,
@@ -16,7 +16,7 @@ import {
   Star,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import Modal from "@/components/ui/Modal";
 import AdminProductForm, {
   productFormSchema,
@@ -24,8 +24,9 @@ import AdminProductForm, {
   mapProductoToForm,
   PRODUCT_FORM_SERVER_FIELDS,
 } from "@/components/admin/AdminProductForm";
-import AdminProductosFiltersBar from "@/components/admin/AdminProductosFiltersBar";
 import AdminProductosListSortBar from "@/components/admin/AdminProductosListSortBar";
+import AdminListPagination from "@/components/admin/AdminListPagination";
+import FiltersPanel from "@/components/common/FiltersPanel";
 import { getCategorias } from "@/services/adminCategoriasService";
 import {
   createProducto,
@@ -34,6 +35,7 @@ import {
   ADMIN_PRODUCTO_CODES,
 } from "@/services/adminProductosService";
 import { useAdminProductosList } from "@/hooks/admin/useAdminProductosList";
+import { useScrollListTopOnPagination } from "@/hooks/admin/useScrollIntoViewOnPageChange";
 import { TIPO_PRODUCTO } from "@/constants/tipoProducto";
 import { ApiError } from "@/utils/api/apiError";
 import { buildImageUrl } from "@/lib/imageUtils";
@@ -41,7 +43,8 @@ import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
 import { formatPrice } from "@/utils/format/price";
 
 const LIST_STAGGER_MS = 48;
-const PAGE_SIZE = 20;
+/** Listado admin mobile-first: 1 card por fila, 4 por página. */
+const PAGE_SIZE = 4;
 
 const ORDENAR_OPTIONS = [
   { value: "orden_asc", label: "Orden (asc)" },
@@ -53,6 +56,7 @@ const ORDENAR_OPTIONS = [
   { value: "fecha_desc", label: "Más recientes" },
   { value: "fecha_asc", label: "Más antiguos" },
 ];
+const FILTER_ALL = "__all__";
 
 function errorMessage(err, fallback) {
   if (err instanceof ApiError) return err.message || fallback;
@@ -157,6 +161,7 @@ export default function AdminProductosPage() {
   const [filtroDisponible, setFiltroDisponible] = useState("all");
   const [ordenar, setOrdenar] = useState("orden_asc");
   const [page, setPage] = useState(1);
+  const listTopRef = useRef(null);
 
   useEffect(() => {
     const t = setTimeout(() => setBusqueda(busquedaInput.trim()), 380);
@@ -186,7 +191,16 @@ export default function AdminProductosPage() {
     tipoProducto: TIPO_PRODUCTO.PRODUCTO,
   });
 
-  const limit = pagination.limit || PAGE_SIZE;
+  useScrollListTopOnPagination({
+    listRef: listTopRef,
+    page,
+    waitForRefresh: true,
+    listRefreshing,
+    loadingInitial,
+    loadError,
+  });
+
+  const limit = Math.max(1, pagination.limit || PAGE_SIZE);
   const totalPages =
     pagination.total > 0 ? Math.max(1, Math.ceil(pagination.total / limit)) : 1;
 
@@ -242,6 +256,103 @@ export default function AdminProductosPage() {
     setBusquedaInput(value);
     if (!value.trim()) setBusqueda("");
   }, []);
+
+  const filtersValues = useMemo(
+    () => ({
+      busqueda: busquedaInput,
+      categoria: filtroCategoria ? String(filtroCategoria) : FILTER_ALL,
+      estado: filtroActivo,
+      destacado: filtroDestacado,
+      venta: filtroDisponible,
+    }),
+    [busquedaInput, filtroCategoria, filtroActivo, filtroDestacado, filtroDisponible],
+  );
+
+  const filtersConfig = useMemo(
+    () => [
+      {
+        type: "search",
+        name: "busqueda",
+        label: "Buscar",
+        placeholder: "Ej. gin, cola…",
+        defaultValue: "",
+      },
+      {
+        type: "select",
+        name: "categoria",
+        label: "Categoría",
+        defaultValue: FILTER_ALL,
+        options: [
+          { value: FILTER_ALL, label: "Todas" },
+          ...categorias.map((c) => ({
+            value: String(c.id),
+            label: `${c.nombre}${!c.activo ? " (inactiva)" : ""}`,
+          })),
+        ],
+      },
+      {
+        type: "select",
+        name: "estado",
+        label: "Catálogo / estado",
+        defaultValue: "all",
+        options: [
+          { value: "all", label: "Todos" },
+          { value: "true", label: "Activos" },
+          { value: "false", label: "Inactivos" },
+        ],
+      },
+      {
+        type: "select",
+        name: "destacado",
+        label: "Destacado",
+        defaultValue: "all",
+        advanced: true,
+        options: [
+          { value: "all", label: "Todos" },
+          { value: "true", label: "Solo destacados" },
+          { value: "false", label: "Sin destacar" },
+        ],
+      },
+      {
+        type: "select",
+        name: "venta",
+        label: "Venta",
+        defaultValue: "all",
+        advanced: true,
+        options: [
+          { value: "all", label: "Todos" },
+          { value: "true", label: "Disponibles para venta" },
+          { value: "false", label: "No disponibles" },
+        ],
+      },
+    ],
+    [categorias],
+  );
+
+  const handleFiltersChange = useCallback(
+    (name, value) => {
+      switch (name) {
+        case "busqueda":
+          handleBusquedaInputChange(String(value));
+          break;
+        case "categoria":
+          setFiltroCategoria(value === FILTER_ALL ? "" : String(value));
+          break;
+        case "estado":
+          setFiltroActivo(String(value));
+          break;
+        case "destacado":
+          setFiltroDestacado(String(value));
+          break;
+        case "venta":
+          setFiltroDisponible(String(value));
+          break;
+        default:
+          break;
+      }
+    },
+    [handleBusquedaInputChange],
+  );
 
   const form = useForm({
     resolver: zodResolver(productFormSchema),
@@ -390,6 +501,8 @@ export default function AdminProductosPage() {
       setSaving(false);
       submitGuardRef.current = false;
     }
+  }, () => {
+    toast.error("Revisá los campos marcados.");
   });
 
   const handleToggleEstado = async (row) => {
@@ -417,28 +530,26 @@ export default function AdminProductosPage() {
     }
   };
 
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
-  const rangoListado =
-    items.length > 0 && pagination.total > 0
-      ? `${(page - 1) * limit + 1}–${Math.min(page * limit, pagination.total)}`
-      : null;
-
   const modalBusy = saving || imageUploading;
   const primarySubmitLabel =
     imageUploading && !saving ? "Esperá la imagen…" : editing ? "Guardar cambios" : "Crear producto";
 
   return (
     <div className="flex flex-col gap-6 pb-4">
-      <header className="admin-quick-card-enter flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <header className="admin-quick-card-enter flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 transition-transform duration-200 ease-out motion-safe:active:scale-95">
-            <Package size={22} strokeWidth={2} className="shrink-0" aria-hidden />
-          </div>
+          <Link
+            href="/admin"
+            className="admin-pressable inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 active:bg-zinc-100"
+            aria-label="Volver al panel"
+            title="Volver al panel"
+          >
+            <ArrowLeft size={18} strokeWidth={2.25} aria-hidden />
+          </Link>
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold tracking-tight text-zinc-900">Productos</h2>
             <p className="mt-0.5 text-xs font-medium text-zinc-500">
-              Catálogo, precios, stock y visibilidad en tienda
+              Precios, stock y visibilidad en tienda
             </p>
           </div>
         </div>
@@ -446,7 +557,7 @@ export default function AdminProductosPage() {
           type="button"
           onClick={openCreate}
           disabled={categoriasActivasCount === 0}
-          className="admin-pressable inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:w-auto sm:min-w-[200px]"
+          className="admin-pressable inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:min-w-[200px]"
         >
           <Plus size={20} strokeWidth={2.25} aria-hidden />
           Nuevo producto
@@ -467,21 +578,13 @@ export default function AdminProductosPage() {
       )}
 
       <div className="flex flex-col gap-3">
-        <AdminProductosFiltersBar
-          categorias={categorias}
-          busquedaInput={busquedaInput}
-          onBusquedaInputChange={handleBusquedaInputChange}
-          filtroCategoria={filtroCategoria}
-          onFiltroCategoriaChange={setFiltroCategoria}
-          filtroActivo={filtroActivo}
-          onFiltroActivoChange={setFiltroActivo}
-          filtroDestacado={filtroDestacado}
-          onFiltroDestacadoChange={setFiltroDestacado}
-          filtroDisponible={filtroDisponible}
-          onFiltroDisponibleChange={setFiltroDisponible}
-          filtrosPredeterminados={filtrosPredeterminados}
-          onLimpiarFiltros={limpiarFiltros}
-          listRefreshing={listRefreshing}
+        <FiltersPanel
+          filters={filtersConfig}
+          values={filtersValues}
+          onChange={handleFiltersChange}
+          onClear={limpiarFiltros}
+          disabled={listRefreshing}
+          clearDisabled={filtrosPredeterminados || listRefreshing}
         />
 
         {!loadError && (
@@ -569,7 +672,9 @@ export default function AdminProductosPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400">
                 <Search size={26} strokeWidth={1.75} aria-hidden />
               </div>
-              <p className="mt-5 text-base font-semibold text-zinc-900">No hay productos con estos filtros</p>
+              <p className="mt-5 text-base font-semibold text-zinc-900">
+                No se encontraron resultados con esos filtros.
+              </p>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
                 Probá otra búsqueda o ajustá categoría, estado, destacado o venta. También podés usar «Limpiar
                 filtros» y volver al listado completo.
@@ -586,7 +691,8 @@ export default function AdminProductosPage() {
 
           {items.length > 0 && (
             <ul
-              className={`flex flex-col gap-3 transition-opacity duration-200 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
+              ref={listTopRef}
+              className={`scroll-mt-4 flex flex-col gap-3 transition-opacity duration-200 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
               aria-busy={listRefreshing}
             >
             {items.map((row, index) => {
@@ -723,46 +829,14 @@ export default function AdminProductosPage() {
             </ul>
           )}
 
-          <div
-            role="navigation"
-            aria-label="Paginación del listado de productos"
-            className={`flex flex-col items-center justify-between gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 text-sm text-zinc-700 shadow-sm ring-1 ring-zinc-200/50 sm:flex-row ${listRefreshing ? "opacity-60" : ""}`}
-          >
-            <p className="text-center sm:text-left">
-              Página <span className="font-semibold text-zinc-900">{page}</span> de{" "}
-              <span className="font-semibold text-zinc-900">{totalPages}</span>
-              <span className="text-zinc-500">
-                {" "}
-                · {pagination.total}{" "}
-                {pagination.total === 1 ? "producto en total" : "productos en total"}
-                {rangoListado ? (
-                  <span className="text-zinc-400"> (mostrando {rangoListado})</span>
-                ) : pagination.total === 0 ? (
-                  <span className="text-zinc-400"> (sin filas en esta página)</span>
-                ) : null}
-              </span>
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!canPrev || listRefreshing}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 disabled:pointer-events-none disabled:opacity-40"
-              >
-                <ChevronLeft size={18} aria-hidden />
-                Anterior
-              </button>
-              <button
-                type="button"
-                disabled={!canNext || listRefreshing}
-                onClick={() => setPage((p) => p + 1)}
-                className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 disabled:pointer-events-none disabled:opacity-40"
-              >
-                Siguiente
-                <ChevronRight size={18} aria-hidden />
-              </button>
-            </div>
-          </div>
+          <AdminListPagination
+            page={page}
+            totalPages={totalPages}
+            busy={listRefreshing}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            ariaLabel="Paginación del listado de productos"
+          />
         </>
       )}
 

@@ -9,7 +9,7 @@ const QUICK_LINKS_ALL = [
   {
     href: "/admin/productos",
     label: "Productos",
-    hint: "Stock",
+    hint: "Gestionar productos y stock",
     icon: Package,
     tone: "bg-red-100 text-primary",
     requiresUserAdmin: false,
@@ -17,7 +17,7 @@ const QUICK_LINKS_ALL = [
   {
     href: "/admin/promociones",
     label: "Promociones",
-    hint: "Combos",
+    hint: "Armá nuevas promociones",
     icon: Tag,
     tone: "bg-amber-100 text-amber-900",
     requiresUserAdmin: false,
@@ -25,7 +25,7 @@ const QUICK_LINKS_ALL = [
   {
     href: "/admin/categorias",
     label: "Categorías",
-    hint: "Secciones",
+    hint: "Gestionar categorías",
     icon: Grid3X3,
     tone: "bg-violet-100 text-violet-800",
     requiresUserAdmin: false,
@@ -33,7 +33,7 @@ const QUICK_LINKS_ALL = [
   {
     href: "/admin/usuarios",
     label: "Usuarios",
-    hint: "Roles",
+    hint: "Creá nuevos usuarios",
     icon: Users,
     tone: "bg-sky-100 text-sky-900",
     requiresUserAdmin: true,
@@ -42,7 +42,6 @@ const QUICK_LINKS_ALL = [
 
 const QUICK_LINK_ICON = 36;
 const QUICK_LINK_ICON_STROKE = 2;
-const HERO_ICON = 44;
 const HERO_ICON_STROKE = 2;
 /** Retardo entre cards (cascada); total ~3×delay + duración sigue bajo ~400ms. */
 const QUICK_LINK_STAGGER_MS = 48;
@@ -63,14 +62,18 @@ export default function AdminDashboard() {
     <div className="flex flex-col gap-8">
       <section
         className={[
-          "relative isolate min-h-[132px] overflow-hidden rounded-2xl shadow-md ring-1 ring-zinc-200/60",
+          "relative isolate min-h-0 overflow-hidden rounded-2xl shadow-md ring-1 ring-zinc-200/60",
           "bg-gradient-to-br from-zinc-100/70 via-white to-zinc-50/90",
-          "px-6 py-8 sm:min-h-0 sm:px-8 sm:py-9",
+          "px-5 py-5 sm:min-h-0 sm:px-8 sm:py-9",
         ].join(" ")}
       >
-        <div className="flex h-full min-h-[inherit] items-center gap-6 sm:items-start sm:gap-6">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10">
-            <LayoutGrid size={HERO_ICON} strokeWidth={HERO_ICON_STROKE} aria-hidden />
+        <div className="flex h-full items-center gap-4 sm:items-start sm:gap-6">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10 sm:h-14 sm:w-14 sm:rounded-2xl">
+            <LayoutGrid
+              className="size-7 sm:size-11"
+              strokeWidth={HERO_ICON_STROKE}
+              aria-hidden
+            />
           </div>
           <div className="min-w-0 sm:pt-0.5">
             {greetName ? (
@@ -84,7 +87,6 @@ export default function AdminDashboard() {
             >
               Panel
             </h2>
-            <p className="mt-2 text-sm font-normal leading-relaxed text-zinc-500/70">Lo esencial primero.</p>
           </div>
         </div>
       </section>

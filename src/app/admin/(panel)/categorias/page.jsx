@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  ArrowLeft,
   Grid3X3,
   Loader2,
   Pencil,
@@ -11,7 +13,7 @@ import {
   Power,
   RefreshCw,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import Modal from "@/components/ui/Modal";
 import AdminCategoryForm, {
   categoryFormSchema,
@@ -19,6 +21,9 @@ import AdminCategoryForm, {
   mapCategoriaToForm,
   CATEGORY_FORM_SERVER_FIELDS,
 } from "@/components/admin/AdminCategoryForm";
+import AdminListPagination from "@/components/admin/AdminListPagination";
+import FiltersPanel from "@/components/common/FiltersPanel";
+import { useScrollListTopOnPagination } from "@/hooks/admin/useScrollIntoViewOnPageChange";
 import {
   getCategorias,
   createCategoria,
@@ -32,6 +37,8 @@ import { PLACEHOLDER_CATEGORY } from "@/constants/images";
 
 /** Misma cascada que `src/app/admin/page.jsx` (accesos rápidos). */
 const LIST_STAGGER_MS = 48;
+/** Listado admin mobile-first: 1 card por fila, 4 por página (sin paginación en API). */
+const PAGE_SIZE = 4;
 
 function errorMessage(err, fallback) {
   if (err instanceof ApiError) return err.message || fallback;
@@ -90,8 +97,65 @@ function hasMappedCategoryFieldError(apiError) {
   return CATEGORY_FORM_SERVER_FIELDS.some((k) => Boolean(fe[k]));
 }
 
+function filterCategoriasClient(list, { busqueda, filtroActivo, filtroDescripcion }) {
+  const q = busqueda.trim().toLowerCase();
+  return list.filter((row) => {
+    if (q) {
+      const nombre = (row.nombre ?? "").toLowerCase();
+      if (!nombre.includes(q)) return false;
+    }
+    if (filtroActivo === "true" && !row.activo) return false;
+    if (filtroActivo === "false" && row.activo) return false;
+    const hasDesc = Boolean(String(row.descripcion ?? "").trim());
+    if (filtroDescripcion === "with" && !hasDesc) return false;
+    if (filtroDescripcion === "without" && hasDesc) return false;
+    return true;
+  });
+}
+
+function sortCategoriasClient(list, ordenar) {
+  const copy = [...list];
+  const cmpOrden = (a, b) => (a.orden ?? 0) - (b.orden ?? 0);
+  switch (ordenar) {
+    case "orden_desc":
+      copy.sort((a, b) => (b.orden ?? 0) - (a.orden ?? 0));
+      break;
+    case "nombre_asc":
+      copy.sort((a, b) =>
+        (a.nombre ?? "").localeCompare(b.nombre ?? "", "es", { sensitivity: "base" }),
+      );
+      break;
+    case "nombre_desc":
+      copy.sort((a, b) =>
+        (b.nombre ?? "").localeCompare(a.nombre ?? "", "es", { sensitivity: "base" }),
+      );
+      break;
+    case "orden_asc":
+    default:
+      copy.sort(cmpOrden);
+      break;
+  }
+  return copy;
+}
+
+function filtrosCategoriasEnDefecto(busqueda, filtroActivo, filtroDescripcion, ordenar) {
+  return (
+    !busqueda &&
+    filtroActivo === "all" &&
+    filtroDescripcion === "all" &&
+    ordenar === "orden_asc"
+  );
+}
+
 export default function AdminCategoriasPage() {
   const [items, setItems] = useState([]);
+  const [busquedaInput, setBusquedaInput] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroActivo, setFiltroActivo] = useState("all");
+  const [filtroDescripcion, setFiltroDescripcion] = useState("all");
+  const [ordenar, setOrdenar] = useState("orden_asc");
+  const [page, setPage] = useState(1);
+  const listTopRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -121,6 +185,154 @@ export default function AdminCategoriasPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setBusqueda(busquedaInput.trim()), 380);
+    return () => clearTimeout(t);
+  }, [busquedaInput]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda, filtroActivo, filtroDescripcion, ordenar]);
+
+  const filtrosPredeterminados = useMemo(
+    () => filtrosCategoriasEnDefecto(busqueda, filtroActivo, filtroDescripcion, ordenar),
+    [busqueda, filtroActivo, filtroDescripcion, ordenar],
+  );
+
+  const itemsFiltrados = useMemo(() => {
+    const filtered = filterCategoriasClient(items, {
+      busqueda,
+      filtroActivo,
+      filtroDescripcion,
+    });
+    return sortCategoriasClient(filtered, ordenar);
+  }, [items, busqueda, filtroActivo, filtroDescripcion, ordenar]);
+
+  const totalListPages = useMemo(() => {
+    if (itemsFiltrados.length === 0) return 1;
+    return Math.max(1, Math.ceil(itemsFiltrados.length / PAGE_SIZE));
+  }, [itemsFiltrados.length]);
+
+  const itemsPaginados = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return itemsFiltrados.slice(start, start + PAGE_SIZE);
+  }, [itemsFiltrados, page]);
+
+  useScrollListTopOnPagination({
+    listRef: listTopRef,
+    page,
+    waitForRefresh: false,
+    loadingInitial: loading,
+    loadError,
+  });
+
+  useEffect(() => {
+    if (loading || loadError) return;
+    if (itemsFiltrados.length > 0 && page > totalListPages) {
+      setPage(totalListPages);
+      return;
+    }
+    if (itemsFiltrados.length === 0 && page !== 1) {
+      setPage(1);
+    }
+  }, [loading, loadError, page, itemsFiltrados.length, totalListPages]);
+
+  const vacioPorFiltros =
+    !loading && !loadError && items.length > 0 && itemsFiltrados.length === 0;
+
+  const limpiarFiltros = useCallback(() => {
+    setBusquedaInput("");
+    setBusqueda("");
+    setFiltroActivo("all");
+    setFiltroDescripcion("all");
+    setOrdenar("orden_asc");
+    setPage(1);
+  }, []);
+
+  const handleBusquedaInputChange = useCallback((value) => {
+    setBusquedaInput(value);
+    if (!value.trim()) setBusqueda("");
+  }, []);
+
+  const filtersValues = useMemo(
+    () => ({
+      busqueda: busquedaInput,
+      estado: filtroActivo,
+      descripcion: filtroDescripcion,
+      ordenar,
+    }),
+    [busquedaInput, filtroActivo, filtroDescripcion, ordenar],
+  );
+
+  const filtersConfig = useMemo(
+    () => [
+      {
+        type: "search",
+        name: "busqueda",
+        label: "Buscar",
+        placeholder: "Ej. bebidas, snacks…",
+        defaultValue: "",
+      },
+      {
+        type: "select",
+        name: "estado",
+        label: "Estado",
+        defaultValue: "all",
+        options: [
+          { value: "all", label: "Todas" },
+          { value: "true", label: "Activas" },
+          { value: "false", label: "Inactivas" },
+        ],
+      },
+      {
+        type: "select",
+        name: "descripcion",
+        label: "Descripción",
+        defaultValue: "all",
+        options: [
+          { value: "all", label: "Todas" },
+          { value: "with", label: "Con descripción" },
+          { value: "without", label: "Sin descripción" },
+        ],
+      },
+      {
+        type: "select",
+        name: "ordenar",
+        label: "Ordenar",
+        defaultValue: "orden_asc",
+        options: [
+          { value: "orden_asc", label: "Orden ↑" },
+          { value: "orden_desc", label: "Orden ↓" },
+          { value: "nombre_asc", label: "Nombre A–Z" },
+          { value: "nombre_desc", label: "Nombre Z–A" },
+        ],
+      },
+    ],
+    [],
+  );
+
+  const handleFiltersChange = useCallback(
+    (name, value) => {
+      switch (name) {
+        case "busqueda":
+          handleBusquedaInputChange(String(value));
+          break;
+        case "estado":
+          setFiltroActivo(String(value));
+          break;
+        case "descripcion":
+          setFiltroDescripcion(String(value));
+          break;
+        case "ordenar":
+          setOrdenar(String(value));
+          break;
+        default:
+          break;
+      }
+    },
+    [handleBusquedaInputChange],
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -210,6 +422,8 @@ export default function AdminCategoriasPage() {
     } finally {
       setSaving(false);
     }
+  }, () => {
+    toast.error("Revisá los campos marcados.");
   });
 
   const handleToggleEstado = async (row) => {
@@ -248,21 +462,26 @@ export default function AdminCategoriasPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-4">
-      <header className="admin-quick-card-enter flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <header className="admin-quick-card-enter flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 transition-transform duration-200 ease-out motion-safe:active:scale-95">
-            <Grid3X3 size={22} strokeWidth={2} className="shrink-0" aria-hidden />
-          </div>
+          <Link
+            href="/admin"
+            className="admin-pressable inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 active:bg-zinc-100"
+            aria-label="Volver al panel"
+            title="Volver al panel"
+          >
+            <ArrowLeft size={18} strokeWidth={2.25} aria-hidden />
+          </Link>
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold tracking-tight text-zinc-900">Categorías</h2>
-            <p className="mt-0.5 text-xs font-medium text-zinc-500">Gestioná el catálogo del panel</p>
+            <p className="mt-0.5 text-xs font-medium text-zinc-500">Gestioná las categorías </p>
           </div>
         </div>
         <button
           type="button"
           onClick={openCreate}
           disabled={Boolean(loading || loadError)}
-          className="admin-pressable inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:w-auto sm:min-w-[200px]"
+          className="admin-pressable inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:min-w-[200px]"
         >
           <Plus size={20} strokeWidth={2.25} aria-hidden />
           Nueva categoría
@@ -312,9 +531,41 @@ export default function AdminCategoriasPage() {
         </div>
       )}
 
-      {!loading && !loadError && items.length > 0 && (
-        <ul className="flex flex-col gap-3">
-          {items.map((row, index) => {
+      {!loading && !loadError ? (
+        <FiltersPanel
+          filters={filtersConfig}
+          values={filtersValues}
+          onChange={handleFiltersChange}
+          onClear={limpiarFiltros}
+          clearDisabled={filtrosPredeterminados}
+        />
+      ) : null}
+
+      {vacioPorFiltros && (
+        <div
+          className="admin-quick-card-enter rounded-2xl border border-amber-200/90 bg-amber-50/90 p-5 text-sm text-amber-950 shadow-sm ring-1 ring-amber-200/50"
+          role="status"
+        >
+          <p className="text-base font-semibold text-amber-900">
+            No se encontraron resultados con esos filtros.
+          </p>
+          <p className="mt-1.5 leading-relaxed text-amber-900/85">
+            Probá otra búsqueda o cambiá estado, descripción u orden del listado.
+          </p>
+          <button
+            type="button"
+            className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-amber-300/90 bg-white px-4 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-100/50 sm:w-auto"
+            onClick={limpiarFiltros}
+          >
+            Limpiar filtros
+          </button>
+        </div>
+      )}
+
+      {!loading && !loadError && items.length > 0 && itemsFiltrados.length > 0 && (
+        <>
+        <ul ref={listTopRef} className="scroll-mt-4 flex flex-col gap-3">
+          {itemsPaginados.map((row, index) => {
             const thumb =
               buildImageUrl(row.imagen_url, { preset: "adminThumb" }) || PLACEHOLDER_CATEGORY;
             const busy = togglingId === row.id;
@@ -391,6 +642,15 @@ export default function AdminCategoriasPage() {
             );
           })}
         </ul>
+        <AdminListPagination
+          page={page}
+          totalPages={totalListPages}
+          busy={false}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalListPages, p + 1))}
+          ariaLabel="Paginación del listado de categorías"
+        />
+        </>
       )}
 
       <Modal

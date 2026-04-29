@@ -3,23 +3,14 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 
-let authBootstrapPromise = null;
+let hasRedirectedForUnauthorized = false;
 
-function startAuthBootstrap() {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (useAuthStore.getState().sessionGateReady) return Promise.resolve();
-  if (authBootstrapPromise) return authBootstrapPromise;
-
-  authBootstrapPromise = (async () => {
-    try {
-      await useAuthStore.getState().refreshProfile();
-    } finally {
-      useAuthStore.setState({ sessionGateReady: true });
-      authBootstrapPromise = null;
-    }
-  })();
-
-  return authBootstrapPromise;
+function shouldRedirectToLogin(pathname) {
+  if (!pathname) return false;
+  if (!pathname.startsWith("/admin")) return false;
+  if (pathname.startsWith("/admin/login")) return false;
+  if (pathname.startsWith("/login")) return false;
+  return true;
 }
 
 /**
@@ -27,12 +18,24 @@ function startAuthBootstrap() {
  */
 export default function AuthSessionProvider({ children }) {
   useEffect(() => {
-    void startAuthBootstrap();
+    void useAuthStore.getState().validateSession();
   }, []);
 
   useEffect(() => {
     const onUnauthorized = () => {
-      void useAuthStore.getState().refreshProfile();
+      useAuthStore.getState().onUnauthorized();
+
+      if (typeof window === "undefined") return;
+      if (hasRedirectedForUnauthorized) return;
+      if (!shouldRedirectToLogin(window.location.pathname)) return;
+
+      hasRedirectedForUnauthorized = true;
+      const next = window.location.pathname + window.location.search;
+      window.location.replace(`/login?next=${encodeURIComponent(next || "/admin")}`);
+
+      window.setTimeout(() => {
+        hasRedirectedForUnauthorized = false;
+      }, 250);
     };
     window.addEventListener("auth:unauthorized", onUnauthorized);
     return () => {

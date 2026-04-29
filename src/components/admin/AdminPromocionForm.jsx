@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useMemo, useState } from "react";
 import { Controller, useFieldArray, useWatch } from "react-hook-form";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import ImageUploader from "@/components/admin/ImageUploader";
 import {
   productFormSchema,

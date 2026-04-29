@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ChevronLeft,
-  ChevronRight,
+  ArrowLeft,
   Loader2,
   Pencil,
   Plus,
@@ -15,10 +15,11 @@ import {
   Star,
   Tag,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import Modal from "@/components/ui/Modal";
-import AppSelect from "@/components/ui/AppSelect";
 import AdminProductosListSortBar from "@/components/admin/AdminProductosListSortBar";
+import AdminListPagination from "@/components/admin/AdminListPagination";
+import FiltersPanel from "@/components/common/FiltersPanel";
 import AdminPromocionForm, {
   promocionFormSchema,
   defaultPromocionFormValues,
@@ -43,6 +44,7 @@ const ADMIN_PROMO_CODES = {
   NO_ENCONTRADA: "PROMO_PRODUCTO_NO_ENCONTRADA",
 };
 import { useAdminProductosList } from "@/hooks/admin/useAdminProductosList";
+import { useScrollListTopOnPagination } from "@/hooks/admin/useScrollIntoViewOnPageChange";
 import { TIPO_PRODUCTO } from "@/constants/tipoProducto";
 import { ApiError } from "@/utils/api/apiError";
 import { buildImageUrl } from "@/lib/imageUtils";
@@ -52,7 +54,8 @@ import { resolveCombosDisponibles } from "@/utils/admin/promocionesMetrics";
 import { findCategoriaPromocionesId } from "@/utils/admin/findCategoriaPromocionesId";
 
 const LIST_STAGGER_MS = 48;
-const PAGE_SIZE = 20;
+/** Listado admin mobile-first: 1 card por fila, 4 por página. */
+const PAGE_SIZE = 4;
 
 const ORDENAR_OPTIONS = [
   { value: "orden_asc", label: "Orden (asc)" },
@@ -144,6 +147,7 @@ export default function AdminPromocionesPage() {
   const [filtroDisponible, setFiltroDisponible] = useState("all");
   const [ordenar, setOrdenar] = useState("orden_asc");
   const [page, setPage] = useState(1);
+  const listTopRef = useRef(null);
 
   const [pickerQuery, setPickerQuery] = useState("");
   const [pickerDebounced, setPickerDebounced] = useState("");
@@ -185,7 +189,16 @@ export default function AdminPromocionesPage() {
     listFn: listPromocionesAdmin,
   });
 
-  const limit = pagination.limit || PAGE_SIZE;
+  useScrollListTopOnPagination({
+    listRef: listTopRef,
+    page,
+    waitForRefresh: true,
+    listRefreshing,
+    loadingInitial,
+    loadError,
+  });
+
+  const limit = Math.max(1, pagination.limit || PAGE_SIZE);
   const totalPages =
     pagination.total > 0 ? Math.max(1, Math.ceil(pagination.total / limit)) : 1;
 
@@ -231,6 +244,86 @@ export default function AdminPromocionesPage() {
     setBusquedaInput(value);
     if (!value.trim()) setBusqueda("");
   }, []);
+
+  const filtersValues = useMemo(
+    () => ({
+      busqueda: busquedaInput,
+      estado: filtroActivo,
+      destacado: filtroDestacado,
+      venta: filtroDisponible,
+    }),
+    [busquedaInput, filtroActivo, filtroDestacado, filtroDisponible],
+  );
+
+  const filtersConfig = useMemo(
+    () => [
+      {
+        type: "search",
+        name: "busqueda",
+        label: "Buscar",
+        placeholder: "Nombre de la promoción…",
+        defaultValue: "",
+      },
+      {
+        type: "select",
+        name: "estado",
+        label: "Estado",
+        defaultValue: "all",
+        options: [
+          { value: "all", label: "Activos e inactivos" },
+          { value: "true", label: "Solo activos" },
+          { value: "false", label: "Solo inactivos" },
+        ],
+      },
+      {
+        type: "select",
+        name: "destacado",
+        label: "Destacado",
+        defaultValue: "all",
+        advanced: true,
+        options: [
+          { value: "all", label: "Todos" },
+          { value: "true", label: "Destacados" },
+          { value: "false", label: "Sin destacar" },
+        ],
+      },
+      {
+        type: "select",
+        name: "venta",
+        label: "Venta",
+        defaultValue: "all",
+        advanced: true,
+        options: [
+          { value: "all", label: "Todos" },
+          { value: "true", label: "Disponibles" },
+          { value: "false", label: "No disponibles" },
+        ],
+      },
+    ],
+    [],
+  );
+
+  const handleFiltersChange = useCallback(
+    (name, value) => {
+      switch (name) {
+        case "busqueda":
+          handleBusquedaInputChange(String(value));
+          break;
+        case "estado":
+          setFiltroActivo(String(value));
+          break;
+        case "destacado":
+          setFiltroDestacado(String(value));
+          break;
+        case "venta":
+          setFiltroDisponible(String(value));
+          break;
+        default:
+          break;
+      }
+    },
+    [handleBusquedaInputChange],
+  );
 
   const form = useForm({
     resolver: zodResolver(promocionFormSchema),
@@ -449,6 +542,8 @@ export default function AdminPromocionesPage() {
       setSaving(false);
       submitGuardRef.current = false;
     }
+  }, () => {
+    toast.error("Revisá los campos marcados.");
   });
 
   const handleToggleEstado = async (row) => {
@@ -476,13 +571,6 @@ export default function AdminPromocionesPage() {
     }
   };
 
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
-  const rangoListado =
-    items.length > 0 && pagination.total > 0
-      ? `${(page - 1) * limit + 1}–${Math.min(page * limit, pagination.total)}`
-      : null;
-
   const modalBusy = saving || imageUploading || detailLoading;
   const primarySubmitLabel =
     imageUploading && !saving
@@ -495,15 +583,20 @@ export default function AdminPromocionesPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-4">
-      <header className="admin-quick-card-enter flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <header className="admin-quick-card-enter flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 transition-transform duration-200 ease-out motion-safe:active:scale-95">
-            <Tag size={22} strokeWidth={2} className="shrink-0" aria-hidden />
-          </div>
+          <Link
+            href="/admin"
+            className="admin-pressable inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 active:bg-zinc-100"
+            aria-label="Volver al panel"
+            title="Volver al panel"
+          >
+            <ArrowLeft size={18} strokeWidth={2.25} aria-hidden />
+          </Link>
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold tracking-tight text-zinc-900">Promociones</h2>
             <p className="mt-0.5 text-xs font-medium text-zinc-500">
-              Combos con precio propio y componentes del catálogo
+              Armá nuevas promos con productos del catálogo
             </p>
           </div>
         </div>
@@ -511,7 +604,7 @@ export default function AdminPromocionesPage() {
           type="button"
           onClick={openCreate}
           disabled={!puedeCrearPromocion}
-          className="admin-pressable inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:w-auto sm:min-w-[200px]"
+          className="admin-pressable inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:min-w-[200px]"
         >
           <Plus size={20} strokeWidth={2.25} aria-hidden />
           Nueva promoción
@@ -554,88 +647,14 @@ export default function AdminPromocionesPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-3.5 shadow-sm ring-1 ring-zinc-200/50 sm:p-4">
-        <div className="space-y-3.5">
-          <div className="min-w-0">
-            <label htmlFor="promo-admin-busqueda" className="mb-1 block text-xs font-semibold text-zinc-600">
-              Buscar por nombre
-            </label>
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
-                aria-hidden
-              />
-              <input
-                id="promo-admin-busqueda"
-                type="search"
-                value={busquedaInput}
-                onChange={(e) => handleBusquedaInputChange(e.target.value)}
-                placeholder="Nombre de la promoción…"
-                className="min-h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50/80 py-3 pl-10 pr-3 text-base text-zinc-900 outline-none ring-primary focus:bg-white focus:ring-2"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <label htmlFor="promo-filtro-activo" className="mb-1.5 block text-sm font-semibold text-zinc-700">
-                Estado
-              </label>
-              <AppSelect
-                id="promo-filtro-activo"
-                value={filtroActivo}
-                onValueChange={setFiltroActivo}
-                options={[
-                  { value: "all", label: "Activos e inactivos" },
-                  { value: "true", label: "Solo activos" },
-                  { value: "false", label: "Solo inactivos" },
-                ]}
-                placeholder="Estado"
-              />
-            </div>
-            <div>
-              <label htmlFor="promo-filtro-dest" className="mb-1.5 block text-sm font-semibold text-zinc-700">
-                Destacado
-              </label>
-              <AppSelect
-                id="promo-filtro-dest"
-                value={filtroDestacado}
-                onValueChange={setFiltroDestacado}
-                options={[
-                  { value: "all", label: "Todos" },
-                  { value: "true", label: "Destacados" },
-                  { value: "false", label: "Sin destacar" },
-                ]}
-                placeholder="Destacado"
-              />
-            </div>
-            <div>
-              <label htmlFor="promo-filtro-disp" className="mb-1.5 block text-sm font-semibold text-zinc-700">
-                Venta
-              </label>
-              <AppSelect
-                id="promo-filtro-disp"
-                value={filtroDisponible}
-                onValueChange={setFiltroDisponible}
-                options={[
-                  { value: "all", label: "Todos" },
-                  { value: "true", label: "Disponibles" },
-                  { value: "false", label: "No disponibles" },
-                ]}
-                placeholder="Venta"
-              />
-            </div>
-          </div>
-        </div>
-        {!filtrosPredeterminados && (
-          <button
-            type="button"
-            onClick={limpiarFiltros}
-            className="self-start text-sm font-semibold text-violet-700 underline-offset-2 hover:underline"
-          >
-            Limpiar filtros
-          </button>
-        )}
-      </div>
+      <FiltersPanel
+        filters={filtersConfig}
+        values={filtersValues}
+        onChange={handleFiltersChange}
+        onClear={limpiarFiltros}
+        disabled={listRefreshing}
+        clearDisabled={filtrosPredeterminados || listRefreshing}
+      />
 
       {!loadError && (
         <AdminProductosListSortBar
@@ -716,7 +735,9 @@ export default function AdminPromocionesPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400">
                 <Search size={26} strokeWidth={1.75} aria-hidden />
               </div>
-              <p className="mt-5 text-base font-semibold text-zinc-900">No hay promociones con estos filtros</p>
+              <p className="mt-5 text-base font-semibold text-zinc-900">
+                No se encontraron resultados con esos filtros.
+              </p>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
                 Ajustá la búsqueda o los filtros de estado.
               </p>
@@ -732,7 +753,8 @@ export default function AdminPromocionesPage() {
 
           {items.length > 0 && (
             <ul
-              className={`flex flex-col gap-3 transition-opacity duration-200 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
+              ref={listTopRef}
+              className={`scroll-mt-4 flex flex-col gap-3 transition-opacity duration-200 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
               aria-busy={listRefreshing}
             >
               {items.map((row, index) => {
@@ -861,46 +883,14 @@ export default function AdminPromocionesPage() {
             </ul>
           )}
 
-          <div
-            role="navigation"
-            aria-label="Paginación del listado de promociones"
-            className={`flex flex-col items-center justify-between gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 text-sm text-zinc-700 shadow-sm ring-1 ring-zinc-200/50 sm:flex-row ${listRefreshing ? "opacity-60" : ""}`}
-          >
-            <p className="text-center sm:text-left">
-              Página <span className="font-semibold text-zinc-900">{page}</span> de{" "}
-              <span className="font-semibold text-zinc-900">{totalPages}</span>
-              <span className="text-zinc-500">
-                {" "}
-                · {pagination.total}{" "}
-                {pagination.total === 1 ? "promoción en total" : "promociones en total"}
-                {rangoListado ? (
-                  <span className="text-zinc-400"> (mostrando {rangoListado})</span>
-                ) : pagination.total === 0 ? (
-                  <span className="text-zinc-400"> (sin filas en esta página)</span>
-                ) : null}
-              </span>
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!canPrev || listRefreshing}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 disabled:pointer-events-none disabled:opacity-40"
-              >
-                <ChevronLeft size={18} aria-hidden />
-                Anterior
-              </button>
-              <button
-                type="button"
-                disabled={!canNext || listRefreshing}
-                onClick={() => setPage((p) => p + 1)}
-                className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 disabled:pointer-events-none disabled:opacity-40"
-              >
-                Siguiente
-                <ChevronRight size={18} aria-hidden />
-              </button>
-            </div>
-          </div>
+          <AdminListPagination
+            page={page}
+            totalPages={totalPages}
+            busy={listRefreshing}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            ariaLabel="Paginación del listado de promociones"
+          />
         </>
       )}
 

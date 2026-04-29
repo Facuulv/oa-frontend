@@ -5,23 +5,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   useAuthStore,
-  selectAuthSessionGateReady,
+  selectAuthLoading,
   selectCanAccessAdminPanel,
   selectIsPanelStaffUser,
   selectIsClienteUser,
 } from "@/store/useAuthStore";
-import { toast } from "sonner";
-
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || "").trim());
-}
+import { toast } from "@/lib/toast";
+import { validateEmail } from "@/lib/validations";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
-  const sessionGateReady = useAuthStore(selectAuthSessionGateReady);
+  const authLoading = useAuthStore(selectAuthLoading);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -34,50 +31,39 @@ function LoginForm() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!sessionGateReady) return;
+    if (authLoading) return;
 
-    let cancelled = false;
+    const state = useAuthStore.getState();
+    if (!state.user) return;
 
-    (async () => {
-      await useAuthStore.getState().refreshProfile();
-      if (cancelled) return;
+    if (selectCanAccessAdminPanel(state)) {
+      const dest = nextPath?.startsWith("/admin") ? nextPath : "/admin";
+      router.replace(dest);
+      return;
+    }
 
-      const state = useAuthStore.getState();
-      if (!state.isAuthenticated || !state.user) return;
+    if (selectIsPanelStaffUser(state)) {
+      router.replace("/");
+      return;
+    }
 
-      if (selectCanAccessAdminPanel(state)) {
-        const dest = nextPath?.startsWith("/admin") ? nextPath : "/admin";
-        router.replace(dest);
-        return;
-      }
-
-      if (selectIsPanelStaffUser(state)) {
+    if (selectIsClienteUser(state)) {
+      if (nextPath?.startsWith("/admin")) {
         router.replace("/");
         return;
       }
-
-      if (selectIsClienteUser(state)) {
-        if (nextPath?.startsWith("/admin")) {
-          router.replace("/");
-          return;
-        }
-        if (nextPath) {
-          router.replace(nextPath);
-          return;
-        }
-        router.replace("/");
+      if (nextPath) {
+        router.replace(nextPath);
+        return;
       }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionGateReady, nextPath, router]);
+      router.replace("/");
+    }
+  }, [authLoading, nextPath, router]);
 
   const validate = () => {
     const err = {};
-    if (!email.trim()) err.email = "Ingresá tu email";
-    else if (!isValidEmail(email)) err.email = "Email no válido";
+    const emailValidation = validateEmail(email, { required: true });
+    if (!emailValidation.valid) err.email = emailValidation.message;
     if (!password) err.password = "Ingresá tu contraseña";
     setFieldErrors(err);
     return Object.keys(err).length === 0;
@@ -85,7 +71,10 @@ function LoginForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Revisá los campos marcados.");
+      return;
+    }
     try {
       await login({ email: email.trim(), password });
       const state = useAuthStore.getState();
@@ -139,7 +128,9 @@ function LoginForm() {
               if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined }));
             }}
             autoComplete="email"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition ${
+              fieldErrors.email ? "border-red-400" : "border-gray-200 focus:border-primary"
+            }`}
             placeholder="tu@email.com"
           />
           {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
@@ -155,7 +146,9 @@ function LoginForm() {
               if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: undefined }));
             }}
             autoComplete="current-password"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition ${
+              fieldErrors.password ? "border-red-400" : "border-gray-200 focus:border-primary"
+            }`}
             placeholder="••••••••"
           />
           {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}

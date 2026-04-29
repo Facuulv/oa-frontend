@@ -5,11 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 import { ApiError } from "@/utils/api/apiError";
-import { toast } from "sonner";
-
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || "").trim());
-}
+import { toast } from "@/lib/toast";
+import { validateEmail, validateLastName, validateName } from "@/lib/validations";
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -26,10 +23,12 @@ export default function RegistroPage() {
 
   const validate = () => {
     const err = {};
-    if (!(form.nombre || "").trim()) err.nombre = "Ingresá tu nombre";
-    if (!(form.apellido || "").trim()) err.apellido = "Ingresá tu apellido";
-    if (!form.email.trim()) err.email = "Ingresá tu email";
-    else if (!isValidEmail(form.email)) err.email = "Email no válido";
+    const nameValidation = validateName(form.nombre);
+    const lastNameValidation = validateLastName(form.apellido);
+    const emailValidation = validateEmail(form.email, { required: true });
+    if (!nameValidation.valid) err.nombre = nameValidation.message;
+    if (!lastNameValidation.valid) err.apellido = lastNameValidation.message;
+    if (!emailValidation.valid) err.email = emailValidation.message;
     if (!form.password) err.password = "Ingresá una contraseña";
     else if (form.password.length < 6) err.password = "Mínimo 6 caracteres";
     setFieldErrors(err);
@@ -38,7 +37,10 @@ export default function RegistroPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Revisá los campos marcados.");
+      return;
+    }
     try {
       await register(
         {
@@ -79,7 +81,9 @@ export default function RegistroPage() {
             value={form.nombre}
             onChange={(e) => updateField("nombre", e.target.value)}
             autoComplete="given-name"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition ${
+              fieldErrors.nombre ? "border-red-400" : "border-gray-200 focus:border-primary"
+            }`}
             placeholder="Tu nombre"
           />
           {fieldErrors.nombre && <p className="mt-1 text-xs text-red-600">{fieldErrors.nombre}</p>}
@@ -92,7 +96,9 @@ export default function RegistroPage() {
             value={form.apellido}
             onChange={(e) => updateField("apellido", e.target.value)}
             autoComplete="family-name"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition ${
+              fieldErrors.apellido ? "border-red-400" : "border-gray-200 focus:border-primary"
+            }`}
             placeholder="Tu apellido"
           />
           {fieldErrors.apellido && <p className="mt-1 text-xs text-red-600">{fieldErrors.apellido}</p>}
@@ -105,7 +111,9 @@ export default function RegistroPage() {
             value={form.email}
             onChange={(e) => updateField("email", e.target.value)}
             autoComplete="email"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition ${
+              fieldErrors.email ? "border-red-400" : "border-gray-200 focus:border-primary"
+            }`}
             placeholder="tu@email.com"
           />
           {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
@@ -118,7 +126,9 @@ export default function RegistroPage() {
             value={form.password}
             onChange={(e) => updateField("password", e.target.value)}
             autoComplete="new-password"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition ${
+              fieldErrors.password ? "border-red-400" : "border-gray-200 focus:border-primary"
+            }`}
             placeholder="Mínimo 6 caracteres"
           />
           {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}

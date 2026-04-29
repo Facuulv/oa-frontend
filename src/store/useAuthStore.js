@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { authLogin, authMe, authLogout, authRegisterCliente } from "@/services/authSessionService";
 import { clearLegacyClientToken } from "@/utils/auth/token";
 
+let validateSessionPromise = null;
+
 function usuarioFromPayload(data) {
   if (!data || typeof data !== "object") return null;
   return data.usuario ?? data.user ?? null;
@@ -25,17 +27,31 @@ function applyUsuario(set, user) {
   set({ user: safe, isAuthenticated: true });
 }
 
+function devAuthLog(message, extra) {
+  if (process.env.NODE_ENV !== "development") return;
+  if (typeof extra === "undefined") {
+    console.info(`[auth] ${message}`);
+    return;
+  }
+  console.info(`[auth] ${message}`, extra);
+}
+
 export const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
+  loading: true,
   isLoading: false,
   error: null,
-  /** true luego de la primera resolución vía `GET /auth/me` (o fallo controlado). */
-  sessionGateReady: false,
+  hasValidatedSession: false,
 
   clearSession: () => {
     clearLegacyClientToken();
     set({ user: null, isAuthenticated: false, error: null });
+  },
+
+  onUnauthorized: () => {
+    get().clearSession();
+    set({ loading: false, hasValidatedSession: true });
   },
 
   login: async ({ email, password }) => {
@@ -43,20 +59,14 @@ export const useAuthStore = create((set, get) => ({
     try {
       const data = await authLogin({ email, password });
       clearLegacyClientToken();
-
-      let user = sanitizeSessionUser(usuarioFromPayload(data));
-
-      if (!user && data?.ok === true) {
-        await get().refreshProfile();
-        user = sanitizeSessionUser(get().user);
-      }
+      const user = sanitizeSessionUser(usuarioFromPayload(data));
 
       if (user && user.activo === false) {
         get().clearSession();
         throw new Error("Cuenta inactiva");
       }
 
-      if (user) {
+      if (data?.ok === true && user) {
         set({ user, isAuthenticated: true, isLoading: false, error: null });
         return data;
       }
@@ -68,6 +78,38 @@ export const useAuthStore = create((set, get) => ({
       set({ isLoading: false, error: err.message });
       throw err;
     }
+  },
+
+  validateSession: async ({ force = false } = {}) => {
+    const state = get();
+    if (!force && state.hasValidatedSession && !state.loading) return;
+    if (validateSessionPromise) return validateSessionPromise;
+
+    set({ loading: true });
+    devAuthLog("validateSession start");
+
+    validateSessionPromise = (async () => {
+      try {
+        const data = await authMe();
+        applyUsuario(set, usuarioFromPayload(data));
+        devAuthLog("validateSession success");
+      } catch (error) {
+        const status = Number(error?.status ?? error?.response?.status);
+        if (status === 401) {
+          get().clearSession();
+          devAuthLog("validateSession 401");
+        } else {
+          get().clearSession();
+          devAuthLog("validateSession error", error);
+        }
+      } finally {
+        set({ loading: false, hasValidatedSession: true });
+        devAuthLog("validateSession end");
+        validateSessionPromise = null;
+      }
+    })();
+
+    return validateSessionPromise;
   },
 
   /**
@@ -104,23 +146,21 @@ export const useAuthStore = create((set, get) => ({
       // cookies ya inválidas o red caída
     }
     get().clearSession();
+    set({ loading: false, hasValidatedSession: true });
   },
 
+  /** @deprecated Usar validateSession(). */
   refreshProfile: async () => {
-    try {
-      const data = await authMe();
-      applyUsuario(set, usuarioFromPayload(data));
-    } catch {
-      get().clearSession();
-    }
+    await get().validateSession();
   },
 
   clearError: () => set({ error: null }),
 }));
 
 export const selectAuthUser = (state) => state.user;
-export const selectIsAuthenticated = (state) => state.isAuthenticated;
-export const selectAuthSessionGateReady = (state) => state.sessionGateReady;
+export const selectIsAuthenticated = (state) => Boolean(state.user);
+export const selectAuthLoading = (state) => state.loading;
+export const selectAuthSessionGateReady = (state) => !state.loading;
 
 /**
  * Personal interno (`usuarios`): sesión con `origen: "ADMIN"` (ADMIN, ENCARGADO o VENDEDOR).

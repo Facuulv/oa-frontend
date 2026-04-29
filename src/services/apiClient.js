@@ -2,6 +2,8 @@ import axios from "axios";
 import appConfig from "@/config/app.config";
 import { logApiRequest } from "@/utils/api/requestLog";
 
+axios.defaults.withCredentials = true;
+
 const rawBase = (appConfig.api.baseUrl || "").trim();
 const baseURL = rawBase ? rawBase.replace(/\/$/, "") : "";
 

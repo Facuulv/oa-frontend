@@ -11,12 +11,12 @@ const ADMIN_LOADING_MESSAGE = "Preparando el panel…";
 export default function AdminPanelLayout({ children }) {
   const pathname = usePathname();
   const loginRedirect = `/login?next=${encodeURIComponent(pathname || "/admin")}`;
-  const { isAuthenticated, isAdmin, authReady } = useAdminAuth({
+  const { isAuthenticated, isAdmin, loading } = useAdminAuth({
     redirectTo: loginRedirect,
     requireAdmin: true,
   });
 
-  const showGate = !authReady || !isAuthenticated || !isAdmin;
+  const showGate = loading || !isAuthenticated || !isAdmin;
 
   if (showGate) {
     return (
