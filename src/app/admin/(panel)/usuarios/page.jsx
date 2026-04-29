@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
+  Eye,
+  EyeOff,
   KeyRound,
   Loader2,
   Pencil,
@@ -394,8 +396,12 @@ export default function AdminUsuariosPage() {
   }, []);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [showPasswordCreatePass, setShowPasswordCreatePass] = useState(false);
+  const [showPasswordCreateConfirm, setShowPasswordCreateConfirm] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [showPasswordChangePass, setShowPasswordChangePass] = useState(false);
+  const [showPasswordChangeConfirm, setShowPasswordChangeConfirm] = useState(false);
   const [confirmDeactivateOpen, setConfirmDeactivateOpen] = useState(false);
 
   const [editingRow, setEditingRow] = useState(null);
@@ -424,11 +430,15 @@ export default function AdminUsuariosPage() {
   const openCreate = () => {
     createForm.reset(defaultCreateValues);
     createForm.clearErrors();
+    setShowPasswordCreatePass(false);
+    setShowPasswordCreateConfirm(false);
     setCreateOpen(true);
   };
 
   const closeCreate = () => {
     createForm.clearErrors();
+    setShowPasswordCreatePass(false);
+    setShowPasswordCreateConfirm(false);
     setCreateOpen(false);
   };
 
@@ -449,11 +459,15 @@ export default function AdminUsuariosPage() {
     setPasswordRow(row);
     passwordForm.reset({ password: "", confirmPassword: "" });
     passwordForm.clearErrors();
+    setShowPasswordChangePass(false);
+    setShowPasswordChangeConfirm(false);
     setPasswordOpen(true);
   };
 
   const closePassword = () => {
     passwordForm.clearErrors();
+    setShowPasswordChangePass(false);
+    setShowPasswordChangeConfirm(false);
     setPasswordOpen(false);
     setPasswordRow(null);
   };
@@ -1026,13 +1040,27 @@ export default function AdminUsuariosPage() {
             <label className="block text-sm font-semibold text-zinc-800" htmlFor="uc-pass">
               Contraseña <span className="text-red-600">*</span>
             </label>
-            <input
-              id="uc-pass"
-              type="password"
-              autoComplete="new-password"
-              className={`${fieldBase} ${createErrs.password ? fieldErr : fieldOk}`}
-              {...createForm.register("password")}
-            />
+            <div className="relative">
+              <input
+                id="uc-pass"
+                type={showPasswordCreatePass ? "text" : "password"}
+                autoComplete="new-password"
+                className={`${fieldBase} pr-11 ${createErrs.password ? fieldErr : fieldOk}`}
+                {...createForm.register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswordCreatePass((v) => !v)}
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 outline-none ring-primary transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-offset-2"
+                aria-label={showPasswordCreatePass ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPasswordCreatePass ? (
+                  <Eye className="h-4 w-4 shrink-0" aria-hidden />
+                ) : (
+                  <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+                )}
+              </button>
+            </div>
             {createErrs.password ? (
               <p className="text-xs font-medium text-red-600">{createErrs.password.message}</p>
             ) : null}
@@ -1041,13 +1069,27 @@ export default function AdminUsuariosPage() {
             <label className="block text-sm font-semibold text-zinc-800" htmlFor="uc-pass2">
               Confirmar contraseña <span className="text-red-600">*</span>
             </label>
-            <input
-              id="uc-pass2"
-              type="password"
-              autoComplete="new-password"
-              className={`${fieldBase} ${createErrs.confirmPassword ? fieldErr : fieldOk}`}
-              {...createForm.register("confirmPassword")}
-            />
+            <div className="relative">
+              <input
+                id="uc-pass2"
+                type={showPasswordCreateConfirm ? "text" : "password"}
+                autoComplete="new-password"
+                className={`${fieldBase} pr-11 ${createErrs.confirmPassword ? fieldErr : fieldOk}`}
+                {...createForm.register("confirmPassword")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswordCreateConfirm((v) => !v)}
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 outline-none ring-primary transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-offset-2"
+                aria-label={showPasswordCreateConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPasswordCreateConfirm ? (
+                  <Eye className="h-4 w-4 shrink-0" aria-hidden />
+                ) : (
+                  <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+                )}
+              </button>
+            </div>
             {createErrs.confirmPassword ? (
               <p className="text-xs font-medium text-red-600">{createErrs.confirmPassword.message}</p>
             ) : null}
@@ -1238,14 +1280,28 @@ export default function AdminUsuariosPage() {
             <label className="block text-sm font-semibold text-zinc-800" htmlFor="up-pass">
               Nueva contraseña <span className="text-red-600">*</span>
             </label>
-            <input
-              id="up-pass"
-              data-modal-initial-focus
-              type="password"
-              autoComplete="new-password"
-              className={`${fieldBase} ${pwdErrs.password ? fieldErr : fieldOk}`}
-              {...passwordForm.register("password")}
-            />
+            <div className="relative">
+              <input
+                id="up-pass"
+                data-modal-initial-focus
+                type={showPasswordChangePass ? "text" : "password"}
+                autoComplete="new-password"
+                className={`${fieldBase} pr-11 ${pwdErrs.password ? fieldErr : fieldOk}`}
+                {...passwordForm.register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswordChangePass((v) => !v)}
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 outline-none ring-primary transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-offset-2"
+                aria-label={showPasswordChangePass ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPasswordChangePass ? (
+                  <Eye className="h-4 w-4 shrink-0" aria-hidden />
+                ) : (
+                  <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+                )}
+              </button>
+            </div>
             {pwdErrs.password ? (
               <p className="text-xs font-medium text-red-600">{pwdErrs.password.message}</p>
             ) : null}
@@ -1254,13 +1310,27 @@ export default function AdminUsuariosPage() {
             <label className="block text-sm font-semibold text-zinc-800" htmlFor="up-pass2">
               Confirmar nueva contraseña <span className="text-red-600">*</span>
             </label>
-            <input
-              id="up-pass2"
-              type="password"
-              autoComplete="new-password"
-              className={`${fieldBase} ${pwdErrs.confirmPassword ? fieldErr : fieldOk}`}
-              {...passwordForm.register("confirmPassword")}
-            />
+            <div className="relative">
+              <input
+                id="up-pass2"
+                type={showPasswordChangeConfirm ? "text" : "password"}
+                autoComplete="new-password"
+                className={`${fieldBase} pr-11 ${pwdErrs.confirmPassword ? fieldErr : fieldOk}`}
+                {...passwordForm.register("confirmPassword")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswordChangeConfirm((v) => !v)}
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 outline-none ring-primary transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-offset-2"
+                aria-label={showPasswordChangeConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPasswordChangeConfirm ? (
+                  <Eye className="h-4 w-4 shrink-0" aria-hidden />
+                ) : (
+                  <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+                )}
+              </button>
+            </div>
             {pwdErrs.confirmPassword ? (
               <p className="text-xs font-medium text-red-600">{pwdErrs.confirmPassword.message}</p>
             ) : null}

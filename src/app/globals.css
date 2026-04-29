@@ -47,6 +47,15 @@ body {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
+/*
+ * Sileo ancla [data-sileo-viewport] con position:fixed al monitor.
+ * Misma columna centrada que AppViewport (max 480px): toasts arriba a la derecha *dentro* del marco.
+ */
+.sileo-app-toast-frame [data-sileo-viewport] {
+  position: absolute !important;
+  max-width: 100% !important;
+}
+
 /* Panel admin: scrollbar fina y discreta (Firefox + WebKit) */
 .admin-shell-scroll {
   scrollbar-width: thin;

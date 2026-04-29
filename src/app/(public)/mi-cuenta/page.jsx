@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { User, LogOut, Package, ChevronRight } from "lucide-react";
 
 export default function MiCuentaPage() {
-  const { user, isAuthenticated, logout, authReady } = useClientAuth({
+  const { user, isAuthenticated, logout, loading } = useClientAuth({
     redirectTo: "/login",
     requireCliente: true,
   });
   const router = useRouter();
 
-  if (!authReady || !isAuthenticated) return null;
+  if (loading || !isAuthenticated) return null;
 
   const handleLogout = async () => {
     try {
