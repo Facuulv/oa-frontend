@@ -13,8 +13,8 @@ export const apiPaths = {
 
   public: {
     categories: "/public/categories",
-    products: "/public/products",
-    productById: (id) => `/public/products/${encodeURIComponent(id)}`,
+    products: "/public/productos",
+    productById: (id) => `/public/productos/${encodeURIComponent(id)}`,
     promotions: "/public/promotions",
     couponsValidate: "/public/coupons/validate",
     orders: "/public/orders",

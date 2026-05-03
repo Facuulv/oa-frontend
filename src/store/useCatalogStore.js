@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   getCategories,
   getProductsByCategory,
+  getPromotions,
   getProductDetail,
   getExtrasByProduct,
 } from "@/services/catalogService";
@@ -33,6 +34,11 @@ export const useCatalogStore = create((set, get) => ({
   productsStatusByCategoryId: {},
   productsErrorByCategoryId: {},
   productsFetchedAtByCategoryId: {},
+
+  promotions: [],
+  promotionsStatus: STATUS.idle,
+  promotionsError: null,
+  promotionsFetchedAt: null,
 
   productDetailById: {},
   productDetailStatusById: {},
@@ -81,6 +87,8 @@ export const useCatalogStore = create((set, get) => ({
   },
 
   fetchProductsByCategory: async (categoryId, { force = false } = {}) => {
+    // Evita requests "all" accidentales cuando llega undefined desde la UI.
+    if (categoryId === undefined) return;
     const key = categoryId == null || categoryId === "" ? "all" : String(categoryId);
     const state = get();
     const status = state.productsStatusByCategoryId[key];
@@ -123,6 +131,45 @@ export const useCatalogStore = create((set, get) => ({
     })();
 
     set((s) => ({ inflight: { ...s.inflight, [`products:${key}`]: promise } }));
+    return promise;
+  },
+
+  fetchPromotions: async ({ force = false } = {}) => {
+    const state = get();
+    const key = "promotions";
+
+    if (!force && state.promotionsStatus === STATUS.success && !isExpired(state.promotionsFetchedAt)) {
+      return;
+    }
+    if (state.inflight[key]) return state.inflight[key];
+
+    const promise = (async () => {
+      set({ promotionsStatus: STATUS.loading, promotionsError: null });
+      try {
+        const data = await getPromotions();
+        const mapped = (Array.isArray(data) ? data : []).map(mapProduct).filter(Boolean);
+        set((s) => {
+          const nextInflight = { ...s.inflight };
+          delete nextInflight[key];
+          return {
+            promotions: mapped,
+            promotionsStatus: STATUS.success,
+            promotionsError: null,
+            promotionsFetchedAt: Date.now(),
+            inflight: nextInflight,
+          };
+        });
+      } catch (err) {
+        const msg = err?.response?.data?.message || err?.message || "Error al cargar promociones";
+        set((s) => {
+          const nextInflight = { ...s.inflight };
+          delete nextInflight[key];
+          return { promotionsStatus: STATUS.error, promotionsError: msg, inflight: nextInflight };
+        });
+      }
+    })();
+
+    set((s) => ({ inflight: { ...s.inflight, [key]: promise } }));
     return promise;
   },
 
@@ -202,6 +249,10 @@ export const selectProductsError = (state, categoryId) => {
   const key = categoryId == null || categoryId === "" ? "all" : String(categoryId);
   return state.productsErrorByCategoryId[key] ?? null;
 };
+
+export const selectPromotions = (state) => (state.promotions && state.promotions.length > 0 ? state.promotions : EMPTY_ARRAY);
+export const selectPromotionsLoading = (state) => state.promotionsStatus === STATUS.loading;
+export const selectPromotionsError = (state) => state.promotionsError;
 
 export const selectProductDetailLoading = (state, productId) => {
   return state.productDetailStatusById[String(productId)] === STATUS.loading;

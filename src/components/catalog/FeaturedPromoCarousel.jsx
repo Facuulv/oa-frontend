@@ -53,13 +53,13 @@ function FeaturedPromoEmbla({ items }) {
             return (
               <div
                 key={p.id}
-                className={`min-w-0 max-w-sm shrink-0 flex-[0_0_88%] sm:flex-[0_0_17rem] ${i < items.length - 1 ? "mr-3" : ""}`}
+                className={`min-w-0 max-w-sm shrink-0 flex-[0_0_75%] sm:flex-[0_0_17rem] ${i < items.length - 1 ? "mr-3" : ""}`}
               >
                 <Link
                   href={`/producto/${p.slug ?? p.id}`}
                   className="flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition hover:shadow-md"
                 >
-                  <div className="relative aspect-16/10 w-full bg-neutral-50">
+                  <div className="aspect-[4/3] w-full object-contain bg-neutral-50 rounded-t-2xl">
                     <ImageWithFade
                       src={imgSrc}
                       alt={p.nombre}
@@ -69,8 +69,10 @@ function FeaturedPromoEmbla({ items }) {
                       }}
                     />
                   </div>
-                  <div className="flex flex-1 flex-col p-3">
-                    <p className="line-clamp-2 text-sm font-semibold text-neutral-900">{p.nombre}</p>
+                  <div className="flex flex-1 flex-col p-4">
+                    <p className="line-clamp-1 text-sm font-semibold text-neutral-900 sm:line-clamp-2">
+                      {p.nombre}
+                    </p>
                     <p className="mt-auto pt-2 text-lg font-bold text-[#C1121F]">{formatPrice(p.precio)}</p>
                   </div>
                 </Link>
@@ -138,7 +140,7 @@ export default function FeaturedPromoCarousel() {
     return (
       <div className="px-4 pt-4">
         <div className="mb-2 h-5 w-28 animate-pulse rounded bg-white/70" />
-        <div className="h-48 animate-pulse rounded-2xl bg-white/60" />
+        <div className="aspect-video w-full max-w-[85%] animate-pulse rounded-2xl bg-white/60" />
       </div>
     );
   }

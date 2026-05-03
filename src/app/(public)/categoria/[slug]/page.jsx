@@ -1,61 +1,115 @@
-"use client";
-
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
-import { useCatalogStore, selectProductsForCategory, selectProductsLoading, selectProductsError } from "@/store/useCatalogStore";
-import { useDelayedLoading } from "@/hooks/useDelayedLoading";
+import { getCategories, getProductsByCategory } from "@/services/catalogService";
+import { mapCategory, mapProduct } from "@/lib/mappers/catalogMapper";
 import ProductListItemCard from "@/components/catalog/ProductListItemCard";
-import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
-export default function CategoryPage() {
-  const { slug } = useParams();
-  const categoryId = slug === "all" ? null : slug;
-  const fetchProducts = useCatalogStore((s) => s.fetchProductsByCategory);
-  const products = useCatalogStore((s) => selectProductsForCategory(s, categoryId));
-  const isLoading = useCatalogStore((s) => selectProductsLoading(s, categoryId));
-  const error = useCatalogStore((s) => selectProductsError(s, categoryId));
-  const showSkeleton = useDelayedLoading(isLoading);
+function toSlug(str) {
+  if (!str || typeof str !== "string") return "";
+  return str
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
-  useEffect(() => {
-    fetchProducts(categoryId);
-  }, [fetchProducts, categoryId]);
+function normalizePlural(slugNorm = "") {
+  // tolera "vino" vs "vinos" (solo para casos simples)
+  return slugNorm.endsWith("s") ? slugNorm.slice(0, -1) : slugNorm;
+}
 
-  if (showSkeleton) return <ProductCardSkeleton />;
+export default async function CategoryPage({ params }) {
+  const awaitedParams = await params;
+  const rawSlug = awaitedParams?.slug;
+  const slugStr = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug != null ? String(rawSlug) : "";
+  const slugNorm = toSlug(slugStr);
+
+  console.log("Slug procesado:", slugStr);
+
+  const rawCategories = await getCategories();
+  const categories = (Array.isArray(rawCategories) ? rawCategories : []).map(mapCategory).filter(Boolean);
+
+  console.log("DEBUG - Lista de categorías completa:", categories);
+
+  const slugNormNoPlural = normalizePlural(slugNorm);
+
+  const slugLower = String(slugStr || "").toLowerCase();
+  const slugLowerNoS = slugLower.replace("s", "");
+
+  const categoriaEncontrada =
+    categories.find(
+      (cat) =>
+        (cat.slug?.toLowerCase?.() === slugLower) ||
+        (cat.nombre?.toLowerCase?.().includes?.(slugLowerNoS))
+    ) ?? null;
+
+  const match =
+    categoriaEncontrada ??
+    categories.find((c) => toSlug(c.slug ?? "") === slugNorm) ??
+    categories.find((c) => toSlug(c.nombre ?? "") === slugNorm) ??
+    categories.find((c) => {
+      const catSlug = toSlug(c.slug ?? "");
+      const catName = toSlug(c.nombre ?? "");
+      const catSlugNoPlural = normalizePlural(catSlug);
+      const catNameNoPlural = normalizePlural(catName);
+      return (
+        (catSlug && (catSlug.includes(slugNorm) || slugNorm.includes(catSlug))) ||
+        (catName && (catName.includes(slugNorm) || slugNorm.includes(catName))) ||
+        (catSlugNoPlural && (catSlugNoPlural.includes(slugNormNoPlural) || slugNormNoPlural.includes(catSlugNoPlural))) ||
+        (catNameNoPlural && (catNameNoPlural.includes(slugNormNoPlural) || slugNormNoPlural.includes(catNameNoPlural)))
+      );
+    }) ??
+    null;
+
+  if (!match) {
+    console.log("Slug recibido:", slugStr);
+    console.log("Categorías en el store:", categories);
+  }
+
+  const categoriaId = match?.id ?? null;
+  const categoriaNombre = slugStr === "all" ? "Todos los productos" : match?.nombre ?? "Categoría";
+
+  let productos = [];
+  let error = null;
+
+  try {
+    if (slugStr === "all") {
+      productos = (await getProductsByCategory({})).map(mapProduct).filter(Boolean);
+    } else if (categoriaId != null) {
+      console.log("ID de categoría detectado:", categoriaId);
+      // Petición limpia: SOLO categoria_id (sin destacado=1).
+      productos = (await getProductsByCategory({ categoria_id: categoriaId })).map(mapProduct).filter(Boolean);
+    }
+  } catch (e) {
+    error = e?.response?.data?.message || e?.message || "Error al cargar productos";
+  }
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
         <AlertCircle size={40} className="mb-3 text-red-400" />
         <p className="mb-4 text-sm text-gray-600">{error}</p>
-        <button
-          type="button"
-          onClick={() => fetchProducts(categoryId, { force: true })}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white"
-        >
-          <RotateCcw size={14} />
-          Reintentar
-        </button>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-red-50 px-4 py-4">
-      <h1 className="mb-4 text-lg font-bold text-neutral-900">
-        {slug === "all" ? "Todos los productos" : `Categoría`}
-      </h1>
+      <h1 className="mb-4 text-lg font-bold text-neutral-900">{categoriaNombre}</h1>
 
-      {products.length > 0 ? (
+      {slugStr !== "all" && categoriaId == null ? (
+        <p className="py-6 text-center text-sm text-gray-500">No se encontró la categoría</p>
+      ) : null}
+
+      {productos.length > 0 ? (
         <div className="space-y-3">
-          {products.map((p) => (
+          {productos.map((p) => (
             <ProductListItemCard key={p.id} product={p} />
           ))}
         </div>
       ) : (
-        <p className="py-12 text-center text-sm text-gray-400">
-          No hay productos en esta categoría
-        </p>
+        <p className="py-12 text-center text-sm text-gray-400">No hay productos en esta categoría</p>
       )}
     </div>
   );

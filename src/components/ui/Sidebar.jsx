@@ -32,7 +32,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   return (
     <aside
-      className={`absolute left-0 top-0 z-40 h-full w-64 bg-white shadow-xl transition-transform duration-[400ms] ease-out ${
+      className={`absolute left-0 top-0 z-40 h-full w-64 bg-white shadow-xl transition-transform duration-400 ease-out ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >

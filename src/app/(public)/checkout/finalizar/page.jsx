@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore, selectCartItems, selectCartTotal } from "@/store/useCartStore";
-import { useCheckoutSubmit } from "@/hooks/checkout/useCheckoutSubmit";
+import { validateCheckoutForm } from "@/utils/checkout/checkoutValidations";
+import { buildWhatsappMessage, buildWhatsappUrl } from "@/utils/checkout/buildWhatsappMessage";
+import UltimoAntojoSection from "@/components/checkout/UltimoAntojoSection";
 import { formatPrice } from "@/utils/format/price";
 import { ArrowLeft } from "lucide-react";
 
@@ -28,19 +30,14 @@ export default function CheckoutFinalizarPage() {
 
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderCreated, setOrderCreated] = useState(null);
+  const [orderSent, setOrderSent] = useState(null);
 
-  const handleSubmit = useCheckoutSubmit({
-    items,
-    total,
-    isSubmitting,
-    paymentMethod: formValues.paymentMethod,
-    setFieldErrors,
-    setIsSubmitting,
-    setOrderCreated,
-    clearCart,
-    formValues,
-  });
+  // En Delivery, el efectivo no aplica → forzar Transferencia.
+  useEffect(() => {
+    if (formValues.deliveryType === "DELIVERY" && formValues.paymentMethod === "efectivo") {
+      setFormValues((prev) => ({ ...prev, paymentMethod: "transferencia" }));
+    }
+  }, [formValues.deliveryType, formValues.paymentMethod]);
 
   const updateField = (key, value) => {
     setFormValues((prev) => ({ ...prev, [key]: value }));
@@ -53,21 +50,72 @@ export default function CheckoutFinalizarPage() {
     }
   };
 
-  if (orderCreated) {
+  const handleSubmit = () => {
+    if (items.length === 0 || isSubmitting) return;
+
+    setFieldErrors({});
+    const { ok, errors, normalized } = validateCheckoutForm(formValues);
+
+    if (!ok) {
+      setFieldErrors(errors);
+      const firstKey = Object.keys(errors)[0];
+      document
+        .getElementById(`checkout-${firstKey}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const message = buildWhatsappMessage({
+        customer: {
+          nombre: normalized.nombre,
+          telefono: normalized.telefono,
+          email: normalized.email,
+        },
+        items,
+        total,
+        deliveryType: normalized.deliveryType,
+        address: normalized.direccion,
+        paymentMethod: normalized.paymentMethod,
+        notes: normalized.notes,
+      });
+
+      const url = buildWhatsappUrl(message);
+      window.open(url, "_blank", "noopener,noreferrer");
+
+      clearCart();
+      setOrderSent({ url });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (orderSent) {
     return (
       <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
           <span className="text-2xl">✓</span>
         </div>
-        <h2 className="mb-2 text-lg font-bold text-gray-800">Pedido creado</h2>
+        <h2 className="mb-2 text-lg font-bold text-gray-800">¡Te llevamos a WhatsApp!</h2>
         <p className="mb-1 text-sm text-gray-600">
-          Tu pedido #{orderCreated.id} fue registrado correctamente.
+          Confirmá el pedido enviando el mensaje al local.
         </p>
-        <p className="mb-6 text-sm text-gray-500">Estado: {orderCreated.status}</p>
+        <p className="mb-6 text-sm text-gray-500">
+          Si la pestaña no se abrió, tocá el botón de abajo.
+        </p>
+        <a
+          href={orderSent.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white"
+        >
+          Abrir WhatsApp
+        </a>
         <button
           type="button"
           onClick={() => router.push("/")}
-          className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white"
+          className="mt-3 rounded-lg border border-gray-200 px-6 py-2.5 text-sm font-medium text-gray-700"
         >
           Volver al inicio
         </button>
@@ -79,6 +127,13 @@ export default function CheckoutFinalizarPage() {
     `w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition ${
       fieldErrors[field] ? "border-red-400" : "border-gray-200 focus:border-primary"
     }`;
+
+  const isDelivery = formValues.deliveryType === "DELIVERY";
+
+  const paymentOptions = [
+    { value: "efectivo", label: "Efectivo" },
+    { value: "transferencia", label: "Transferencia" },
+  ];
 
   return (
     <div className="pb-6">
@@ -145,7 +200,7 @@ export default function CheckoutFinalizarPage() {
               </button>
             ))}
           </div>
-          {formValues.deliveryType === "DELIVERY" && (
+          {isDelivery && (
             <div className="mt-3">
               <input
                 id="checkout-direccion"
@@ -162,24 +217,33 @@ export default function CheckoutFinalizarPage() {
         <section>
           <h2 className="mb-3 text-sm font-semibold text-gray-700">Método de pago</h2>
           <div className="flex gap-2">
-            {[
-              { value: "efectivo", label: "Efectivo" },
-              { value: "mercadopago", label: "Mercado Pago" },
-            ].map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => updateField("paymentMethod", value)}
-                className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition ${
-                  formValues.paymentMethod === value
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-gray-200 text-gray-600"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            {paymentOptions.map(({ value, label }) => {
+              const isCashOnDelivery = value === "efectivo" && isDelivery;
+              const disabled = isCashOnDelivery;
+              const selected = formValues.paymentMethod === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => !disabled && updateField("paymentMethod", value)}
+                  className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition ${
+                    selected
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-gray-200 text-gray-600"
+                  } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+                  aria-disabled={disabled}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
+          {isDelivery && (
+            <p className="mt-2 text-xs text-gray-500">
+              El pago en efectivo solo es válido para retiro en local.
+            </p>
+          )}
         </section>
 
         <section>
@@ -193,6 +257,8 @@ export default function CheckoutFinalizarPage() {
           />
         </section>
 
+        <UltimoAntojoSection />
+
         <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Total ({items.length} productos)</span>
@@ -203,7 +269,7 @@ export default function CheckoutFinalizarPage() {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || items.length === 0}
           className="w-full rounded-lg bg-primary py-3 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
         >
           {isSubmitting ? "Procesando..." : "Confirmar pedido"}
