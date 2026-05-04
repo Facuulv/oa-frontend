@@ -56,7 +56,6 @@ export default function InstallPrompt({
   const {
     canOfferInstallGuide = false,
     canUseNativeInstall = false,
-    hideGuideForever,
     platform = "unknown",
     promptInstall,
   } = installState || {};
@@ -74,15 +73,6 @@ export default function InstallPrompt({
     setIsInstalling(true);
     await promptInstall();
     setIsInstalling(false);
-    if (typeof onClose === "function") {
-      onClose();
-    }
-  };
-
-  const handleHideForever = () => {
-    if (typeof hideGuideForever === "function") {
-      hideGuideForever();
-    }
     if (typeof onClose === "function") {
       onClose();
     }
@@ -147,20 +137,13 @@ export default function InstallPrompt({
             ))}
           </ol>
 
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="mt-4">
             <button
               type="button"
               onClick={onClose}
-              className="min-h-11 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="min-h-11 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Ahora no
-            </button>
-            <button
-              type="button"
-              onClick={handleHideForever}
-              className="min-h-11 rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-              No volver a mostrar
             </button>
           </div>
         </div>

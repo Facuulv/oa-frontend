@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const DISMISS_KEY = "oa:pwa:prompt:dismissed-at";
-const HIDE_GUIDE_KEY = "oa:pwa:guide:hidden";
 const INSTALLED_KEY = "oa:pwa:installed";
 const DISMISS_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
@@ -66,7 +65,6 @@ export default function usePwaInstallPrompt() {
   const [isMobile, setIsMobile] = useState(false);
   const [isDismissed, setIsDismissed] = useState(true);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isGuideHidden, setIsGuideHidden] = useState(false);
 
   useEffect(() => {
     const standalone = isStandaloneDisplayMode();
@@ -79,22 +77,18 @@ export default function usePwaInstallPrompt() {
 
     let dismissed = false;
     let installed = false;
-    let hiddenGuide = false;
 
     try {
       const dismissedAt = Number(window.localStorage.getItem(DISMISS_KEY) || 0);
       dismissed = Date.now() - dismissedAt < DISMISS_TTL_MS;
       installed = window.localStorage.getItem(INSTALLED_KEY) === "1";
-      hiddenGuide = window.localStorage.getItem(HIDE_GUIDE_KEY) === "1";
     } catch {
       dismissed = false;
       installed = standalone;
-      hiddenGuide = false;
     }
 
     setIsDismissed(dismissed);
     setIsInstalled(installed || standalone);
-    setIsGuideHidden(hiddenGuide);
   }, []);
 
   useEffect(() => {
@@ -143,15 +137,6 @@ export default function usePwaInstallPrompt() {
     }
   }, []);
 
-  const hideGuideForever = useCallback(() => {
-    setIsGuideHidden(true);
-    try {
-      window.localStorage.setItem(HIDE_GUIDE_KEY, "1");
-    } catch {
-      // Silencioso: no rompe UX si falla localStorage.
-    }
-  }, []);
-
   const promptInstall = useCallback(async () => {
     if (!installEvent) {
       return null;
@@ -187,11 +172,11 @@ export default function usePwaInstallPrompt() {
   }, [installEvent, isDismissed, isInstalled, isMobile, isStandalone, platform]);
 
   const canOfferInstallGuide = useMemo(() => {
-    if (isStandalone || isInstalled || isGuideHidden) {
+    if (isStandalone || isInstalled) {
       return false;
     }
     return true;
-  }, [isGuideHidden, isInstalled, isStandalone]);
+  }, [isInstalled, isStandalone]);
 
   return {
     canShowPrompt,
@@ -200,7 +185,6 @@ export default function usePwaInstallPrompt() {
     platform,
     isIOS: platform === "ios-safari",
     dismissPrompt,
-    hideGuideForever,
     promptInstall,
   };
 }
