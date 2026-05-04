@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, X } from "lucide-react";
+import { Download, Share, X } from "lucide-react";
 import { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
 import { cn } from "@/lib/cn";
 
@@ -11,7 +11,7 @@ function buildGuideContent(platform) {
       title: "Instalar OA! en Android",
       description: "Seguí estos pasos para tener OA! como una app en tu celular.",
       steps: [
-        "⋮ Tocá los tres puntitos arriba a la derecha.",
+        "Tocá el botón Compartir (o el menú del navegador) arriba a la derecha.",
         '➕ Tocá "Agregar a pantalla principal" o "Instalar app".',
         '✅ Tocá "Instalar" o "Agregar".',
         "📱 Buscá el ícono OA! en la pantalla de tu celular.",
@@ -24,8 +24,8 @@ function buildGuideContent(platform) {
       title: "Instalar OA! en iPhone",
       description: "En iPhone se agrega desde Safari.",
       steps: [
-        "📱 Abrí esta página usando Safari.",
-        "⬆️ Tocá el botón Compartir.",
+        "Tocá el botón Compartir.",
+        "📱 Verificá que estás usando Safari.",
         '➕ Elegí "Agregar a pantalla de inicio".',
         '✅ Tocá "Agregar".',
         "📱 Buscá el ícono OA! en tu pantalla.",
@@ -37,7 +37,7 @@ function buildGuideContent(platform) {
     title: "Instalar OA! en tu celular",
     description: "Te guiamos paso a paso para agregar OA! como app.",
     steps: [
-      "⋮ Abrí el menú del navegador (o el botón compartir ⬆️).",
+      "Tocá el botón Compartir del navegador.",
       '➕ Elegí "Agregar a pantalla principal", "Agregar a inicio" o "Instalar app".',
       '✅ Confirmá con "Instalar" o "Agregar".',
       "📱 Buscá el ícono OA! en tu pantalla principal.",
@@ -81,7 +81,7 @@ export default function InstallPrompt({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[70] flex items-end justify-center bg-black/45 px-2 pb-2 pt-8 sm:items-center sm:p-4",
+        "fixed inset-0 z-[70] flex items-center justify-center bg-black/45 p-3 sm:p-4",
         APP_VIEWPORT_MAX_CLASS
       )}
       onClick={(event) => {
@@ -132,7 +132,14 @@ export default function InstallPrompt({
                 <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
                   {index + 1}
                 </span>
-                <span className="leading-snug">{step}</span>
+                <span className="leading-snug">
+                  {index === 0 ? (
+                    <span className="mr-1.5 inline-flex align-middle text-slate-700">
+                      <Share size={18} strokeWidth={2.5} aria-hidden="true" />
+                    </span>
+                  ) : null}
+                  {step}
+                </span>
               </li>
             ))}
           </ol>
