@@ -8,6 +8,7 @@ import {
   User,
   LogIn,
   Settings,
+  Download,
   X,
 } from "lucide-react";
 import { useAuthStore, selectCanAccessAdminPanel, selectIsClienteUser } from "@/store/useAuthStore";
@@ -26,9 +27,19 @@ const adminLinks = [
   { href: "/admin", label: "Panel admin", icon: Settings },
 ];
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({
+  isOpen,
+  onClose,
+  showInstallAction = false,
+  onInstallClick,
+}) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
   const canAccessAdminPanel = useAuthStore(selectCanAccessAdminPanel);
+
+  const handleInstallClick = () => {
+    onClose?.();
+    onInstallClick?.();
+  };
 
   return (
     <aside
@@ -61,6 +72,17 @@ export default function Sidebar({ isOpen, onClose }) {
               {label}
             </Link>
           ))}
+
+          {showInstallAction ? (
+            <button
+              type="button"
+              onClick={handleInstallClick}
+              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-primary transition hover:bg-primary/5"
+            >
+              <Download size={18} className="text-primary" />
+              Instalar app
+            </button>
+          ) : null}
 
           <hr className="my-2" />
 

@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import AppViewport, { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
 import Sidebar from "@/components/ui/Sidebar";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
+import usePwaInstallPrompt from "@/hooks/usePwaInstallPrompt";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { useCartStore, selectCartTotal, selectCartCount } from "@/store/useCartStore";
 import { formatPrice } from "@/utils/format/price";
@@ -15,8 +16,10 @@ const DESKTOP_BREAKPOINT = 768;
 export default function AppShell({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isInstallGuideOpen, setIsInstallGuideOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const installState = usePwaInstallPrompt();
   const total = useCartStore(selectCartTotal);
   const itemCount = useCartStore(selectCartCount);
   const hasItems = itemCount > 0;
@@ -24,16 +27,7 @@ export default function AppShell({ children }) {
   const isCheckout = pathname?.startsWith("/checkout");
   const isProductDetail = pathname?.startsWith("/producto/");
   const isSearch = pathname === "/buscar";
-  const isInstallPromptHiddenPath =
-    pathname?.startsWith("/checkout") ||
-    pathname?.startsWith("/carrito") ||
-    pathname?.startsWith("/login") ||
-    pathname?.startsWith("/registro") ||
-    pathname?.startsWith("/auth") ||
-    pathname?.startsWith("/admin");
-
   const cartBarVisible = hasItems && !isCheckout && !isProductDetail && !isSearch;
-  const installPromptBottomOffset = cartBarVisible ? 58 : 12;
 
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
@@ -56,7 +50,12 @@ export default function AppShell({ children }) {
       <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
 
       <div className="relative min-h-[calc(100dvh-3.25rem)] overflow-hidden">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          showInstallAction={installState.canOfferInstallGuide}
+          onInstallClick={() => setIsInstallGuideOpen(true)}
+        />
 
         <div
           onClick={() => setIsSidebarOpen(false)}
@@ -101,8 +100,10 @@ export default function AppShell({ children }) {
       )}
 
       <InstallPrompt
-        hidden={Boolean(isInstallPromptHiddenPath) || isSidebarOpen}
-        bottomOffset={installPromptBottomOffset}
+        hidden={isSidebarOpen}
+        isOpen={isInstallGuideOpen}
+        onClose={() => setIsInstallGuideOpen(false)}
+        installState={installState}
       />
     </AppViewport>
   );

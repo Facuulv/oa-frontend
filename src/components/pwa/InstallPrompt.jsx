@@ -1,111 +1,170 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Share2, Smartphone, X } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
 import { cn } from "@/lib/cn";
-import usePwaInstallPrompt from "@/hooks/usePwaInstallPrompt";
 
-export default function InstallPrompt({ hidden = false, bottomOffset = 12 }) {
-  const { canShowPrompt, canUseNativeInstall, isIOS, dismissPrompt, promptInstall } =
-    usePwaInstallPrompt();
-  const [showGuide, setShowGuide] = useState(false);
+function buildGuideContent(platform) {
+  if (platform === "android-chrome") {
+    return {
+      title: "Instalar OA! en Android",
+      description: "Seguí estos pasos para tener OA! como una app en tu celular.",
+      steps: [
+        "⋮ Tocá los tres puntitos arriba a la derecha.",
+        '➕ Tocá "Agregar a pantalla principal" o "Instalar app".',
+        '✅ Tocá "Instalar" o "Agregar".',
+        "📱 Buscá el ícono OA! en la pantalla de tu celular.",
+      ],
+    };
+  }
 
-  const steps = useMemo(() => {
-    if (isIOS) {
-      return [
-        "Abrí esta página desde Safari.",
-        "Tocá el botón Compartir.",
-        'Elegí "Agregar a pantalla de inicio".',
-        'Tocá "Agregar".',
-      ];
-    }
+  if (platform === "ios-safari") {
+    return {
+      title: "Instalar OA! en iPhone",
+      description: "En iPhone se agrega desde Safari.",
+      steps: [
+        "📱 Abrí esta página usando Safari.",
+        "⬆️ Tocá el botón Compartir.",
+        '➕ Elegí "Agregar a pantalla de inicio".',
+        '✅ Tocá "Agregar".',
+        "📱 Buscá el ícono OA! en tu pantalla.",
+      ],
+    };
+  }
 
-    return [
-      'Tocá "Instalar app".',
-      "Confirmá la instalación.",
-      "Buscá el ícono OA! en tu pantalla principal.",
-    ];
-  }, [isIOS]);
+  return {
+    title: "Instalar OA! en tu celular",
+    description: "Te guiamos paso a paso para agregar OA! como app.",
+    steps: [
+      "⋮ Abrí el menú del navegador (o el botón compartir ⬆️).",
+      '➕ Elegí "Agregar a pantalla principal", "Agregar a inicio" o "Instalar app".',
+      '✅ Confirmá con "Instalar" o "Agregar".',
+      "📱 Buscá el ícono OA! en tu pantalla principal.",
+    ],
+  };
+}
 
-  if (hidden || !canShowPrompt) {
+export default function InstallPrompt({
+  hidden = false,
+  isOpen = false,
+  onClose,
+  installState,
+}) {
+  const [isInstalling, setIsInstalling] = useState(false);
+
+  const {
+    canOfferInstallGuide = false,
+    canUseNativeInstall = false,
+    hideGuideForever,
+    platform = "unknown",
+    promptInstall,
+  } = installState || {};
+
+  const guide = useMemo(() => buildGuideContent(platform), [platform]);
+
+  if (hidden || !isOpen || !canOfferInstallGuide) {
     return null;
   }
 
+  const handleAutomaticInstall = async () => {
+    if (!canUseNativeInstall || typeof promptInstall !== "function") {
+      return;
+    }
+    setIsInstalling(true);
+    await promptInstall();
+    setIsInstalling(false);
+    if (typeof onClose === "function") {
+      onClose();
+    }
+  };
+
+  const handleHideForever = () => {
+    if (typeof hideGuideForever === "function") {
+      hideGuideForever();
+    }
+    if (typeof onClose === "function") {
+      onClose();
+    }
+  };
+
   return (
     <div
-      className={cn("pointer-events-none fixed left-1/2 z-20 w-full px-3", APP_VIEWPORT_MAX_CLASS)}
-      style={{
-        bottom: `${bottomOffset}px`,
-        transform: "translateX(-50%)",
+      className={cn(
+        "fixed inset-0 z-[70] flex items-end justify-center bg-black/45 px-2 pb-2 pt-8 sm:items-center sm:p-4",
+        APP_VIEWPORT_MAX_CLASS
+      )}
+      onClick={(event) => {
+        if (event.target === event.currentTarget && typeof onClose === "function") {
+          onClose();
+        }
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Guía para instalar la app"
     >
-      <section className="pointer-events-auto rounded-2xl border border-black/5 bg-white p-3 shadow-lg">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900">Instalá OA! en tu celular</p>
-            <p className="mt-0.5 text-xs text-slate-600">
-              Vas a abrir la app más rápido desde tu pantalla principal.
-            </p>
+      <div className="w-full max-w-lg rounded-2xl border border-black/5 bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 pb-3 pt-4">
+          <div>
+            <p className="text-xl font-bold leading-tight text-slate-900">{guide.title}</p>
+            <p className="mt-2 text-sm text-slate-600">{guide.description}</p>
           </div>
           <button
             type="button"
-            onClick={dismissPrompt}
-            className="shrink-0 rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
-            aria-label="Cerrar aviso de instalación"
+            onClick={onClose}
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            aria-label="Cerrar guía de instalación"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="px-4 pb-4 pt-3">
           {canUseNativeInstall ? (
             <button
               type="button"
-              onClick={promptInstall}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110"
+              onClick={handleAutomaticInstall}
+              disabled={isInstalling}
+              className="mb-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-semibold text-white transition hover:brightness-110 disabled:opacity-70"
             >
-              <Download size={15} />
-              Instalar app
+              <Download size={18} />
+              {isInstalling ? "Abriendo instalacion..." : "Instalar automáticamente"}
             </button>
-          ) : null}
+          ) : (
+            <div className="mb-3 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-primary">
+              Seguí estos pasos manuales para instalar la app.
+            </div>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setShowGuide((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            {isIOS ? <Share2 size={15} /> : <Smartphone size={15} />}
-            {showGuide ? "Ocultar instrucciones" : "Ver instrucciones"}
-          </button>
+          <ol className="space-y-2.5 rounded-xl bg-slate-50 p-3 text-base text-slate-700">
+            {guide.steps.map((step, index) => (
+              <li key={step} className="flex items-start gap-2.5">
+                <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+                  {index + 1}
+                </span>
+                <span className="leading-snug">{step}</span>
+              </li>
+            ))}
+          </ol>
 
-          <button
-            type="button"
-            onClick={dismissPrompt}
-            className="rounded-xl px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-50"
-          >
-            Ahora no
-          </button>
-        </div>
-
-        {showGuide ? (
-          <div className="mt-3 rounded-xl bg-slate-50 p-3">
-            <p className="mb-2 text-xs font-semibold text-slate-700">
-              {isIOS ? "Instalación en iPhone (Safari)" : "Instalación en Android (Chrome)"}
-            </p>
-            <ol className="space-y-1.5 text-xs text-slate-700">
-              {steps.map((step, index) => (
-                <li key={step} className="flex items-start gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
-                    {index + 1}
-                  </span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-11 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Ahora no
+            </button>
+            <button
+              type="button"
+              onClick={handleHideForever}
+              className="min-h-11 rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              No volver a mostrar
+            </button>
           </div>
-        ) : null}
-      </section>
+        </div>
+      </div>
     </div>
   );
 }
