@@ -10,6 +10,7 @@ const inter = Inter({
   display: "swap",
 });
 
+// Esto es para el PWA
 export const metadata = {
   applicationName: "OA! Bebidas",
   title: "OA! Bebidas",
