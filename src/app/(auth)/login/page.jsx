@@ -168,6 +168,11 @@ function LoginForm() {
             </button>
           </div>
           {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
+          <div className="mt-2 text-right">
+            <Link href="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
         </div>
 
         <button

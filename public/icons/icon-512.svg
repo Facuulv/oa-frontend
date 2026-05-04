@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="OA! Bebidas">
+  <defs>
+    <linearGradient id="bg512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C1121F" />
+      <stop offset="100%" stop-color="#8D0D16" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg512)" />
+  <circle cx="256" cy="256" r="172" fill="rgba(255,255,255,0.12)" />
+  <text x="256" y="287" font-size="154" font-weight="800" text-anchor="middle" fill="#FFFFFF" font-family="Inter, Arial, sans-serif">OA!</text>
+</svg>

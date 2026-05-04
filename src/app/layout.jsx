@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import AuthSessionProvider from "@/components/AuthSessionProvider";
 import ToastProvider from "@/components/ToastProvider";
+import PwaServiceWorkerRegistration from "@/components/pwa/PwaServiceWorkerRegistration";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -10,10 +11,22 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "OA! - Tu tienda online",
-  description: "Catálogo y tienda online",
+  applicationName: "OA! Bebidas",
+  title: "OA! Bebidas",
+  description: "Tienda online de bebidas OA!",
   manifest: "/manifest.json",
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/icon-192.png" },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
+      { url: "/icons/icon-512.svg", sizes: "512x512", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.svg", sizes: "180x180", type: "image/svg+xml" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "OA! Bebidas",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport = {
@@ -28,6 +41,7 @@ export default function RootLayout({ children }) {
     <html lang="es">
       <body className={`bg-background ${inter.variable}`}>
         <AuthSessionProvider>{children}</AuthSessionProvider>
+        <PwaServiceWorkerRegistration />
         <ToastProvider />
       </body>
     </html>

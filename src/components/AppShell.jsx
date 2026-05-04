@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import AppViewport, { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
 import Sidebar from "@/components/ui/Sidebar";
+import InstallPrompt from "@/components/pwa/InstallPrompt";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { useCartStore, selectCartTotal, selectCartCount } from "@/store/useCartStore";
 import { formatPrice } from "@/utils/format/price";
@@ -23,6 +24,16 @@ export default function AppShell({ children }) {
   const isCheckout = pathname?.startsWith("/checkout");
   const isProductDetail = pathname?.startsWith("/producto/");
   const isSearch = pathname === "/buscar";
+  const isInstallPromptHiddenPath =
+    pathname?.startsWith("/checkout") ||
+    pathname?.startsWith("/carrito") ||
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/registro") ||
+    pathname?.startsWith("/auth") ||
+    pathname?.startsWith("/admin");
+
+  const cartBarVisible = hasItems && !isCheckout && !isProductDetail && !isSearch;
+  const installPromptBottomOffset = cartBarVisible ? 58 : 12;
 
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
@@ -44,52 +55,55 @@ export default function AppShell({ children }) {
     <AppViewport innerClassName="overflow-hidden bg-surface ring-1 ring-black/5">
       <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
 
-        <div className="relative min-h-[calc(100dvh-3.25rem)] overflow-hidden">
-          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <div className="relative min-h-[calc(100dvh-3.25rem)] overflow-hidden">
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-          <div
-            onClick={() => setIsSidebarOpen(false)}
-            className={`absolute right-0 top-0 bottom-0 bg-black/30 transition-all duration-[400ms] ease-out ${
-              isSidebarOpen
-                ? "left-64 z-40 opacity-100 pointer-events-auto"
-                : "left-0 z-30 opacity-0 pointer-events-none"
-            }`}
-            aria-hidden="true"
-          />
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className={`absolute right-0 top-0 bottom-0 bg-black/30 transition-all duration-[400ms] ease-out ${
+            isSidebarOpen
+              ? "left-64 z-40 opacity-100 pointer-events-auto"
+              : "left-0 z-30 opacity-0 pointer-events-none"
+          }`}
+          aria-hidden="true"
+        />
 
-          <div
-            className={`relative z-10 min-h-full transition-transform duration-[400ms] ease-out ${
-              isSidebarOpen ? "translate-x-64" : "translate-x-0"
-            }`}
-          >
-            <main className="min-h-[calc(100dvh-3.25rem)] w-full">
-              {children}
-            </main>
-          </div>
+        <div
+          className={`relative z-10 min-h-full transition-transform duration-[400ms] ease-out ${
+            isSidebarOpen ? "translate-x-64" : "translate-x-0"
+          }`}
+        >
+          <main className="min-h-[calc(100dvh-3.25rem)] w-full">{children}</main>
         </div>
+      </div>
 
-        {hasItems && !isCheckout && !isProductDetail && !isSearch && (
-          <div
-            className={`fixed bottom-0 left-1/2 z-30 w-full ${APP_VIEWPORT_MAX_CLASS} transition-all duration-[400ms] ease-out`}
-            style={{
-              transform:
-                isDesktop || !isSidebarOpen
-                  ? "translateX(-50%)"
-                  : "translate(calc(-50% + 16rem), 0)",
-            }}
+      {cartBarVisible && (
+        <div
+          className={`fixed bottom-0 left-1/2 z-30 w-full ${APP_VIEWPORT_MAX_CLASS} transition-all duration-[400ms] ease-out`}
+          style={{
+            transform:
+              isDesktop || !isSidebarOpen
+                ? "translateX(-50%)"
+                : "translate(calc(-50% + 16rem), 0)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => router.push("/checkout")}
+            className="flex h-[45px] w-full items-center justify-between bg-primary p-[0.9em] text-base font-medium leading-none text-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)] transition-all duration-200 hover:brightness-110"
           >
-            <button
-              type="button"
-              onClick={() => router.push("/checkout")}
-              className="flex h-[45px] w-full items-center justify-between bg-primary p-[0.9em] text-base font-medium leading-none text-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)] transition-all duration-200 hover:brightness-110"
-            >
-              <span>Ver mi pedido</span>
-              <span className="whitespace-nowrap text-[1.2em] font-extrabold">
-                {formatPrice(total)}
-              </span>
-            </button>
-          </div>
-        )}
+            <span>Ver mi pedido</span>
+            <span className="whitespace-nowrap text-[1.2em] font-extrabold">
+              {formatPrice(total)}
+            </span>
+          </button>
+        </div>
+      )}
+
+      <InstallPrompt
+        hidden={Boolean(isInstallPromptHiddenPath) || isSidebarOpen}
+        bottomOffset={installPromptBottomOffset}
+      />
     </AppViewport>
   );
 }

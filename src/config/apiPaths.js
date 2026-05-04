@@ -9,6 +9,8 @@ export const apiPaths = {
     logout: "/auth/logout",
     register: "/auth/register",
     me: "/auth/me",
+    forgotPassword: "/auth/forgot-password",
+    resetPassword: "/auth/reset-password",
   },
 
   public: {

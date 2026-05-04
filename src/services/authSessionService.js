@@ -106,3 +106,53 @@ export async function authRegisterCliente({ nombre, apellido, email, password, t
 
   return data;
 }
+
+/** `POST /auth/forgot-password` — respuesta genérica para evitar enumeración de emails. */
+export async function authForgotPassword({ email }) {
+  const base = requireApiBaseUrl();
+  const url = `${base}${apiPaths.auth.forgotPassword}`;
+  const body = { email: (email ?? "").trim() };
+
+  logApiRequest("POST", url, { email: body.email });
+  const response = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const fieldErrors = flattenValidationErrors(data);
+    const msg = apiErrorMessage(data, "No pudimos procesar tu solicitud");
+    throw new ApiError(msg, { fieldErrors, status: response.status, body: data });
+  }
+
+  return data;
+}
+
+/** `POST /auth/reset-password` — aplica nueva contraseña para token válido/no vencido. */
+export async function authResetPassword({ token, password }) {
+  const base = requireApiBaseUrl();
+  const url = `${base}${apiPaths.auth.resetPassword}`;
+  const body = { token: (token ?? "").trim(), password };
+
+  logApiRequest("POST", url);
+  const response = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const fieldErrors = flattenValidationErrors(data);
+    const msg = apiErrorMessage(data, "No pudimos restablecer tu contraseña");
+    throw new ApiError(msg, { fieldErrors, status: response.status, body: data });
+  }
+
+  return data;
+}
