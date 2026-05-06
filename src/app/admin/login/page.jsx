@@ -27,7 +27,7 @@ function RedirectToLogin() {
 
 export default function AdminLoginRedirectPage() {
   return (
-    <AppViewport innerClassName="flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-surface px-4 ring-1 ring-black/5">
+    <AppViewport variant="auth" innerClassName="flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-surface px-4 ring-1 ring-black/5">
       <Suspense
         fallback={<p className="text-sm text-gray-500">Cargando…</p>}
       >

@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { Download, Share, X } from "lucide-react";
-import { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
-import { cn } from "@/lib/cn";
 
 function buildGuideContent(platform) {
   if (platform === "android-chrome") {
@@ -80,10 +78,7 @@ export default function InstallPrompt({
 
   return (
     <div
-      className={cn(
-        "fixed inset-0 z-[70] flex items-center justify-center bg-black/45 p-3 sm:p-4",
-        APP_VIEWPORT_MAX_CLASS
-      )}
+      className="fixed inset-0 z-50 flex w-screen min-h-[100dvh] items-center justify-center bg-black/45 p-4"
       onClick={(event) => {
         if (event.target === event.currentTarget && typeof onClose === "function") {
           onClose();
@@ -93,7 +88,7 @@ export default function InstallPrompt({
       aria-modal="true"
       aria-label="Guía para instalar la app"
     >
-      <div className="w-full max-w-lg rounded-2xl border border-black/5 bg-white shadow-2xl">
+      <div className="mx-auto w-full max-w-md rounded-2xl border border-black/5 bg-white shadow-2xl sm:max-w-lg">
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 pb-3 pt-4">
           <div>
             <p className="text-xl font-bold leading-tight text-slate-900">{guide.title}</p>

@@ -1,16 +1,39 @@
 import { cn } from "@/lib/cn";
 
 /**
- * Ancho máximo del “teléfono” / columna OA! (público, admin, auth).
- * Usar también en barras `fixed` alineadas al marco.
+ * Ancho máximo legado del “teléfono” / columna (~480px).
+ * Sigue usándose en barras `fixed`, toasts, etc., hasta migrar esos puntos al nuevo layout.
  */
 export const APP_VIEWPORT_MAX_CLASS = "max-w-[480px]";
 
 /**
- * Marco exterior (chrome) + columna centrada mobile-first.
- * Las variantes visuales (surface vs admin) van en `innerClassName`.
+ * @typedef {"public" | "admin" | "auth"} AppViewportVariant
  */
-export default function AppViewport({ children, className, innerClassName }) {
+
+/**
+ * @param {object} props
+ * @param {React.ReactNode} props.children
+ * @param {string} [props.className]
+ * @param {string} [props.innerClassName]
+ * @param {AppViewportVariant} [props.variant] Sin definir = mismo ancho máximo que antes (`APP_VIEWPORT_MAX_CLASS`).
+ */
+function innerMaxWidthClass(variant) {
+  if (variant === "public" || variant === "admin" || variant === "auth") {
+    return "max-w-none";
+  }
+  return APP_VIEWPORT_MAX_CLASS;
+}
+
+/**
+ * Marco exterior (chrome) + columna mobile-first.
+ * `variant` ajusta el ancho máximo de la columna; el aspecto concreto (surface, admin…) va en `innerClassName`.
+ */
+export default function AppViewport({
+  children,
+  className,
+  innerClassName,
+  variant,
+}) {
   return (
     <div
       className={cn(
@@ -21,7 +44,7 @@ export default function AppViewport({ children, className, innerClassName }) {
       <div
         className={cn(
           "relative flex w-full min-h-[100dvh] flex-col",
-          APP_VIEWPORT_MAX_CLASS,
+          innerMaxWidthClass(variant),
           innerClassName,
         )}
       >

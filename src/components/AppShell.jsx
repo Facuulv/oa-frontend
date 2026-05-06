@@ -46,14 +46,13 @@ export default function AppShell({ children }) {
   }, [isSidebarOpen]);
 
   return (
-    <AppViewport innerClassName="overflow-hidden bg-surface ring-1 ring-black/5">
+    <AppViewport variant="public" innerClassName="overflow-hidden bg-surface ring-1 ring-black/5">
       <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
 
       <div className="relative min-h-[calc(100dvh-3.25rem)] overflow-hidden">
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
-          showInstallAction={installState.canOfferInstallGuide}
           onInstallClick={() => setIsInstallGuideOpen(true)}
         />
 

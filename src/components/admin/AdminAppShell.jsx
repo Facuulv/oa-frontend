@@ -83,7 +83,7 @@ export default function AdminAppShell({ children }) {
     "admin-shell-scroll min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain";
 
   return (
-    <AppViewport innerClassName="h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden bg-[#ececec] ring-1 ring-black/5">
+    <AppViewport variant="admin" innerClassName="h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden bg-[#ececec] ring-1 ring-black/5">
       <header
         className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-zinc-200/90 bg-white/95 px-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/85"
         aria-label="Administración"
