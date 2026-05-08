@@ -919,6 +919,8 @@ export default function AdminUsuariosPage() {
         onClose={closeCreate}
         title="Nuevo usuario"
         closeDisabled={savingCreate}
+        keepMountedOnClose
+        eagerMount
         maxWidthClass="w-full max-w-lg sm:max-w-xl"
         closeOnBackdrop={false}
         animatePanelPop
@@ -1102,6 +1104,7 @@ export default function AdminUsuariosPage() {
         onClose={closeEdit}
         title="Editar usuario"
         closeDisabled={savingEdit}
+        keepMountedOnClose
         maxWidthClass="w-full max-w-lg sm:max-w-xl"
         closeOnBackdrop={false}
         animatePanelPop
@@ -1242,6 +1245,7 @@ export default function AdminUsuariosPage() {
         onClose={closePassword}
         title="Cambiar contraseña"
         closeDisabled={savingPassword}
+        keepMountedOnClose
         maxWidthClass="w-full max-w-lg"
         closeOnBackdrop={false}
         animatePanelPop
@@ -1343,6 +1347,7 @@ export default function AdminUsuariosPage() {
         onClose={closeConfirmDeactivate}
         title="Desactivar usuario"
         closeDisabled={Boolean(togglingId)}
+        keepMountedOnClose
         maxWidthClass="w-full max-w-md"
         animatePanelPop
         footer={

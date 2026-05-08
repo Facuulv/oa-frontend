@@ -658,6 +658,8 @@ export default function AdminCategoriasPage() {
         onClose={closeFormModal}
         title={editing ? "Editar categoría" : "Nueva categoría"}
         closeDisabled={modalBusy}
+        keepMountedOnClose
+        eagerMount
         maxWidthClass="w-full max-w-lg sm:max-w-xl"
         closeOnBackdrop={false}
         animatePanelPop

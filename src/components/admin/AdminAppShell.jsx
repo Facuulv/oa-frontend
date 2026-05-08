@@ -116,7 +116,7 @@ export default function AdminAppShell({ children }) {
         <aside
           id="admin-drawer"
           aria-hidden={!drawerOpen}
-          className={`absolute left-0 top-0 z-40 h-full ${DRAWER_WIDTH_CLASS} bg-white shadow-xl transition-transform duration-[400ms] ease-out ${
+          className={`absolute left-0 top-0 z-40 h-full ${DRAWER_WIDTH_CLASS} transform-gpu bg-white shadow-xl will-change-transform transition-transform duration-200 ease-out ${
             drawerOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -191,18 +191,14 @@ export default function AdminAppShell({ children }) {
 
         <div
           onClick={closeDrawer}
-          className={`absolute right-0 top-0 bg-black/30 transition-all duration-[400ms] ease-out ${
-            drawerOpen
-              ? "bottom-0 left-64 z-40 opacity-100 pointer-events-auto"
-              : "bottom-0 left-0 z-30 opacity-0 pointer-events-none"
+          className={`absolute inset-0 z-30 bg-black/60 transition-opacity duration-200 ease-out ${
+            drawerOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
           }`}
           aria-hidden="true"
         />
 
         <div
-          className={`relative z-10 flex min-h-0 flex-1 flex-col transition-transform duration-[400ms] ease-out ${
-            drawerOpen ? "translate-x-64" : "translate-x-0"
-          }`}
+          className="relative z-10 flex min-h-0 flex-1 flex-col"
         >
           <main className={mainScrollClass}>
             <div className="flex flex-col px-4 pb-8 pt-5">

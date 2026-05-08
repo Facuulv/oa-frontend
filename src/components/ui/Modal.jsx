@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 const FOCUSABLE_SELECTOR = [
@@ -34,6 +34,8 @@ function getFocusableElements(container) {
  * @param {boolean} [props.closeOnBackdrop] Si false, no cierra al clic fuera del panel.
  * @param {boolean} [props.animatePanelPop] Animación de entrada un poco más marcada (producto, etc.).
  * @param {string} [props.titleId] id del título para aria-labelledby (default: useId).
+ * @param {boolean} [props.keepMountedOnClose] Si true, mantiene el modal montado al cerrar (mejor reapertura).
+ * @param {boolean} [props.eagerMount] Si true y keepMountedOnClose=true, monta el contenido desde el inicio.
  */
 export default function Modal({
   isOpen,
@@ -48,11 +50,18 @@ export default function Modal({
   closeOnBackdrop = true,
   animatePanelPop = false,
   titleId: titleIdProp,
+  keepMountedOnClose = false,
+  eagerMount = false,
 }) {
   const reactId = useId();
   const titleId = titleIdProp ?? `modal-title-${reactId.replace(/:/g, "")}`;
   const panelRef = useRef(null);
   const previousActiveElement = useRef(null);
+  const [hasOpened, setHasOpened] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) setHasOpened(true);
+  }, [isOpen]);
 
   const tryClose = useCallback(() => {
     if (!closeDisabled) onClose();
@@ -121,7 +130,8 @@ export default function Modal({
     }
   };
 
-  if (!isOpen) return null;
+  const shouldRender = isOpen || (keepMountedOnClose && (hasOpened || eagerMount));
+  if (!shouldRender) return null;
 
   const backdropClick = () => {
     if (closeOnBackdrop) tryClose();
@@ -131,11 +141,13 @@ export default function Modal({
 
   return (
     <div
+      hidden={!isOpen}
+      aria-hidden={!isOpen}
       className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-3 pt-10 sm:items-center sm:px-4 sm:pb-6 sm:pt-8"
       role="presentation"
     >
       <div
-        className={`modal-overlay-enter absolute inset-0 bg-zinc-900/50 backdrop-blur-[2px] ${closeDisabled ? "cursor-not-allowed" : closeOnBackdrop ? "cursor-pointer" : ""}`}
+        className={`modal-overlay-enter absolute inset-0 bg-black/65 ${closeDisabled ? "cursor-not-allowed" : closeOnBackdrop ? "cursor-pointer" : ""}`}
         onClick={backdropClick}
         aria-hidden
       />
@@ -147,7 +159,7 @@ export default function Modal({
         tabIndex={-1}
         onKeyDown={handlePanelKeyDown}
         onClick={(e) => e.stopPropagation()}
-        className={`relative flex w-full ${maxWidthClass} ${maxHeightClass} flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-zinc-200/70 sm:rounded-2xl ${panelAnim} ${panelClassName}`.trim()}
+        className={`relative flex w-full ${maxWidthClass} ${maxHeightClass} transform-gpu flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200/70 will-change-transform sm:rounded-2xl ${panelAnim} ${panelClassName}`.trim()}
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200/90 bg-white px-4 py-3.5 sm:px-5 sm:py-4">
           <h2 id={titleId} className="min-w-0 flex-1 text-base font-semibold leading-snug tracking-tight text-zinc-900 sm:text-lg">

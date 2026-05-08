@@ -899,6 +899,8 @@ export default function AdminPromocionesPage() {
         onClose={closeFormModal}
         title={editing ? "Editar promoción" : "Nueva promoción"}
         closeDisabled={modalBusy}
+        keepMountedOnClose
+        eagerMount
         maxWidthClass="w-full max-w-lg sm:max-w-2xl"
         closeOnBackdrop={false}
         animatePanelPop

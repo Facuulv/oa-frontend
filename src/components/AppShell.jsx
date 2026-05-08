@@ -12,6 +12,7 @@ import { useCartStore, selectCartTotal, selectCartCount } from "@/store/useCartS
 import { formatPrice } from "@/utils/format/price";
 
 const DESKTOP_BREAKPOINT = 768;
+const SIDEBAR_WIDTH = "17.5rem";
 
 export default function AppShell({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -58,17 +59,15 @@ export default function AppShell({ children }) {
 
         <div
           onClick={() => setIsSidebarOpen(false)}
-          className={`absolute right-0 top-0 bottom-0 bg-black/30 transition-all duration-[400ms] ease-out ${
-            isSidebarOpen
-              ? "left-64 z-40 opacity-100 pointer-events-auto"
-              : "left-0 z-30 opacity-0 pointer-events-none"
+          className={`absolute inset-0 z-40 bg-black/65 transition-opacity duration-200 ease-out ${
+            isSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
           aria-hidden="true"
         />
 
         <div
-          className={`relative z-10 min-h-full transition-transform duration-[400ms] ease-out ${
-            isSidebarOpen ? "translate-x-64" : "translate-x-0"
+          className={`relative z-10 min-h-full transition-transform duration-300 ease-out ${
+            isSidebarOpen ? "translate-x-[17.5rem]" : "translate-x-0"
           }`}
         >
           <main className="min-h-[calc(100dvh-3.25rem)] w-full">{children}</main>
@@ -82,7 +81,7 @@ export default function AppShell({ children }) {
             transform:
               isDesktop || !isSidebarOpen
                 ? "translateX(-50%)"
-                : "translate(calc(-50% + 16rem), 0)",
+                : `translate(calc(-50% + ${SIDEBAR_WIDTH}), 0)`,
           }}
         >
           <button

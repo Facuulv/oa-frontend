@@ -845,6 +845,8 @@ export default function AdminProductosPage() {
         onClose={closeFormModal}
         title={editing ? "Editar producto" : "Nuevo producto"}
         closeDisabled={modalBusy}
+        keepMountedOnClose
+        eagerMount
         maxWidthClass="w-full max-w-lg sm:max-w-xl"
         closeOnBackdrop={false}
         animatePanelPop
