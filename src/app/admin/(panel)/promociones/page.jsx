@@ -90,7 +90,7 @@ function isUnauthorizedApi(err) {
 function humanLoadError(err) {
   if (err instanceof ApiError) {
     if (isUnauthorizedApi(err)) {
-      return "No tenés permiso para ver las promociones. Volvé a iniciar sesión si hace falta.";
+      return "No tenés permiso para ver los combos. Volvé a iniciar sesión si hace falta.";
     }
     if (err.status === 404) {
       return "No encontramos el recurso. Si el problema sigue, contactá al administrador.";
@@ -98,12 +98,12 @@ function humanLoadError(err) {
     if (err.status >= 500) {
       return "El servidor no respondió bien. Reintentá en unos segundos.";
     }
-    return err.message || "No se pudieron cargar las promociones.";
+    return err.message || "No se pudieron cargar los combos.";
   }
   if (err instanceof Error && err.message) {
-    return `No se pudieron cargar las promociones. (${err.message})`;
+    return `No se pudieron cargar los combos. (${err.message})`;
   }
-  return "No se pudieron cargar las promociones. Comprobá tu conexión.";
+  return "No se pudieron cargar los combos. Comprobá tu conexión.";
 }
 
 function applyServerFieldErrors(form, apiError) {
@@ -261,7 +261,7 @@ export default function AdminPromocionesPage() {
         type: "search",
         name: "busqueda",
         label: "Buscar",
-        placeholder: "Nombre de la promoción…",
+        placeholder: "Nombre del combo…",
         defaultValue: "",
       },
       {
@@ -463,8 +463,8 @@ export default function AdminPromocionesPage() {
     const catPromoId = findCategoriaPromocionesId(categorias);
     const catRow = categorias.find((c) => Number(c.id) === Number(catPromoId));
     if (!catPromoId || !catRow?.activo) {
-      toast.error("No está disponible la categoría «Promociones»", {
-        description: "Creala o activala en «Categorías» con ese nombre (o slug «promociones»).",
+      toast.error("No está disponible la categoría «Combos»", {
+        description: "Creala o activala en «Categorías» con ese nombre (o slug «combos»).",
       });
       submitGuardRef.current = false;
       return;
@@ -474,10 +474,10 @@ export default function AdminPromocionesPage() {
     try {
       if (editing) {
         await updatePromocion(editing.id, payload);
-        toast.success("Promoción actualizada");
+        toast.success("Combo actualizado");
       } else {
         await createPromocion(payload);
-        toast.success("Promoción creada");
+        toast.success("Combo creado");
       }
       closeFormModal();
       await load();
@@ -486,7 +486,7 @@ export default function AdminPromocionesPage() {
         applyServerFieldErrors(form, e);
 
         if (isNotFoundApi(e)) {
-          toast.error("Esta promoción ya no existe", { description: "Actualizamos el listado." });
+          toast.error("Este combo ya no existe", { description: "Actualizamos el listado." });
           closeFormModal();
           await load();
           return;
@@ -515,7 +515,7 @@ export default function AdminPromocionesPage() {
           e.code === ADMIN_PRODUCTO_CODES.CATEGORIA_NO_ENCONTRADA
         ) {
           toast.error(e.message || "Revisá la categoría", {
-            description: "La promoción debe usar la categoría «Promociones» activa en «Categorías».",
+            description: "El combo debe usar la categoría «Combos» activa en «Categorías».",
           });
           form.setError("categoria_id", {
             type: "server",
@@ -551,11 +551,11 @@ export default function AdminPromocionesPage() {
     setTogglingId(row.id);
     try {
       await togglePromocionEstado(row.id, next);
-      toast.success(next ? "Promoción activada" : "Promoción desactivada");
+      toast.success(next ? "Combo activado" : "Combo desactivado");
       await load();
     } catch (e) {
       if (isNotFoundApi(e)) {
-        toast.error("Esa promoción ya no existe", {
+        toast.error("Ese combo ya no existe", {
           description: "Actualizamos el listado por vos.",
         });
       } else if (isUnauthorizedApi(e)) {
@@ -579,7 +579,7 @@ export default function AdminPromocionesPage() {
         ? "Cargando combo…"
         : editing
           ? "Guardar cambios"
-          : "Crear promoción";
+          : "Crear combo";
 
   return (
     <div className="flex flex-col gap-6 pb-4">
@@ -594,9 +594,9 @@ export default function AdminPromocionesPage() {
             <ArrowLeft size={18} strokeWidth={2.25} aria-hidden />
           </Link>
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-bold tracking-tight text-zinc-900">Promociones</h2>
+            <h2 className="truncate text-lg font-bold tracking-tight text-zinc-900">Combos</h2>
             <p className="mt-0.5 text-xs font-medium text-zinc-500">
-              Armá nuevas promos con productos del catálogo
+              Armá nuevos combos con productos del catálogo
             </p>
           </div>
         </div>
@@ -607,7 +607,7 @@ export default function AdminPromocionesPage() {
           className="admin-pressable inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:min-w-[200px]"
         >
           <Plus size={20} strokeWidth={2.25} aria-hidden />
-          Nueva promoción
+          Nuevo combo
         </button>
       </header>
 
@@ -618,17 +618,17 @@ export default function AdminPromocionesPage() {
         >
           {promocionesCategoria.id == null ? (
             <>
-              <p className="font-semibold text-amber-900">Falta la categoría «Promociones»</p>
+              <p className="font-semibold text-amber-900">Falta la categoría «Combos»</p>
               <p className="mt-1 leading-relaxed text-amber-900/90">
-                Creá en «Categorías» una categoría llamada <span className="font-semibold">Promociones</span> (o con
-                slug <span className="font-semibold">promociones</span>) para publicar combos.
+                Creá en «Categorías» una categoría llamada <span className="font-semibold">Combos</span> (o con slug{" "}
+                <span className="font-semibold">combos</span>) para publicar combos.
               </p>
             </>
           ) : (
             <>
-              <p className="font-semibold text-amber-900">La categoría «Promociones» está inactiva</p>
+              <p className="font-semibold text-amber-900">La categoría «Combos» está inactiva</p>
               <p className="mt-1 leading-relaxed text-amber-900/90">
-                Activá esa categoría en «Categorías» para poder crear o guardar promociones.
+                Activá esa categoría en «Categorías» para poder crear o guardar combos.
               </p>
             </>
           )}
@@ -642,7 +642,7 @@ export default function AdminPromocionesPage() {
         >
           <p className="font-semibold text-zinc-900">No hay categorías cargadas</p>
           <p className="mt-1 text-zinc-600">
-            Cargá categorías desde el backend o en «Categorías» antes de crear promociones.
+            Cargá categorías desde el backend o en «Categorías» antes de crear combos.
           </p>
         </div>
       )}
@@ -666,7 +666,7 @@ export default function AdminPromocionesPage() {
       )}
 
       {loadingInitial && (
-        <div className="flex flex-col gap-3" aria-busy="true" aria-label="Cargando promociones">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-busy="true" aria-label="Cargando combos">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
@@ -674,7 +674,7 @@ export default function AdminPromocionesPage() {
               style={{ animationDelay: `${i * 90}ms` }}
             />
           ))}
-          <p className="text-center text-sm text-zinc-500">Cargando promociones…</p>
+          <p className="col-span-full text-center text-sm text-zinc-500">Cargando combos…</p>
         </div>
       )}
 
@@ -713,10 +713,10 @@ export default function AdminPromocionesPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-400 ring-1 ring-violet-100">
                 <Tag size={28} strokeWidth={1.75} aria-hidden />
               </div>
-              <p className="mt-5 text-base font-semibold text-zinc-900">Todavía no hay promociones</p>
+              <p className="mt-5 text-base font-semibold text-zinc-900">Todavía no hay combos</p>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
-                Creá combos con productos del catálogo. El precio final se guarda en el producto tipo promoción; el
-                stock vendible depende de los componentes.
+                Creá combos con productos del catálogo. El precio final se guarda en el producto tipo combo; el stock
+                vendible depende de los componentes.
               </p>
               <button
                 type="button"
@@ -725,7 +725,7 @@ export default function AdminPromocionesPage() {
                 className="admin-pressable mt-6 inline-flex min-h-12 w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-sm enabled:hover:brightness-105 enabled:active:brightness-95 active:shadow-[0_1px_4px_rgba(0,0,0,0.2)] disabled:pointer-events-none disabled:opacity-45 sm:w-auto"
               >
                 <Plus size={20} strokeWidth={2.25} aria-hidden />
-                Nueva promoción
+                Nuevo combo
               </button>
             </div>
           )}
@@ -754,7 +754,7 @@ export default function AdminPromocionesPage() {
           {items.length > 0 && (
             <ul
               ref={listTopRef}
-              className={`scroll-mt-4 flex flex-col gap-3 transition-opacity duration-200 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
+              className={`scroll-mt-4 grid grid-cols-1 gap-4 transition-opacity duration-200 lg:grid-cols-2 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
               aria-busy={listRefreshing}
             >
               {items.map((row, index) => {
@@ -889,7 +889,7 @@ export default function AdminPromocionesPage() {
             busy={listRefreshing}
             onPrev={() => setPage((p) => Math.max(1, p - 1))}
             onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-            ariaLabel="Paginación del listado de promociones"
+            ariaLabel="Paginación del listado de combos"
           />
         </>
       )}
@@ -897,7 +897,7 @@ export default function AdminPromocionesPage() {
       <Modal
         isOpen={formModalOpen}
         onClose={closeFormModal}
-        title={editing ? "Editar promoción" : "Nueva promoción"}
+        title={editing ? "Editar combo" : "Nuevo combo"}
         closeDisabled={modalBusy}
         keepMountedOnClose
         eagerMount

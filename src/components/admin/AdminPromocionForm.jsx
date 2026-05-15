@@ -219,7 +219,7 @@ export default function AdminPromocionForm({
 
         <div className="space-y-1.5">
           <label htmlFor="promo-nombre" className="block text-sm font-semibold text-zinc-800">
-            Nombre de la promoción <span className="text-red-600">*</span>
+            Nombre del combo <span className="text-red-600">*</span>
           </label>
           <input
             id="promo-nombre"
@@ -250,7 +250,7 @@ export default function AdminPromocionForm({
 
         <div className="space-y-1.5">
           <label htmlFor="promo-precio" className="block text-sm font-semibold text-zinc-800">
-            Precio final de la promoción <span className="text-red-600">*</span>
+            Precio final del combo <span className="text-red-600">*</span>
           </label>
           <input
             id="promo-precio"
@@ -334,7 +334,7 @@ export default function AdminPromocionForm({
         )}
 
         <div className="rounded-xl border border-violet-200/80 bg-violet-50/40 px-3 py-3 sm:px-4 sm:py-4">
-          <h3 className="text-sm font-semibold text-zinc-900">Componentes de la promoción</h3>
+          <h3 className="text-sm font-semibold text-zinc-900">Componentes del combo</h3>
 
           <div className="mt-3 space-y-3">
             <label htmlFor="promo-picker-search" className="sr-only">
@@ -486,7 +486,7 @@ export default function AdminPromocionForm({
               </span>
             </li>
             <li>
-              Precio promo:{" "}
+              Precio del combo:{" "}
               <span className="font-semibold text-zinc-900">
                 {precioPromoNum != null ? formatPrice(precioPromoNum) : "—"}
               </span>

@@ -249,7 +249,7 @@ export default function AdminProductForm({
             {form.formState.errors.precio && (
               <p className="text-xs font-medium text-red-600">{form.formState.errors.precio.message}</p>
             )}
-            <p className="text-[11px] leading-snug text-zinc-500">Coma o punto decimal. $0 = gratis o promo.</p>
+            <p className="text-[11px] leading-snug text-zinc-500">Coma o punto decimal. $0 = gratis o combo.</p>
           </div>
           <div className="space-y-1.5">
             <label htmlFor="prod-stock" className="block text-sm font-semibold text-zinc-800">
@@ -327,7 +327,7 @@ export default function AdminProductForm({
                 className="h-4 w-4 shrink-0 cursor-pointer rounded border-zinc-300 accent-primary"
                 {...form.register("destacado")}
               />
-              Destacado (vitrinas / promos)
+              Destacado (vitrinas / combos)
             </label>
           </div>
           <p className="text-[11px] leading-relaxed text-zinc-600">

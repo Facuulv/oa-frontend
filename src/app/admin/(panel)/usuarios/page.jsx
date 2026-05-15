@@ -728,7 +728,7 @@ export default function AdminUsuariosPage() {
       />
 
       {loadingInitial && (
-        <div className="flex flex-col gap-3" aria-busy="true" aria-label="Cargando usuarios">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-busy="true" aria-label="Cargando usuarios">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
@@ -736,7 +736,7 @@ export default function AdminUsuariosPage() {
               style={{ animationDelay: `${i * 90}ms` }}
             />
           ))}
-          <p className="text-center text-sm text-zinc-500">Cargando usuarios…</p>
+          <p className="col-span-full text-center text-sm text-zinc-500">Cargando usuarios…</p>
         </div>
       )}
 
@@ -805,7 +805,7 @@ export default function AdminUsuariosPage() {
             <>
               <ul
                 ref={listTopRef}
-                className={`scroll-mt-4 flex flex-col gap-3 transition-opacity duration-200 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
+                className={`scroll-mt-4 grid grid-cols-1 gap-4 transition-opacity duration-200 lg:grid-cols-2 ${listRefreshing ? "pointer-events-none opacity-55" : ""}`}
                 aria-busy={listRefreshing}
               >
                 {items.map((row, index) => {

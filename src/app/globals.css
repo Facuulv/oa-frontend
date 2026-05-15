@@ -178,6 +178,63 @@ body {
   animation: cardFadeIn 0.26s ease-out both;
 }
 
+.admin-welcome-card-enter {
+  opacity: 0;
+  animation: cardFadeIn 0.32s ease-out both;
+}
+
+/**
+ * Elevación premium en cards interactivas del admin.
+ * Combinar con `.admin-pressable`; maneja hover lift + active press sin conflicto.
+ */
+.admin-card-lift {
+  -webkit-tap-highlight-color: transparent;
+  transition-property: transform, box-shadow, background-color, border-color, ring-color;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .admin-pressable.admin-card-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  .admin-pressable.admin-card-lift:active {
+    transform: translateY(0) scale(0.995);
+  }
+
+  .admin-icon-well {
+    transition-property: transform, background-color, color, box-shadow, ring-color;
+    transition-duration: 180ms;
+    transition-timing-function: ease-out;
+  }
+
+  .group:hover .admin-icon-well {
+    transform: scale(1.04);
+  }
+
+  .admin-pressable.admin-card-lift:active .admin-icon-well {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-welcome-card-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .admin-pressable.admin-card-lift:hover,
+  .admin-pressable.admin-card-lift:active {
+    transform: none;
+  }
+
+  .group:hover .admin-icon-well {
+    transform: none;
+  }
+}
+
 /**
  * Panel admin: feedback táctil (transform + sombra), ~180ms.
  * Usar en cards de acceso rápido y CTAs; sin JS; respeta `prefers-reduced-motion`.

@@ -103,7 +103,7 @@ export default function AdminCategoryForm({
             id="cat-nombre"
             data-modal-initial-focus
             autoComplete="off"
-            placeholder="Ej. Bebidas, Promos…"
+            placeholder="Ej. Bebidas, Combos…"
             className={`${fieldBase} ${errs.nombre ? fieldErr : fieldOk}`}
             {...form.register("nombre")}
           />

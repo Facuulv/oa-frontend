@@ -489,7 +489,7 @@ export default function AdminCategoriasPage() {
       </header>
 
       {loading && (
-        <div className="flex flex-col gap-3" aria-busy="true" aria-label="Cargando categorías">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-busy="true" aria-label="Cargando categorías">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
@@ -497,7 +497,7 @@ export default function AdminCategoriasPage() {
               style={{ animationDelay: `${i * 90}ms` }}
             />
           ))}
-          <p className="text-center text-sm text-zinc-500">Cargando categorías…</p>
+          <p className="col-span-full text-center text-sm text-zinc-500">Cargando categorías…</p>
         </div>
       )}
 
@@ -564,7 +564,7 @@ export default function AdminCategoriasPage() {
 
       {!loading && !loadError && items.length > 0 && itemsFiltrados.length > 0 && (
         <>
-        <ul ref={listTopRef} className="scroll-mt-4 flex flex-col gap-3">
+        <ul ref={listTopRef} className="scroll-mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           {itemsPaginados.map((row, index) => {
             const thumb =
               buildImageUrl(row.imagen_url, { preset: "adminThumb" }) || PLACEHOLDER_CATEGORY;

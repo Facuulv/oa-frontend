@@ -69,7 +69,7 @@ export default function Sidebar({
       }`}
     >
       <div className="flex h-full flex-col justify-between">
-        <div className="px-5 pt-5">
+        <div className="shrink-0 px-5 pt-5">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -93,8 +93,8 @@ export default function Sidebar({
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col justify-between px-5 pb-5 pt-4">
-          <nav className="space-y-2 overflow-y-auto px-1">
+        <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4">
+          <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain scroll-pt-1 px-1 pt-1">
             {publicLinks.map(({ href, label, icon: Icon }) => {
               const isActive = isLinkActive(href);
 
@@ -135,7 +135,7 @@ export default function Sidebar({
             </button>
           </nav>
 
-          <div className="mt-4 space-y-2 border-t border-white/10 px-1 pt-4">
+          <div className="mt-4 shrink-0 space-y-2 border-t border-white/10 px-1 pt-4">
             {isAuthenticated ? (
               <>
                 {authLinks.map(({ href, label, icon: Icon }) => {
