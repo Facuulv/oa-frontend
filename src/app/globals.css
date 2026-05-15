@@ -13,11 +13,6 @@
   --text-secondary: #6b7280;
   --error: #ef4444;
   --success: #22c55e;
-  --sileo-state-success: oklch(0.723 0.219 142.136);
-  --sileo-state-error: oklch(0.637 0.237 25.331);
-  --sileo-state-info: oklch(0.685 0.169 237.323);
-  --sileo-state-warning: oklch(0.795 0.184 86.047);
-  --sileo-width: 360px;
 }
 
 @theme inline {
@@ -47,13 +42,16 @@ body {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
-/*
- * Sileo ancla [data-sileo-viewport] con position:fixed al monitor.
- * Misma columna centrada que AppViewport (max 480px): toasts arriba a la derecha *dentro* del marco.
- */
-.sileo-app-toast-frame [data-sileo-viewport] {
-  position: absolute !important;
-  max-width: 100% !important;
+/* Sonner: stacking por encima de Modal/Sidebar (z-50) */
+[data-sonner-toaster] {
+  z-index: 100;
+}
+
+/* Mobile / PWA: toasts compactos, sin desbordar el viewport */
+@media (max-width: 600px) {
+  [data-sonner-toast] {
+    max-width: min(100vw - 24px, 400px);
+  }
 }
 
 /* Panel admin: scrollbar fina y discreta (Firefox + WebKit) */
@@ -314,10 +312,4 @@ body {
   margin: 0;
   white-space: break-spaces;
   color: var(--foreground);
-}
-
-@media (max-width: 640px) {
-  :root {
-    --sileo-width: min(92vw, 360px);
-  }
 }

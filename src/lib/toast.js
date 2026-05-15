@@ -1,10 +1,21 @@
 "use client";
 
-import { sileo } from "sileo";
+import { toast as sonnerToast } from "sonner";
 
-const DEFAULT_DURATION_MS = 2800;
+export const DEFAULT_TOAST_DURATION = 2800;
 const DEDUPE_WINDOW_MS = 1200;
 const recentToasts = new Map();
+
+/** Keys propias o heredadas de Sileo que no deben pasarse a Sonner. */
+const SILEO_AND_INTERNAL_KEYS = new Set([
+  "dedupeKey",
+  "styles",
+  "button",
+  "autopilot",
+  "fill",
+  "roundness",
+  "type",
+]);
 
 function cleanupRecent(now) {
   for (const [key, ts] of recentToasts.entries()) {
@@ -20,7 +31,7 @@ function normalizeMessage(message, fallback = "Ocurrió un error") {
 function buildOptions(message, options, fallback) {
   const title = normalizeMessage(message, fallback);
   const description = options?.description;
-  const duration = options?.duration ?? DEFAULT_DURATION_MS;
+  const duration = options?.duration ?? DEFAULT_TOAST_DURATION;
   const dedupeKey = options?.dedupeKey ?? `${options?.type || "info"}:${title}:${String(description ?? "")}`;
   return { title, description, duration, dedupeKey };
 }
@@ -34,27 +45,37 @@ function shouldSkipToast(dedupeKey) {
   return false;
 }
 
+function sonnerPassthrough(options) {
+  if (!options || typeof options !== "object") return {};
+  const out = { ...options };
+  for (const k of SILEO_AND_INTERNAL_KEYS) delete out[k];
+  delete out.description;
+  delete out.duration;
+  return out;
+}
+
 function show(method, message, options = {}, fallback = "Ocurrió un error") {
   const { title, description, duration, dedupeKey } = buildOptions(message, { ...options, type: method }, fallback);
   if (shouldSkipToast(dedupeKey)) return null;
 
-  let id = "";
-  id = sileo[method]({
-    title,
-    description,
+  const data = {
+    ...sonnerPassthrough(options),
+    ...(description !== undefined && description !== null ? { description } : {}),
     duration,
-    button: {
-      title: "x",
-      onClick: () => sileo.dismiss(id),
-    },
-    styles: {
-      button:
-        "h-7 min-w-7 rounded-full text-xs font-bold leading-none bg-black/5 hover:bg-black/10 active:scale-95",
-      ...(options.styles || {}),
-    },
-    ...options,
-  });
-  return id;
+  };
+
+  switch (method) {
+    case "success":
+      return sonnerToast.success(title, data);
+    case "error":
+      return sonnerToast.error(title, data);
+    case "warning":
+      return sonnerToast.warning(title, data);
+    case "info":
+      return sonnerToast.info(title, data);
+    default:
+      return sonnerToast.info(title, data);
+  }
 }
 
 export function getApiErrorMessage(error, fallback = "Ocurrió un error") {
@@ -81,10 +102,10 @@ export const toast = {
     return show("info", message, options, "Información");
   },
   dismiss(id) {
-    if (id) sileo.dismiss(id);
+    if (id !== undefined && id !== null && id !== "") sonnerToast.dismiss(id);
   },
   clear() {
-    sileo.clear();
+    sonnerToast.dismiss();
   },
 };
 

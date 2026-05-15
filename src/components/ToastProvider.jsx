@@ -1,29 +1,22 @@
 "use client";
 
-import { Toaster } from "sileo";
-import "sileo/styles.css";
-import { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
-import { cn } from "@/lib/cn";
+import { DEFAULT_TOAST_DURATION } from "@/lib/toast";
+import { Toaster } from "sonner";
 
 export default function ToastProvider() {
   return (
-    <div className="sileo-app-toast-frame pointer-events-none fixed inset-x-0 top-0 z-50 flex h-[100dvh] justify-center">
-      <div
-        className={cn(
-          "pointer-events-none relative h-full w-full shrink-0",
-          APP_VIEWPORT_MAX_CLASS,
-        )}
-      >
-        <Toaster
-          position="top-right"
-          offset={{ top: 16, right: 12, left: 12, bottom: 16 }}
-          options={{
-            duration: 2800,
-            roundness: 16,
-            autopilot: { expand: 120, collapse: 180 },
-          }}
-        />
-      </div>
-    </div>
+    <Toaster
+      position="top-right"
+      closeButton
+      richColors
+      theme="light"
+      toastOptions={{ duration: DEFAULT_TOAST_DURATION }}
+      offset={{ top: 20, right: 16 }}
+      mobileOffset={{
+        top: "calc(12px + env(safe-area-inset-top, 0px))",
+        right: "calc(12px + env(safe-area-inset-right, 0px))",
+      }}
+      gap={10}
+    />
   );
 }
