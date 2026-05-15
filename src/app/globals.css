@@ -1,7 +1,12 @@
 @import "tailwindcss";
 
 :root {
+<<<<<<< Updated upstream
   --background: #f5f5f5;
+=======
+  /* Fondo global (shell + body); alineado con AppShell superficie blanca */
+  --background: #ffffff;
+>>>>>>> Stashed changes
   --foreground: #1f2937;
   --primary: #C1121F;
   --primary-dark: #A10E19;

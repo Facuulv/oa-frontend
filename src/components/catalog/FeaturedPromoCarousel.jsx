@@ -53,25 +53,43 @@ function FeaturedPromoEmbla({ items }) {
             return (
               <div
                 key={p.id}
+<<<<<<< Updated upstream
                 className={`min-w-0 max-w-sm shrink-0 flex-[0_0_88%] sm:flex-[0_0_17rem] ${i < items.length - 1 ? "mr-3" : ""}`}
+=======
+                className={`min-w-0 w-44 shrink-0 sm:w-68 ${i < items.length - 1 ? "mr-3" : ""}`}
+>>>>>>> Stashed changes
               >
                 <Link
                   href={`/producto/${p.slug ?? p.id}`}
-                  className="flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition hover:shadow-md"
+                  className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
+<<<<<<< Updated upstream
                   <div className="relative aspect-16/10 w-full bg-neutral-50">
+=======
+                  <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-t-2xl bg-zinc-50">
+>>>>>>> Stashed changes
                     <ImageWithFade
                       src={imgSrc}
                       alt={p.nombre}
-                      className="h-full w-full object-cover"
+                      className="absolute inset-0 h-full w-full object-cover"
                       onError={(e) => {
                         e.currentTarget.src = PLACEHOLDER_PRODUCT_CARD;
                       }}
                     />
                   </div>
+<<<<<<< Updated upstream
                   <div className="flex flex-1 flex-col p-3">
                     <p className="line-clamp-2 text-sm font-semibold text-neutral-900">{p.nombre}</p>
                     <p className="mt-auto pt-2 text-lg font-bold text-[#C1121F]">{formatPrice(p.precio)}</p>
+=======
+                  <div className="flex h-22 w-full shrink-0 flex-col justify-between gap-1 px-3 py-2">
+                    <p className="h-10 shrink-0 overflow-hidden text-sm font-semibold leading-snug text-neutral-900 line-clamp-2">
+                      {p.nombre}
+                    </p>
+                    <p className="h-7 shrink-0 truncate text-lg font-bold leading-none text-[#C1121F]">
+                      {formatPrice(p.precio)}
+                    </p>
+>>>>>>> Stashed changes
                   </div>
                 </Link>
               </div>
@@ -138,7 +156,24 @@ export default function FeaturedPromoCarousel() {
     return (
       <div className="px-4 pt-4">
         <div className="mb-2 h-5 w-28 animate-pulse rounded bg-white/70" />
+<<<<<<< Updated upstream
         <div className="h-48 animate-pulse rounded-2xl bg-white/60" />
+=======
+        <div className="flex gap-3 overflow-hidden">
+          {[0, 1, 2].map((k) => (
+            <div
+              key={k}
+              className="w-44 shrink-0 overflow-hidden rounded-2xl border border-zinc-100 bg-white/60 shadow-sm sm:w-68"
+            >
+              <div className="aspect-square w-full animate-pulse bg-zinc-100/80" />
+              <div className="h-22 space-y-2 p-3">
+                <div className="h-10 animate-pulse rounded bg-zinc-100/80" />
+                <div className="h-6 w-20 animate-pulse rounded bg-zinc-100/80" />
+              </div>
+            </div>
+          ))}
+        </div>
+>>>>>>> Stashed changes
       </div>
     );
   }

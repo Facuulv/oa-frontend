@@ -37,6 +37,11 @@ const appConfig = {
     storageKey: "oa-carrito",
   },
 
+  savedCombos: {
+    storageKey: "tus_combos",
+    maxItems: 10,
+  },
+
   pwa: {
     themeColor: "#C1121F",
     backgroundColor: "#f5f5f5",
