@@ -1,18 +1,9 @@
 "use client";
 
-<<<<<<< HEAD
-import { useEffect, useState } from "react";
-=======
 import { useEffect, useMemo, useState } from "react";
->>>>>>> sacha
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
 import { useCartStore, selectCartItems, selectCartTotal } from "@/store/useCartStore";
-<<<<<<< HEAD
-import { validateCheckoutForm } from "@/utils/checkout/checkoutValidations";
-import { buildWhatsappMessage, buildWhatsappUrl } from "@/utils/checkout/buildWhatsappMessage";
-import UltimoAntojoSection from "@/components/checkout/UltimoAntojoSection";
-=======
 import {
   useUserDataStore,
   selectUserProfile,
@@ -22,7 +13,6 @@ import { validateCheckoutForm } from "@/utils/checkout/checkoutValidations";
 import { buildWhatsappMessage, buildWhatsappUrl } from "@/utils/checkout/buildWhatsappMessage";
 import UltimoAntojoSection from "@/components/checkout/UltimoAntojoSection";
 import AddressAutocompleteInput from "@/components/checkout/AddressAutocompleteInput";
->>>>>>> sacha
 import { formatPrice } from "@/utils/format/price";
 
 const INITIAL_FORM = {
@@ -53,8 +43,6 @@ export default function CheckoutFinalizarPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSent, setOrderSent] = useState(null);
 
-<<<<<<< HEAD
-=======
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -71,7 +59,6 @@ export default function CheckoutFinalizarPage() {
     }));
   }, [mounted, savedProfile, savedAddresses]);
 
->>>>>>> sacha
   // En Delivery, el efectivo no aplica → forzar Transferencia.
   useEffect(() => {
     if (formValues.deliveryType === "DELIVERY" && formValues.paymentMethod === "efectivo") {
@@ -90,8 +77,6 @@ export default function CheckoutFinalizarPage() {
     }
   };
 
-<<<<<<< HEAD
-=======
   const isDelivery = formValues.deliveryType === "DELIVERY";
 
   // Bloqueo del CTA: nombre, teléfono y (si es delivery) dirección obligatorios.
@@ -102,7 +87,6 @@ export default function CheckoutFinalizarPage() {
     return hasName && hasPhone && hasAddress;
   }, [formValues.nombre, formValues.telefono, formValues.direccion, isDelivery]);
 
->>>>>>> sacha
   const handleSubmit = () => {
     if (items.length === 0 || isSubmitting) return;
 
@@ -120,8 +104,6 @@ export default function CheckoutFinalizarPage() {
 
     setIsSubmitting(true);
     try {
-<<<<<<< HEAD
-=======
       // Persistir datos del usuario para futuros pedidos (localStorage: user_data).
       saveFromOrder({
         nombre: normalized.nombre,
@@ -130,7 +112,6 @@ export default function CheckoutFinalizarPage() {
         direccion: isDelivery ? normalized.direccion : "",
       });
 
->>>>>>> sacha
       const message = buildWhatsappMessage({
         customer: {
           nombre: normalized.nombre,
@@ -161,41 +142,25 @@ export default function CheckoutFinalizarPage() {
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
           <Check size={28} strokeWidth={3} />
         </div>
-<<<<<<< HEAD
-        <h2 className="mb-2 text-lg font-bold text-gray-800">¡Te llevamos a WhatsApp!</h2>
-        <p className="mb-1 text-sm text-gray-600">
-          Confirmá el pedido enviando el mensaje al local.
-        </p>
-        <p className="mb-6 text-sm text-gray-500">
-=======
         <h2 className="mb-2 text-lg font-bold text-zinc-900">¡Te llevamos a WhatsApp!</h2>
         <p className="mb-1 text-sm text-zinc-700">
           Confirmá el pedido enviando el mensaje al local.
         </p>
         <p className="mb-6 text-sm text-zinc-500">
->>>>>>> sacha
           Si la pestaña no se abrió, tocá el botón de abajo.
         </p>
         <a
           href={orderSent.url}
           target="_blank"
           rel="noopener noreferrer"
-<<<<<<< HEAD
-          className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white"
-=======
           className="rounded-xl bg-[#C1121F] px-6 py-2.5 text-sm font-bold text-white"
->>>>>>> sacha
         >
           Abrir WhatsApp
         </a>
         <button
           type="button"
           onClick={() => router.push("/")}
-<<<<<<< HEAD
-          className="mt-3 rounded-lg border border-gray-200 px-6 py-2.5 text-sm font-medium text-gray-700"
-=======
           className="mt-3 rounded-xl border border-zinc-200 px-6 py-2.5 text-sm font-semibold text-zinc-700"
->>>>>>> sacha
         >
           Volver al inicio
         </button>
@@ -213,11 +178,6 @@ export default function CheckoutFinalizarPage() {
         : "border-zinc-200 focus:border-[#C1121F]/40 focus:ring-2 focus:ring-[#C1121F]/15"
     }`;
 
-<<<<<<< HEAD
-  const isDelivery = formValues.deliveryType === "DELIVERY";
-
-=======
->>>>>>> sacha
   const paymentOptions = [
     { value: "efectivo", label: "Efectivo" },
     { value: "transferencia", label: "Transferencia" },
@@ -353,17 +313,10 @@ export default function CheckoutFinalizarPage() {
                   type="button"
                   disabled={disabled}
                   onClick={() => !disabled && updateField("paymentMethod", value)}
-<<<<<<< HEAD
-                  className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition ${
-                    selected
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-gray-200 text-gray-600"
-=======
                   className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${
                     selected
                       ? "border-[#C1121F] bg-[#C1121F]/5 text-[#C1121F]"
                       : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
->>>>>>> sacha
                   } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
                   aria-disabled={disabled}
                 >
@@ -373,11 +326,7 @@ export default function CheckoutFinalizarPage() {
             })}
           </div>
           {isDelivery && (
-<<<<<<< HEAD
-            <p className="mt-2 text-xs text-gray-500">
-=======
             <p className="mt-2 text-xs text-zinc-500">
->>>>>>> sacha
               El pago en efectivo solo es válido para retiro en local.
             </p>
           )}
@@ -398,17 +347,11 @@ export default function CheckoutFinalizarPage() {
           />
         </section>
 
-<<<<<<< HEAD
-        <UltimoAntojoSection />
-
-        <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-=======
         {/* Sugerencias (compactas) — antes del resumen */}
         <UltimoAntojoSection />
 
         {/* Resumen de pago */}
         <section className="rounded-2xl border border-zinc-200 bg-white p-4">
->>>>>>> sacha
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-700">
               Total ({items.length} {items.length === 1 ? "producto" : "productos"})
@@ -422,13 +365,8 @@ export default function CheckoutFinalizarPage() {
         <button
           type="button"
           onClick={handleSubmit}
-<<<<<<< HEAD
-          disabled={isSubmitting || items.length === 0}
-          className="w-full rounded-lg bg-primary py-3 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
-=======
           disabled={isSubmitting || items.length === 0 || !isFormReady}
           className="min-h-[48px] w-full rounded-xl bg-[#C1121F] px-6 py-3.5 text-base font-bold text-white shadow-lg transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 disabled:shadow-none"
->>>>>>> sacha
         >
           {isSubmitting ? "Procesando..." : "Confirmar pedido"}
         </button>

@@ -14,16 +14,8 @@ export default function Navbar({ onMenuClick }) {
   const searchQuery = useCartStore((s) => s.searchQuery);
   const setSearchQuery = useCartStore((s) => s.setSearchQuery);
   const clearSearch = useCartStore((s) => s.clearSearch);
-<<<<<<< HEAD
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
-=======
-<<<<<<< Updated upstream
-  const isAuthenticated = useAuthStore(selectIsAuthenticated);
-=======
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
   const [mounted, setMounted] = useState(false);
->>>>>>> Stashed changes
->>>>>>> sacha
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
 

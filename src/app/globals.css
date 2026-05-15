@@ -1,17 +1,8 @@
 @import "tailwindcss";
 
 :root {
-<<<<<<< HEAD
   /* Chrome exterior (whitesmoke / gris muy suave; distinto del blanco de cards) */
   --background: #f0f0f2;
-=======
-<<<<<<< Updated upstream
-  --background: #f5f5f5;
-=======
-  /* Fondo global (shell + body); alineado con AppShell superficie blanca */
-  --background: #ffffff;
->>>>>>> Stashed changes
->>>>>>> sacha
   --foreground: #1f2937;
   --primary: #C1121F;
   --primary-dark: #A10E19;
