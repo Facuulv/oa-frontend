@@ -8,6 +8,7 @@ import {
   selectCanAccessAdminPanel,
   selectIsAuthenticated,
   selectAuthLoading,
+  selectIsSessionLoaded,
 } from "@/store/useAuthStore";
 
 export function useAdminAuth({ redirectTo = null, requireAdmin = false } = {}) {
@@ -18,6 +19,7 @@ export function useAdminAuth({ redirectTo = null, requireAdmin = false } = {}) {
   const isAdmin = useAuthStore(selectCanAccessAdminPanel);
   const logout = useAuthStore((s) => s.logout);
   const loading = useAuthStore(selectAuthLoading);
+  const isSessionLoaded = useAuthStore(selectIsSessionLoaded);
 
   useEffect(() => {
     if (loading) return;
@@ -29,5 +31,5 @@ export function useAdminAuth({ redirectTo = null, requireAdmin = false } = {}) {
     }
   }, [loading, isAuthenticated, isAdmin, redirectTo, requireAdmin, router]);
 
-  return { user, isAuthenticated, isAdmin, logout, loading };
+  return { user, isAuthenticated, isAdmin, logout, loading, isSessionLoaded };
 }

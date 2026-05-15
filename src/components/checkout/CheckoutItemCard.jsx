@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import ImageWithFade from "@/components/ImageWithFade";
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
@@ -7,7 +8,7 @@ import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { formatPrice } from "@/utils/format/price";
 import { getItemUnitPrice } from "@/store/useCartStore";
 
-export default function CheckoutItemCard({ item, onUpdateQuantity, onRemove }) {
+function CheckoutItemCard({ item, onUpdateQuantity, onRemove }) {
   const imgSrc =
     getOptimizedImageUrl(item.imagen_url, { preset: "checkoutLine" }) || PLACEHOLDER_PRODUCT_CARD;
   const unitPrice = getItemUnitPrice(item);
@@ -62,3 +63,5 @@ export default function CheckoutItemCard({ item, onUpdateQuantity, onRemove }) {
     </div>
   );
 }
+
+export default memo(CheckoutItemCard);

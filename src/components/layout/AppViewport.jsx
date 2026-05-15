@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
  * Sigue usándose en barras `fixed`, toasts, etc., hasta migrar esos puntos al nuevo layout.
  */
 export const APP_VIEWPORT_MAX_CLASS = "max-w-[480px]";
+export const APP_VIEWPORT_MIN_HEIGHT_CLASS = "min-h-[100dvh]";
 
 /**
  * @typedef {"public" | "admin" | "auth"} AppViewportVariant
@@ -37,13 +38,13 @@ export default function AppViewport({
   return (
     <div
       className={cn(
-        "flex min-h-[100dvh] w-full justify-center bg-background text-foreground",
+        `flex ${APP_VIEWPORT_MIN_HEIGHT_CLASS} w-full justify-center bg-background text-foreground`,
         className,
       )}
     >
       <div
         className={cn(
-          "relative flex w-full min-h-[100dvh] flex-col",
+          `relative flex w-full ${APP_VIEWPORT_MIN_HEIGHT_CLASS} flex-col`,
           innerMaxWidthClass(variant),
           innerClassName,
         )}

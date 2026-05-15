@@ -197,6 +197,9 @@ Variables `NEXT_PUBLIC_*` deben estar definidas **en el momento del build** en l
 - El parseo de rol en middleware es **indicativo**; no sustituye controles en API.
 - **Horarios**: con `NEXT_PUBLIC_ENABLE_STORE_HOURS_VALIDATION=true`, el hook está preparado para conectar un endpoint de horarios; revisá `useStoreStatus` antes de asumir cierre automático en producción.
 - **Inconsistencia resuelta en repo**: `NEXT_PUBLIC_APP_URL` existía en código pero no en `.env.example`; el ejemplo fue actualizado para reflejar el código.
+- Para evolución técnica del frontend, consultar:
+  - `docs/FRONTEND_STABILIZATION_BASELINE.md`
+  - `docs/FRONTEND_GOVERNANCE.md`
 
 ## Problemas comunes / troubleshooting
 
@@ -214,6 +217,14 @@ Variables `NEXT_PUBLIC_*` deben estar definidas **en el momento del build** en l
 - Integración completa de **horarios de tienda** con endpoint dedicado.
 - Uso explícito de **`NEXT_PUBLIC_APP_URL`** en metadatos, enlaces absolutos o integraciones (OAuth callbacks, etc.).
 - Tests automatizados (e2e / component) y pipeline CI.
+
+## Segmentación sugerida de backlog
+
+- `stabilization`: deuda técnica y consolidación estructural.
+- `feature`: entregables funcionales de negocio.
+- `risky`: cambios con potencial de regresión alto.
+- `pre-release`: tareas de hardening para despliegue.
+- `post-merge`: limpieza específica luego de conflictos de ramas.
 
 ## Autor / notas finales
 

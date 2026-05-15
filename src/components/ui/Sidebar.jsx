@@ -16,8 +16,14 @@ import {
   Download,
   X,
 } from "lucide-react";
-import { useAuthStore, selectCanAccessAdminPanel, selectIsClienteUser } from "@/store/useAuthStore";
+import {
+  useAuthStore,
+  selectCanAccessAdminPanel,
+  selectIsAuthenticatedCliente,
+} from "@/store/useAuthStore";
 import { useSavedCombosStore, selectSavedCombos } from "@/store/useSavedCombosStore";
+import { PUBLIC_SIDEBAR_WIDTH } from "@/constants/layout";
+import NavItem from "@/components/ui/NavItem";
 
 /**
  * Orden fijo. Se renderizan en dos bloques: los que van antes de la sección
@@ -52,7 +58,7 @@ export default function Sidebar({
   const [greeting, setGreeting] = useState("Hola");
   const [isCombosOpen, setIsCombosOpen] = useState(false);
 
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
+  const isAuthenticated = useAuthStore(selectIsAuthenticatedCliente);
   const canAccessAdminPanel = useAuthStore(selectCanAccessAdminPanel);
   const savedCombos = useSavedCombosStore(selectSavedCombos);
   const removeCombo = useSavedCombosStore((s) => s.removeCombo);
@@ -64,6 +70,8 @@ export default function Sidebar({
 
   const isLinkActive = (href) => (href === "/" ? pathname === "/" : pathname?.startsWith(href));
   const isCombosSectionActive = pathname?.startsWith("/arma-tu-combo");
+  const loginIsActive = isLinkActive("/login");
+
 
   useEffect(() => {
     setMounted(true);
@@ -84,9 +92,10 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`absolute left-0 top-0 z-50 h-full w-[17.5rem] max-w-[85vw] transform-gpu border-r border-white/10 bg-zinc-950/98 shadow-2xl backdrop-blur-[1px] will-change-transform transition-transform duration-200 ease-out ${
+      className={`absolute left-0 top-0 z-50 h-full transform-gpu border-r border-white/10 bg-zinc-950/98 shadow-2xl backdrop-blur-[1px] will-change-transform transition-transform duration-200 ease-out ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}
+      style={{ width: `min(${PUBLIC_SIDEBAR_WIDTH}, 85vw)` }}
     >
       <div className="flex h-full flex-col justify-between">
         <div className="shrink-0 px-5 pt-5">
@@ -119,27 +128,14 @@ export default function Sidebar({
               const isActive = isLinkActive(href);
 
               return (
-                <Link
+                <NavItem
                   key={href}
                   href={href}
+                  label={label}
+                  icon={Icon}
+                  isActive={isActive}
                   onClick={onClose}
-                  className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors duration-200 ${
-                    isActive
-                      ? "bg-red-500/15 text-red-100 ring-1 ring-red-400/30"
-                      : "bg-white/[0.02] text-zinc-300 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition-colors duration-200 ${
-                      isActive
-                        ? "border-red-400/30 bg-red-500/15 text-red-300"
-                        : "border-white/10 bg-white/[0.02] text-zinc-400 group-hover:border-white/20 group-hover:text-zinc-200"
-                    }`}
-                  >
-                    <Icon size={16} />
-                  </span>
-                  <span>{label}</span>
-                </Link>
+                />
               );
             })}
 
@@ -231,27 +227,14 @@ export default function Sidebar({
               const isActive = isLinkActive(href);
 
               return (
-                <Link
+                <NavItem
                   key={href}
                   href={href}
+                  label={label}
+                  icon={Icon}
+                  isActive={isActive}
                   onClick={onClose}
-                  className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors duration-200 ${
-                    isActive
-                      ? "bg-red-500/15 text-red-100 ring-1 ring-red-400/30"
-                      : "bg-white/[0.02] text-zinc-300 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition-colors duration-200 ${
-                      isActive
-                        ? "border-red-400/30 bg-red-500/15 text-red-300"
-                        : "border-white/10 bg-white/[0.02] text-zinc-400 group-hover:border-white/20 group-hover:text-zinc-200"
-                    }`}
-                  >
-                    <Icon size={16} />
-                  </span>
-                  <span>{label}</span>
-                </Link>
+                />
               );
             })}
 
@@ -274,27 +257,14 @@ export default function Sidebar({
                   const isActive = isLinkActive(href);
 
                   return (
-                    <Link
+                    <NavItem
                       key={href}
                       href={href}
+                      label={label}
+                      icon={Icon}
+                      isActive={isActive}
                       onClick={onClose}
-                      className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors duration-200 ${
-                        isActive
-                          ? "bg-red-500/15 text-red-100 ring-1 ring-red-400/30"
-                          : "bg-white/[0.02] text-zinc-300 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <span
-                        className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition-colors duration-200 ${
-                          isActive
-                            ? "border-red-400/30 bg-red-500/15 text-red-300"
-                            : "border-white/10 bg-white/[0.02] text-zinc-400 group-hover:border-white/20 group-hover:text-zinc-200"
-                        }`}
-                      >
-                        <Icon size={16} />
-                      </span>
-                      <span>{label}</span>
-                    </Link>
+                    />
                   );
                 })}
 
@@ -303,51 +273,25 @@ export default function Sidebar({
                     const isActive = isLinkActive(href);
 
                     return (
-                      <Link
+                      <NavItem
                         key={href}
                         href={href}
+                        label={label}
+                        icon={Icon}
+                        isActive={isActive}
                         onClick={onClose}
-                        className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors duration-200 ${
-                          isActive
-                            ? "bg-red-500/15 text-red-100 ring-1 ring-red-400/30"
-                            : "bg-white/[0.02] text-zinc-300 hover:bg-white/5 hover:text-white"
-                        }`}
-                      >
-                        <span
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition-colors duration-200 ${
-                            isActive
-                              ? "border-red-400/30 bg-red-500/15 text-red-300"
-                              : "border-white/10 bg-white/[0.02] text-zinc-400 group-hover:border-white/20 group-hover:text-zinc-200"
-                          }`}
-                        >
-                          <Icon size={16} />
-                        </span>
-                        <span>{label}</span>
-                      </Link>
+                      />
                     );
                   })}
               </>
             ) : (
-              <Link
+              <NavItem
                 href="/login"
+                label="Iniciar sesión"
+                icon={LogIn}
+                isActive={loginIsActive}
                 onClick={onClose}
-                className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors duration-200 ${
-                  isLinkActive("/login")
-                    ? "bg-red-500/15 text-red-100 ring-1 ring-red-400/30"
-                    : "bg-white/[0.02] text-zinc-300 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <span
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition-colors duration-200 ${
-                    isLinkActive("/login")
-                      ? "border-red-400/30 bg-red-500/15 text-red-300"
-                      : "border-white/10 bg-white/[0.02] text-zinc-400 group-hover:border-white/20 group-hover:text-zinc-200"
-                  }`}
-                >
-                  <LogIn size={16} />
-                </span>
-                <span>Iniciar sesión</span>
-              </Link>
+              />
             )}
           </div>
         </div>

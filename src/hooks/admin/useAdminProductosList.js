@@ -1,12 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 import { listProductos } from "@/services/adminProductosService";
 import { TIPO_PRODUCTO } from "@/constants/tipoProducto";
-
-const defaultPagination = (pageSize) => ({
-  page: 1,
-  limit: pageSize,
-  total: 0,
-});
+import { useAdminPaginatedList } from "@/hooks/admin/useAdminPaginatedList";
 
 /**
  * Listado paginado de productos admin: sincroniza filtros + página con el API.
@@ -35,76 +30,29 @@ export function useAdminProductosList({
   tipoProducto = TIPO_PRODUCTO.PRODUCTO,
   listFn = listProductos,
 }) {
-  const [items, setItems] = useState([]);
-  const [pagination, setPagination] = useState(() => defaultPagination(pageSize));
-  const [loadError, setLoadError] = useState(null);
-  const [loadingInitial, setLoadingInitial] = useState(true);
-  const [listRefreshing, setListRefreshing] = useState(false);
-  const fetchSeqRef = useRef(0);
-  const completedOnceRef = useRef(false);
+  const fetchPage = useCallback(async () => {
+    const params = {
+      page,
+      limit: pageSize,
+      ordenar,
+    };
+    if (busqueda) params.busqueda = busqueda;
+    if (filtroCategoria) params.categoria_id = Number(filtroCategoria);
+    if (filtroActivo === "true") params.activo = true;
+    if (filtroActivo === "false") params.activo = false;
+    if (filtroDestacado === "true") params.destacado = true;
+    if (filtroDestacado === "false") params.destacado = false;
+    if (filtroDisponible === "true") params.disponible = true;
+    if (filtroDisponible === "false") params.disponible = false;
+    if (tipoProducto && listFn === listProductos) params.tipo_producto = tipoProducto;
 
-  const load = useCallback(async () => {
-    const seq = ++fetchSeqRef.current;
-
-    setLoadError(null);
-    if (!completedOnceRef.current) setLoadingInitial(true);
-    else setListRefreshing(true);
-
-    try {
-      const params = {
-        page,
-        limit: pageSize,
-        ordenar,
-      };
-      if (busqueda) params.busqueda = busqueda;
-      if (filtroCategoria) params.categoria_id = Number(filtroCategoria);
-      if (filtroActivo === "true") params.activo = true;
-      if (filtroActivo === "false") params.activo = false;
-      if (filtroDestacado === "true") params.destacado = true;
-      if (filtroDestacado === "false") params.destacado = false;
-      if (filtroDisponible === "true") params.disponible = true;
-      if (filtroDisponible === "false") params.disponible = false;
-      if (tipoProducto && listFn === listProductos) params.tipo_producto = tipoProducto;
-
-      const { productos, pagination: pag } = await listFn(params);
-      if (seq !== fetchSeqRef.current) return;
-      let rows = Array.isArray(productos) ? productos : [];
-      if (tipoProducto) {
-        rows = rows.filter((p) => (p?.tipo_producto ?? TIPO_PRODUCTO.PRODUCTO) === tipoProducto);
-      }
-
-      const lim =
-        Number.isFinite(Number(pag?.limit)) && Number(pag.limit) > 0 ? Number(pag.limit) : pageSize;
-      let total =
-        Number.isFinite(Number(pag?.total)) && Number(pag.total) >= 0 ? Number(pag.total) : 0;
-      let resolvedPage =
-        Number.isFinite(Number(pag?.page)) && Number(pag.page) > 0 ? Number(pag.page) : page;
-
-      /** Backend devolvió más filas que el límite pedido: paginación en cliente (legacy / sin offset). */
-      if (rows.length > lim) {
-        total = Math.max(total, rows.length);
-        resolvedPage = page;
-        const start = (page - 1) * lim;
-        rows = rows.slice(start, start + lim);
-      } else if (rows.length > 0 && total === 0) {
-        total = rows.length;
-      }
-
-      setItems(rows);
-      setPagination({
-        page: resolvedPage,
-        limit: lim,
-        total,
-      });
-    } catch (e) {
-      if (seq !== fetchSeqRef.current) return;
-      setLoadError(e);
-    } finally {
-      if (seq !== fetchSeqRef.current) return;
-      completedOnceRef.current = true;
-      setLoadingInitial(false);
-      setListRefreshing(false);
+    const { productos, pagination } = await listFn(params);
+    let rows = Array.isArray(productos) ? productos : [];
+    if (tipoProducto) {
+      rows = rows.filter((p) => (p?.tipo_producto ?? TIPO_PRODUCTO.PRODUCTO) === tipoProducto);
     }
+
+    return { items: rows, pagination };
   }, [
     page,
     pageSize,
@@ -118,16 +66,9 @@ export function useAdminProductosList({
     listFn,
   ]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  return {
-    items,
-    pagination,
-    loadError,
-    load,
-    loadingInitial,
-    listRefreshing,
-  };
+  return useAdminPaginatedList({
+    page,
+    pageSize,
+    fetchPage,
+  });
 }

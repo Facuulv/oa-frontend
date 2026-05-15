@@ -1,12 +1,14 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import ImageWithFade from "@/components/ImageWithFade";
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
+import { OA_BRAND_PRIMARY_HEX } from "@/constants/layout";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { formatPrice } from "@/utils/format/price";
 
-export default function ProductListItemCard({ product }) {
+function ProductListItemCard({ product }) {
   const imgSrc =
     getOptimizedImageUrl(product.imagen_url, { preset: "productCard" }) || PLACEHOLDER_PRODUCT_CARD;
 
@@ -35,10 +37,12 @@ export default function ProductListItemCard({ product }) {
             {product.descripcion}
           </p>
         )}
-        <p className="product-price mt-1 text-lg font-bold text-[#C1121F]">
+        <p className="product-price mt-1 text-lg font-bold" style={{ color: OA_BRAND_PRIMARY_HEX }}>
           {formatPrice(product.precio)}
         </p>
       </div>
     </Link>
   );
 }
+
+export default memo(ProductListItemCard);

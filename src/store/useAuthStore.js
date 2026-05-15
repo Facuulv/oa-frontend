@@ -159,6 +159,7 @@ export const useAuthStore = create((set, get) => ({
 
 export const selectAuthUser = (state) => state.user;
 export const selectIsAuthenticated = (state) => Boolean(state.user);
+export const selectIsSessionLoaded = (state) => state.hasValidatedSession && !state.loading;
 export const selectAuthLoading = (state) => state.loading;
 export const selectAuthSessionGateReady = (state) => !state.loading;
 
@@ -207,4 +208,9 @@ export function selectIsAdminUser(state) {
 
 export function selectIsClienteUser(state) {
   return state.user?.origen === "CLIENTE";
+}
+
+/** Sesión autenticada estrictamente para área cliente (carta pública + mi cuenta). */
+export function selectIsAuthenticatedCliente(state) {
+  return selectIsAuthenticated(state) && selectIsClienteUser(state);
 }

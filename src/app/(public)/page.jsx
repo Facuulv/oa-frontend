@@ -8,6 +8,7 @@ import HomeFeaturedCards from "@/components/catalog/HomeFeaturedCards";
 import CategoryCard from "@/components/catalog/CategoryCard";
 import HomeSkeleton from "@/components/skeletons/HomeSkeleton";
 import { isPromocionesCategory } from "@/utils/admin/findCategoriaPromocionesId";
+import { PUBLIC_CONTENT_MIN_HEIGHT_CLASS } from "@/constants/layout";
 
 export default function HomePage() {
   const fetchCategories = useCatalogStore((s) => s.fetchCategories);
@@ -28,7 +29,7 @@ export default function HomePage() {
   if (showSkeleton) return <HomeSkeleton />;
 
   return (
-    <div className="min-h-[calc(100dvh-3.25rem)] bg-[#FFF1F2] pb-16">
+    <div className={`${PUBLIC_CONTENT_MIN_HEIGHT_CLASS} bg-[#FFF1F2] pb-16`}>
       <FeaturedPromoCarousel />
 
       <section className="px-4 pt-6">

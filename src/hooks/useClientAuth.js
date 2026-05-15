@@ -7,6 +7,7 @@ import {
   selectAuthUser,
   selectAuthLoading,
   selectIsClienteUser,
+  selectIsAuthenticatedCliente,
 } from "@/store/useAuthStore";
 
 /**
@@ -17,7 +18,7 @@ export function useClientAuth({ redirectTo = null, requireCliente = false } = {}
   const user = useAuthStore(selectAuthUser);
   const loading = useAuthStore(selectAuthLoading);
   const isCliente = useAuthStore(selectIsClienteUser);
-  const isAuthenticated = useAuthStore((s) => Boolean(s.user) && selectIsClienteUser(s));
+  const isAuthenticated = useAuthStore(selectIsAuthenticatedCliente);
   const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {

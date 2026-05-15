@@ -3,6 +3,8 @@ import appConfig from "@/config/app.config";
 import { logApiRequest } from "@/utils/api/requestLog";
 
 axios.defaults.withCredentials = true;
+let lastUnauthorizedDispatchAt = 0;
+const UNAUTHORIZED_DISPATCH_DEBOUNCE_MS = 1000;
 
 const rawBase = (appConfig.api.baseUrl || "").trim();
 const baseURL = rawBase ? rawBase.replace(/\/$/, "") : "";
@@ -33,7 +35,11 @@ apiClient.interceptors.response.use(
     }
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+        const now = Date.now();
+        if (now - lastUnauthorizedDispatchAt >= UNAUTHORIZED_DISPATCH_DEBOUNCE_MS) {
+          lastUnauthorizedDispatchAt = now;
+          window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+        }
       }
     }
     return Promise.reject(error);

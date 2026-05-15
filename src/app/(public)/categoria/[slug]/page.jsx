@@ -25,12 +25,8 @@ export default async function CategoryPage({ params }) {
   const slugStr = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug != null ? String(rawSlug) : "";
   const slugNorm = toSlug(slugStr);
 
-  console.log("Slug procesado:", slugStr);
-
   const rawCategories = await getCategories();
   const categories = (Array.isArray(rawCategories) ? rawCategories : []).map(mapCategory).filter(Boolean);
-
-  console.log("DEBUG - Lista de categorías completa:", categories);
 
   const slugNormNoPlural = normalizePlural(slugNorm);
 
@@ -62,11 +58,6 @@ export default async function CategoryPage({ params }) {
     }) ??
     null;
 
-  if (!match) {
-    console.log("Slug recibido:", slugStr);
-    console.log("Categorías en el store:", categories);
-  }
-
   const categoriaId = match?.id ?? null;
   const categoriaNombre = slugStr === "all" ? "Todos los productos" : match?.nombre ?? "Categoría";
 
@@ -77,7 +68,6 @@ export default async function CategoryPage({ params }) {
     if (slugStr === "all") {
       productos = (await getProductsByCategory({})).map(mapProduct).filter(Boolean);
     } else if (categoriaId != null) {
-      console.log("ID de categoría detectado:", categoriaId);
       // Petición limpia: SOLO categoria_id (sin destacado=1).
       productos = (await getProductsByCategory({ categoria_id: categoriaId })).map(mapProduct).filter(Boolean);
     }

@@ -1,6 +1,8 @@
+import { PUBLIC_CONTENT_MIN_HEIGHT_CLASS } from "@/constants/layout";
+
 export default function HomeSkeleton() {
   return (
-    <div className="min-h-[calc(100dvh-3.25rem)] animate-pulse space-y-4 bg-[#FFF1F2] p-4 pb-16">
+    <div className={`${PUBLIC_CONTENT_MIN_HEIGHT_CLASS} animate-pulse space-y-4 bg-[#FFF1F2] p-4 pb-16`}>
       <div className="h-48 rounded-2xl bg-white/60" />
       <div className="mb-6 space-y-3">
         <div className="h-[5.5rem] rounded-2xl bg-[#C1121F]/25" />

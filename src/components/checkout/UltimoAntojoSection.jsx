@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
+import { OA_BRAND_PRIMARY_HEX } from "@/constants/layout";
 import { formatPrice } from "@/utils/format/price";
 
 /**
@@ -74,7 +75,7 @@ export default function UltimoAntojoSection() {
             >
               {s.nombre}
             </p>
-            <p className="mt-0.5 text-sm font-bold text-[#C1121F] tabular-nums">
+            <p className="mt-0.5 text-sm font-bold tabular-nums" style={{ color: OA_BRAND_PRIMARY_HEX }}>
               {formatPrice(s.precioBase)}
             </p>
             <button
@@ -89,7 +90,8 @@ export default function UltimoAntojoSection() {
                 })
               }
               aria-label={`Agregar ${s.nombre} al carrito`}
-              className="absolute -right-1.5 -top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-[#C1121F] text-white shadow-md transition active:scale-95"
+              className="absolute -right-1.5 -top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-white shadow-md transition active:scale-95"
+              style={{ backgroundColor: OA_BRAND_PRIMARY_HEX }}
             >
               <Plus size={16} strokeWidth={2.5} />
             </button>

@@ -4,17 +4,22 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu, Search, ShoppingCart, X, User } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import BrandLogo from "@/components/BrandLogo";
 import { useCartStore, selectCartCount } from "@/store/useCartStore";
-import { useAuthStore, selectIsClienteUser } from "@/store/useAuthStore";
+import { useAuthStore, selectIsAuthenticatedCliente } from "@/store/useAuthStore";
 
 export default function Navbar({ onMenuClick }) {
   const router = useRouter();
-  const totalItems = useCartStore(selectCartCount);
-  const searchQuery = useCartStore((s) => s.searchQuery);
-  const setSearchQuery = useCartStore((s) => s.setSearchQuery);
-  const clearSearch = useCartStore((s) => s.clearSearch);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
+  const { totalItems, searchQuery, setSearchQuery, clearSearch } = useCartStore(
+    useShallow((s) => ({
+      totalItems: selectCartCount(s),
+      searchQuery: s.searchQuery,
+      setSearchQuery: s.setSearchQuery,
+      clearSearch: s.clearSearch,
+    }))
+  );
+  const isAuthenticated = useAuthStore(selectIsAuthenticatedCliente);
   const [mounted, setMounted] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);

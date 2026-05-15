@@ -9,10 +9,13 @@ import InstallPrompt from "@/components/pwa/InstallPrompt";
 import usePwaInstallPrompt from "@/hooks/usePwaInstallPrompt";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { useCartStore, selectCartTotal, selectCartCount } from "@/store/useCartStore";
+import { useShallow } from "zustand/react/shallow";
+import {
+  PUBLIC_CONTENT_MIN_HEIGHT_CLASS,
+  PUBLIC_DESKTOP_BREAKPOINT_PX,
+  PUBLIC_SIDEBAR_WIDTH,
+} from "@/constants/layout";
 import { formatPrice } from "@/utils/format/price";
-
-const DESKTOP_BREAKPOINT = 768;
-const SIDEBAR_WIDTH = "17.5rem";
 
 export default function AppShell({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -22,8 +25,12 @@ export default function AppShell({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const installState = usePwaInstallPrompt();
-  const total = useCartStore(selectCartTotal);
-  const itemCount = useCartStore(selectCartCount);
+  const { total, itemCount } = useCartStore(
+    useShallow((state) => ({
+      total: selectCartTotal(state),
+      itemCount: selectCartCount(state),
+    }))
+  );
   const hasItems = itemCount > 0;
 
   const isCheckout = pathname?.startsWith("/checkout");
@@ -43,7 +50,7 @@ export default function AppShell({ children }) {
   }, []);
 
   useEffect(() => {
-    const media = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
+    const media = window.matchMedia(`(min-width: ${PUBLIC_DESKTOP_BREAKPOINT_PX}px)`);
     const onChange = (event) => setIsDesktop(event.matches);
     setIsDesktop(media.matches);
     media.addEventListener("change", onChange);
@@ -60,7 +67,7 @@ export default function AppShell({ children }) {
     <AppViewport variant="public" innerClassName="overflow-hidden bg-surface ring-1 ring-black/5">
       <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
 
-      <div className="relative min-h-[calc(100dvh-3.25rem)] overflow-hidden">
+      <div className={`relative overflow-hidden ${PUBLIC_CONTENT_MIN_HEIGHT_CLASS}`}>
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
@@ -80,7 +87,7 @@ export default function AppShell({ children }) {
             isSidebarOpen ? "translate-x-[17.5rem]" : "translate-x-0"
           }`}
         >
-          <main className="min-h-[calc(100dvh-3.25rem)] w-full">{children}</main>
+          <main className={`w-full ${PUBLIC_CONTENT_MIN_HEIGHT_CLASS}`}>{children}</main>
         </div>
       </div>
 
@@ -91,7 +98,7 @@ export default function AppShell({ children }) {
             transform:
               isDesktop || !isSidebarOpen
                 ? "translateX(-50%)"
-                : `translate(calc(-50% + ${SIDEBAR_WIDTH}), 0)`,
+                : `translate(calc(-50% + ${PUBLIC_SIDEBAR_WIDTH}), 0)`,
           }}
         >
           <button

@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 let hasRedirectedForUnauthorized = false;
+let lastUnauthorizedAt = 0;
+const UNAUTHORIZED_DEBOUNCE_MS = 1000;
 
 function shouldRedirectToLogin(pathname) {
   if (!pathname) return false;
@@ -23,6 +25,10 @@ export default function AuthSessionProvider({ children }) {
 
   useEffect(() => {
     const onUnauthorized = () => {
+      const now = Date.now();
+      if (now - lastUnauthorizedAt < UNAUTHORIZED_DEBOUNCE_MS) return;
+      lastUnauthorizedAt = now;
+
       useAuthStore.getState().onUnauthorized();
 
       if (typeof window === "undefined") return;
