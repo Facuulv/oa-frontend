@@ -2,7 +2,11 @@
  * Normaliza texto para comparar nombre/slug de categoría (sin acentos).
  * @param {unknown} s
  */
+<<<<<<< HEAD
 function normalizeKey(s) {
+=======
+export function normalizeCategoryKey(s) {
+>>>>>>> sacha
   return String(s ?? "")
     .trim()
     .toLowerCase()
@@ -10,6 +14,28 @@ function normalizeKey(s) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+<<<<<<< HEAD
+=======
+/** @deprecated alias interno */
+const normalizeKey = normalizeCategoryKey;
+
+/**
+ * Indica si una categoría del catálogo es la de Promociones (por slug o nombre).
+ * @param {{ id?: unknown, nombre?: unknown, slug?: unknown } | null | undefined} categoria
+ */
+export function isPromocionesCategory(categoria) {
+  if (!categoria || typeof categoria !== "object") return false;
+  const slug = normalizeCategoryKey(categoria.slug);
+  const nombre = normalizeCategoryKey(categoria.nombre);
+  return (
+    slug === "promociones" ||
+    slug === "promocion" ||
+    nombre === "promociones" ||
+    nombre === "promocion"
+  );
+}
+
+>>>>>>> sacha
 /**
  * Busca la categoría fija de combos/promociones en el listado admin de categorías.
  * Coincide por `slug` === "promociones" o por `nombre` (Promociones / Promoción, etc.).

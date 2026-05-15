@@ -88,7 +88,7 @@ export default async function CategoryPage({ params }) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-        <AlertCircle size={40} className="mb-3 text-red-400" />
+        <AlertCircle size={40} className="bg-zinc-50" />
         <p className="mb-4 text-sm text-gray-600">{error}</p>
       </div>
     );
