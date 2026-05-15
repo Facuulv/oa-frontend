@@ -14,13 +14,30 @@ export default function Navbar({ onMenuClick }) {
   const searchQuery = useCartStore((s) => s.searchQuery);
   const setSearchQuery = useCartStore((s) => s.setSearchQuery);
   const clearSearch = useCartStore((s) => s.clearSearch);
+<<<<<<< HEAD
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
+=======
+<<<<<<< Updated upstream
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+=======
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
+  const [mounted, setMounted] = useState(false);
+>>>>>>> Stashed changes
+>>>>>>> sacha
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (isSearchOpen) searchInputRef.current?.focus();
   }, [isSearchOpen]);
+
+  const showCartBadge = mounted && totalItems > 0;
+  const accountHref = mounted && isAuthenticated ? "/mi-cuenta" : "/login";
+  const accountAriaLabel = mounted && isAuthenticated ? "Mi cuenta" : "Iniciar sesión";
 
   const handleCloseSearch = () => {
     setIsSearchOpen(false);
@@ -102,7 +119,7 @@ export default function Navbar({ onMenuClick }) {
                 aria-label="Ver carrito"
               >
                 <ShoppingCart size={22} />
-                {totalItems > 0 && (
+                {showCartBadge && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
                     {totalItems > 99 ? "99+" : totalItems}
                   </span>
@@ -110,9 +127,9 @@ export default function Navbar({ onMenuClick }) {
               </Link>
 
               <Link
-                href={isAuthenticated ? "/mi-cuenta" : "/login"}
+                href={accountHref}
                 className="rounded-md p-1 text-white/90"
-                aria-label={isAuthenticated ? "Mi cuenta" : "Iniciar sesión"}
+                aria-label={accountAriaLabel}
               >
                 <User size={22} />
               </Link>

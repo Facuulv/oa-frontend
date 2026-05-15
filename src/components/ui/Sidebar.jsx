@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ChevronDown,
   Home,
   ShoppingCart,
+  Sparkles,
   Tag,
+  Trash2,
   User,
   LogIn,
   Settings,
@@ -14,10 +17,20 @@ import {
   X,
 } from "lucide-react";
 import { useAuthStore, selectCanAccessAdminPanel, selectIsClienteUser } from "@/store/useAuthStore";
+import { useSavedCombosStore, selectSavedCombos } from "@/store/useSavedCombosStore";
 
-const publicLinks = [
+/**
+ * Orden fijo. Se renderizan en dos bloques: los que van antes de la sección
+ * "Tus combos" (hasta Promociones inclusive) y los que van después.
+ * No mutar ni reordenar en runtime durante el primer render.
+ */
+const primaryPublicLinks = [
   { href: "/", label: "Inicio", icon: Home },
+  { href: "/arma-tu-combo", label: "Arma tu combo", icon: Sparkles },
   { href: "/promociones", label: "Promociones", icon: Tag },
+];
+
+const secondaryPublicLinks = [
   { href: "/checkout", label: "Mi carrito", icon: ShoppingCart },
 ];
 
@@ -35,9 +48,14 @@ export default function Sidebar({
   onInstallClick,
 }) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [greeting, setGreeting] = useState("Hola");
+  const [isCombosOpen, setIsCombosOpen] = useState(false);
+
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated && selectIsClienteUser(s));
   const canAccessAdminPanel = useAuthStore(selectCanAccessAdminPanel);
+  const savedCombos = useSavedCombosStore(selectSavedCombos);
+  const removeCombo = useSavedCombosStore((s) => s.removeCombo);
 
   const handleInstallClick = () => {
     onClose?.();
@@ -45,8 +63,10 @@ export default function Sidebar({
   };
 
   const isLinkActive = (href) => (href === "/" ? pathname === "/" : pathname?.startsWith(href));
+  const isCombosSectionActive = pathname?.startsWith("/arma-tu-combo");
 
   useEffect(() => {
+    setMounted(true);
     const hour = new Date().getHours();
 
     if (hour >= 6 && hour < 12) {
@@ -95,7 +115,119 @@ export default function Sidebar({
 
         <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4">
           <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain scroll-pt-1 px-1 pt-1">
-            {publicLinks.map(({ href, label, icon: Icon }) => {
+            {primaryPublicLinks.map(({ href, label, icon: Icon }) => {
+              const isActive = isLinkActive(href);
+
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onClose}
+                  className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors duration-200 ${
+                    isActive
+                      ? "bg-red-500/15 text-red-100 ring-1 ring-red-400/30"
+                      : "bg-white/[0.02] text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition-colors duration-200 ${
+                      isActive
+                        ? "border-red-400/30 bg-red-500/15 text-red-300"
+                        : "border-white/10 bg-white/[0.02] text-zinc-400 group-hover:border-white/20 group-hover:text-zinc-200"
+                    }`}
+                  >
+                    <Icon size={16} />
+                  </span>
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+
+            {mounted && (
+              <div className="border-t border-white/10 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsCombosOpen((open) => !open)}
+                  aria-expanded={isCombosOpen}
+                  aria-controls="sidebar-tus-combos-panel"
+                  className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors duration-200 ${
+                    isCombosSectionActive
+                      ? "bg-red-500/15 text-red-100 ring-1 ring-red-400/30"
+                      : isCombosOpen
+                        ? "bg-white/[0.04] text-white"
+                        : "bg-white/[0.02] text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ${
+                      isCombosSectionActive
+                        ? "border-red-400/30 bg-red-500/15 text-red-300"
+                        : "border-white/10 bg-white/[0.02] text-zinc-400 group-hover:border-white/20 group-hover:text-zinc-200"
+                    }`}
+                  >
+                    <Sparkles size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1 text-left">Tus combos</span>
+                  <ChevronDown
+                    size={18}
+                    strokeWidth={2.25}
+                    className={`shrink-0 text-zinc-400 transition-transform duration-200 group-hover:text-zinc-200 ${
+                      isCombosOpen ? "rotate-180" : ""
+                    }`}
+                    aria-hidden
+                  />
+                </button>
+
+                {isCombosOpen && (
+                  <div
+                    id="sidebar-tus-combos-panel"
+                    className="mt-1 max-h-52 overflow-y-auto rounded-xl border border-white/10 bg-black/20 py-1"
+                  >
+                    {savedCombos.length === 0 ? (
+                      <p className="px-4 py-3 text-xs font-medium leading-relaxed text-zinc-400">
+                        No tenés combos guardados
+                      </p>
+                    ) : (
+                      <ul className="space-y-0.5 px-1.5 py-1">
+                        {savedCombos.map((combo) => {
+                          const displayName =
+                            combo.name?.trim() || combo.label || "Mi Combo Custom";
+                          return (
+                            <li
+                              key={combo.id}
+                              className="flex items-center gap-1 rounded-lg hover:bg-white/5"
+                            >
+                              <Link
+                                href={`/arma-tu-combo?combo=${encodeURIComponent(combo.id)}`}
+                                onClick={onClose}
+                                title={displayName}
+                                className="min-w-0 flex-1 truncate px-2.5 py-2 text-sm font-medium text-zinc-200 transition-colors hover:text-red-300"
+                              >
+                                {displayName}
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeCombo(combo.id);
+                                }}
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-500/15 hover:text-red-200"
+                                aria-label={`Eliminar ${displayName}`}
+                              >
+                                <Trash2 size={14} strokeWidth={2} />
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {secondaryPublicLinks.map(({ href, label, icon: Icon }) => {
               const isActive = isLinkActive(href);
 
               return (
