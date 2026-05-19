@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { authLogin, authMe, authLogout, authRegisterCliente } from "@/services/authSessionService";
 import { clearLegacyClientToken } from "@/utils/auth/token";
+import { useUserDataStore } from "@/store/useUserDataStore";
 
 let validateSessionPromise = null;
 
@@ -25,6 +26,9 @@ function applyUsuario(set, user) {
     return;
   }
   set({ user: safe, isAuthenticated: true });
+  if (safe.origen === "CLIENTE") {
+    useUserDataStore.getState().syncFromAuthUser(safe);
+  }
 }
 
 function devAuthLog(message, extra) {
@@ -113,7 +117,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   /**
-   * @param {object} payload — { nombre, apellido, email, password, telefono? }
+   * @param {object} payload — { nombre, apellido, dni, email, password, telefono? }
    * @param {{ autoLogin?: boolean }} [options]
    */
   register: async (payload, options = {}) => {

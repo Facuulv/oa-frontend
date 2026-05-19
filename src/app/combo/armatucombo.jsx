@@ -373,14 +373,16 @@ function ArmaTuComboContent() {
 
   const addItem = useCartStore((s) => s.addItem);
   const saveCombo = useSavedCombosStore((s) => s.saveCombo);
+  const syncCombosFromApi = useSavedCombosStore((s) => s.syncCombosFromApi);
   const getComboById = useSavedCombosStore((s) => s.getComboById);
 
   useEffect(() => {
     setMounted(true);
+    void syncCombosFromApi();
     return () => {
       if (advanceTimer.current) clearTimeout(advanceTimer.current);
     };
-  }, []);
+  }, [syncCombosFromApi]);
 
   useEffect(() => {
     if (!mounted) return;

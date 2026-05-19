@@ -50,6 +50,29 @@ export function validateDni(value, { required = false } = {}) {
   if (!DNI_REGEX.test(text)) {
     return buildResult(false, "El DNI solo puede contener números.");
   }
+  if (text.length < 7) {
+    return buildResult(false, "El DNI debe tener al menos 7 dígitos.");
+  }
+  if (text.length > 10) {
+    return buildResult(false, "El DNI no puede superar 10 dígitos.");
+  }
+  return buildResult(true);
+}
+
+export function validateBirthDate(value, { required = false } = {}) {
+  const text = normalizeText(value);
+  if (!text) {
+    return required ? buildResult(false, "Ingresá tu fecha de nacimiento.") : buildResult(true);
+  }
+  const parsed = new Date(`${text}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return buildResult(false, "La fecha no es válida.");
+  }
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  if (parsed > today) {
+    return buildResult(false, "La fecha de nacimiento no puede ser futura.");
+  }
   return buildResult(true);
 }
 

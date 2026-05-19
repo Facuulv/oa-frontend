@@ -5,6 +5,14 @@ import Link from "next/link";
 import { authForgotPassword } from "@/services/authSessionService";
 import { validateEmail } from "@/lib/validations";
 import { toast } from "@/lib/toast";
+import AuthHero from "@/components/auth/AuthHero";
+import AuthCard from "@/components/auth/AuthCard";
+import {
+  authInputClass,
+  authLabelClass,
+  authLinkClass,
+  authPrimaryButtonClass,
+} from "@/components/auth/authForm";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -48,56 +56,61 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-lg">
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-primary">Recuperar contraseña</h1>
-        <p className="mt-1 text-sm text-gray-500">Ingresá tu email y te enviamos un enlace.</p>
-      </div>
+    <div className="w-full">
+      <AuthHero
+        tagline="Recuperá tu contraseña"
+        subtext="Te enviaremos un enlace a tu email para restablecer el acceso"
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (fieldError) setFieldError("");
-              if (formError) setFormError("");
-            }}
-            autoComplete="email"
-            className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition ${
-              fieldError ? "border-red-400" : "border-gray-200 focus:border-primary"
-            }`}
-            placeholder="tu@email.com"
-          />
-          {fieldError && <p className="mt-1 text-xs text-red-600">{fieldError}</p>}
-        </div>
+      <AuthCard>
+        <p className="mb-4 text-center text-sm font-medium text-zinc-600">
+          Ingresá el email de tu cuenta
+        </p>
 
-        {formError && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
-        )}
-
-        {successMessage && (
-          <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-            {successMessage}
+        <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4" noValidate>
+          <div>
+            <label htmlFor="forgot-email" className={authLabelClass}>
+              Email
+            </label>
+            <input
+              id="forgot-email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (fieldError) setFieldError("");
+                if (formError) setFormError("");
+              }}
+              autoComplete="email"
+              className={authInputClass(fieldError)}
+              placeholder="tu@email.com"
+            />
+            {fieldError && <p className="mt-1 text-xs text-red-600">{fieldError}</p>}
           </div>
-        )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
-        >
-          {isSubmitting ? "Enviando..." : "Enviar enlace"}
-        </button>
-      </form>
+          {formError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {formError}
+            </div>
+          )}
 
-      <p className="mt-4 text-center text-sm text-gray-500">
-        <Link href="/login" className="font-medium text-primary hover:underline">
-          Volver a iniciar sesión
-        </Link>
-      </p>
+          {successMessage && (
+            <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              {successMessage}
+            </div>
+          )}
+
+          <button type="submit" disabled={isSubmitting} className={authPrimaryButtonClass}>
+            {isSubmitting ? "Enviando..." : "Enviar enlace"}
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-zinc-500 sm:mt-5">
+          <Link href="/login" className={authLinkClass}>
+            Volver a iniciar sesión
+          </Link>
+        </p>
+      </AuthCard>
     </div>
   );
 }

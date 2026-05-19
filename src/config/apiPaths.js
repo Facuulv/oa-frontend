@@ -2,6 +2,9 @@ export const apiPaths = {
   /** Registro público de cliente (alias histórico; preferir `auth.register`). */
   clientes: {
     register: "/clientes/register",
+    me: "/clientes/me",
+    combos: "/clientes/me/combos",
+    comboById: (id) => `/clientes/me/combos/${encodeURIComponent(id)}`,
   },
 
   auth: {
@@ -20,11 +23,11 @@ export const apiPaths = {
     promotions: "/public/promotions",
     couponsValidate: "/public/coupons/validate",
     orders: "/public/orders",
-    checkoutPreference: "/public/checkout/preference",
   },
 
   orders: {
     myList: "/orders/me",
+    myDetail: (id) => `/orders/me/${encodeURIComponent(id)}`,
     updateStatus: (id) => `/orders/${encodeURIComponent(id)}/status`,
     list: "/orders",
   },

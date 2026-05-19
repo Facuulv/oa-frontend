@@ -76,12 +76,21 @@ export async function authLogout() {
 }
 
 /** `POST /auth/register` — alta cliente; cookie si `useCookie`. */
-export async function authRegisterCliente({ nombre, apellido, email, password, telefono, useCookie = true }) {
+export async function authRegisterCliente({
+  nombre,
+  apellido,
+  dni,
+  email,
+  password,
+  telefono,
+  useCookie = true,
+}) {
   const base = requireApiBaseUrl();
   const url = `${base}${apiPaths.auth.register}`;
   const body = {
     nombre: (nombre ?? "").trim(),
     apellido: (apellido ?? "").trim(),
+    dni: String(dni ?? "").trim(),
     email: (email ?? "").trim(),
     password,
     useCookie,
@@ -100,8 +109,9 @@ export async function authRegisterCliente({ nombre, apellido, email, password, t
 
   if (!response.ok) {
     const fieldErrors = flattenValidationErrors(data);
+    const code = typeof data?.code === "string" ? data.code : undefined;
     const msg = apiErrorMessage(data, "Error al registrarse");
-    throw new ApiError(msg, { fieldErrors, status: response.status, body: data });
+    throw new ApiError(msg, { fieldErrors, status: response.status, body: data, code });
   }
 
   return data;

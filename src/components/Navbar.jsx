@@ -3,11 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, Search, ShoppingCart, X, User } from "lucide-react";
+import { Menu, Search, ShoppingCart, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import BrandLogo from "@/components/BrandLogo";
+import NavbarSessionAvatar from "@/components/account/NavbarSessionAvatar";
 import { useCartStore, selectCartCount } from "@/store/useCartStore";
-import { useAuthStore, selectIsAuthenticatedCliente } from "@/store/useAuthStore";
+import {
+  useAuthStore,
+  selectAuthUser,
+  selectIsAuthenticatedCliente,
+} from "@/store/useAuthStore";
 
 export default function Navbar({ onMenuClick }) {
   const router = useRouter();
@@ -20,6 +25,7 @@ export default function Navbar({ onMenuClick }) {
     }))
   );
   const isAuthenticated = useAuthStore(selectIsAuthenticatedCliente);
+  const user = useAuthStore(selectAuthUser);
   const [mounted, setMounted] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
@@ -33,8 +39,12 @@ export default function Navbar({ onMenuClick }) {
   }, [isSearchOpen]);
 
   const showCartBadge = mounted && totalItems > 0;
-  const accountHref = mounted && isAuthenticated ? "/mi-cuenta" : "/login";
-  const accountAriaLabel = mounted && isAuthenticated ? "Mi cuenta" : "Iniciar sesión";
+  const showAuthenticated = mounted && isAuthenticated;
+  const accountHref = showAuthenticated ? "/mi-cuenta" : "/login";
+  const accountAriaLabel = showAuthenticated
+    ? "Mi cuenta, sesión activa"
+    : "Iniciar sesión";
+  const accountTitle = showAuthenticated ? "Mi cuenta" : "Ingresar";
 
   const handleCloseSearch = () => {
     setIsSearchOpen(false);
@@ -125,10 +135,14 @@ export default function Navbar({ onMenuClick }) {
 
               <Link
                 href={accountHref}
-                className="rounded-md p-1 text-white/90"
+                title={accountTitle}
+                className="navbar-account-trigger inline-flex h-8 w-8 items-center justify-center rounded-full text-white outline-none transition duration-200 active:scale-95 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
                 aria-label={accountAriaLabel}
               >
-                <User size={22} />
+                <NavbarSessionAvatar
+                  isAuthenticated={showAuthenticated}
+                  user={user}
+                />
               </Link>
 
               <button

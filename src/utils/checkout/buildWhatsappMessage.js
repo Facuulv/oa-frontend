@@ -8,6 +8,7 @@ export const WHATSAPP_PHONE = "+542804648174";
  * Soporta carrito local + datos del cliente + entrega + pago + notas.
  */
 export function buildWhatsappMessage({
+  orderId,
   customer,
   items = [],
   total = 0,
@@ -19,6 +20,7 @@ export function buildWhatsappMessage({
   const lineas = [];
 
   lineas.push("*Nuevo pedido - OA!*");
+  if (orderId) lineas.push(`*Pedido #${orderId}*`);
   lineas.push("");
 
   if (customer?.nombre) lineas.push(`*Cliente:* ${customer.nombre}`);

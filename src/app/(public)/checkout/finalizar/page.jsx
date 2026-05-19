@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
 import UltimoAntojoSection from "@/components/checkout/UltimoAntojoSection";
@@ -17,6 +16,9 @@ export default function CheckoutFinalizarPage() {
     fieldErrors,
     isSubmitting,
     orderSent,
+    authLoading,
+    isAuthenticatedCliente,
+    authUser,
     isDelivery,
     isFormReady,
     savedAddresses,
@@ -24,18 +26,37 @@ export default function CheckoutFinalizarPage() {
     submit,
   } = useCheckoutFinalize();
 
+  if (authLoading || !isAuthenticatedCliente || authUser?.origen === "ADMIN") {
+    return (
+      <div className="min-h-screen bg-white px-4 py-10 text-zinc-900">
+        <div className="mx-auto max-w-md animate-pulse space-y-4">
+          <div className="h-6 w-40 rounded bg-zinc-200" />
+          <div className="h-24 rounded-2xl bg-zinc-100" />
+          <div className="h-24 rounded-2xl bg-zinc-100" />
+          <div className="h-24 rounded-2xl bg-zinc-100" />
+          <div className="h-12 rounded-xl bg-zinc-200" />
+        </div>
+      </div>
+    );
+  }
+
   if (orderSent) {
     return (
       <div className="flex flex-col items-center justify-center bg-white px-6 py-16 text-center">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
           <Check size={28} strokeWidth={3} />
         </div>
-        <h2 className="mb-2 text-lg font-bold text-zinc-900">¡Te llevamos a WhatsApp!</h2>
+        <h2 className="mb-2 text-lg font-bold text-zinc-900">¡Pedido registrado!</h2>
+        <p className="mb-1 text-sm font-semibold text-[#C1121F]">Pedido #{orderSent.orderId}</p>
         <p className="mb-1 text-sm text-zinc-700">
-          Confirmá el pedido enviando el mensaje al local.
+          {orderSent.whatsappOpened
+            ? "Confirmá el pedido enviando el mensaje al local."
+            : "No pudimos abrir WhatsApp automáticamente en este dispositivo."}
         </p>
         <p className="mb-6 text-sm text-zinc-500">
-          Si la pestaña no se abrió, tocá el botón de abajo.
+          {orderSent.whatsappOpened
+            ? "Si la pestaña no se abrió, tocá el botón de abajo."
+            : "Tu pedido quedó guardado. Tocá el botón para abrir WhatsApp manualmente."}
         </p>
         <a
           href={orderSent.url}
@@ -252,7 +273,7 @@ export default function CheckoutFinalizarPage() {
 
         <button
           type="button"
-          onClick={submit}
+          onClick={() => void submit()}
           disabled={isSubmitting || items.length === 0 || !isFormReady}
           className="min-h-[48px] w-full rounded-xl bg-[#C1121F] px-6 py-3.5 text-base font-bold text-white shadow-lg transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 disabled:shadow-none"
         >

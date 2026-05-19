@@ -98,6 +98,38 @@ body {
   animation: navbar-search-expand 220ms ease-out;
 }
 
+/* Navbar: estado de sesión (mobile-first, sin texto extra) */
+.navbar-account-trigger {
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 9999px;
+}
+
+.navbar-account-guest-avatar {
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.28));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .navbar-account-guest-avatar {
+    animation: navbar-account-guest-pulse 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes navbar-account-guest-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.22));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.38));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar-account-guest-avatar {
+    animation: none;
+  }
+}
+
 /* Modal animations */
 @keyframes modal-overlay-fade-in {
   from {

@@ -67,6 +67,19 @@ export const useUserDataStore = create(
           addresses: state.addresses.filter((a) => a.id !== id),
         })),
 
+      /**
+       * Sincroniza perfil local desde sesión autenticada (fuente de verdad en DB).
+       */
+      syncFromAuthUser: (user) => {
+        if (!user || typeof user !== "object") return;
+        const nombre = safeString(user.nombre ?? user.name);
+        const email = safeString(user.email);
+        const telefono = safeString(user.telefono);
+        set({
+          profile: { nombre, email, telefono },
+        });
+      },
+
       clearUserData: () =>
         set({ profile: { nombre: "", telefono: "", email: "" }, addresses: [] }),
     }),

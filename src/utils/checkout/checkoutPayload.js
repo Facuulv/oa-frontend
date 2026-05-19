@@ -28,11 +28,6 @@ export function buildCheckoutPayload({ normalized, items }) {
   return { payload };
 }
 
-export function buildMercadoPagoCheckoutPayload({ normalized, items }) {
-  const { payload } = buildCheckoutPayload({ normalized, items });
-  return { ...payload, paymentMethod: "mercadopago" };
-}
-
 export function resolveCreatedOrderMeta(data) {
   const inner = data?.data ?? data;
   return {

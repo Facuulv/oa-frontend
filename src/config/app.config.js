@@ -20,7 +20,6 @@ const appConfig = {
 
   features: {
     storeHoursValidation: process.env.NEXT_PUBLIC_ENABLE_STORE_HOURS_VALIDATION === "true",
-    mercadoPago: true,
     cashPayment: true,
     delivery: true,
     pickup: true,

@@ -17,8 +17,6 @@ const PAYMENT_METHOD_MAP = {
   cash: "CASH",
   transferencia: "TRANSFER",
   transfer: "TRANSFER",
-  mercadopago: "MERCADOPAGO",
-  MERCADOPAGO: "MERCADOPAGO",
   CASH: "CASH",
   TRANSFER: "TRANSFER",
 };
@@ -56,6 +54,7 @@ function toBackendOrderBody(payload) {
   const notesBase = String(payload.notes ?? "").trim();
   const notesExtra = meta.length ? meta.join(" | ") : "";
   const notes = [notesBase, notesExtra].filter(Boolean).join(" — ") || null;
+  const tipoEntrega = payload.deliveryType === "DELIVERY" ? "ENVIO" : "RETIRO";
 
   return {
     items,
@@ -65,6 +64,7 @@ function toBackendOrderBody(payload) {
     customerEmail,
     customerPhone,
     notes,
+    tipoEntrega,
     paymentMethod: mapPaymentMethod(payload.paymentMethod),
   };
 }
@@ -99,54 +99,37 @@ export async function createOrder(payload) {
   return data;
 }
 
-export async function createMercadoPagoCheckout(payload) {
+export async function getMyOrderDetail(orderId) {
+  const id = String(orderId ?? "").trim();
+  if (!id) throw new Error("Falta el identificador del pedido.");
+
   const base = requireApiBaseUrl();
-  const url = `${base}${apiPaths.public.checkoutPreference}`;
-  const body = toBackendOrderBody({
-    ...payload,
-    paymentMethod: "MERCADOPAGO",
-  });
-  logApiRequest("POST", url, { items: body.items?.length });
+  const url = `${base}${apiPaths.orders.myDetail(id)}`;
+  logApiRequest("GET", url);
   const response = await fetch(url, {
-    method: "POST",
+    method: "GET",
     credentials: "include",
     headers: jsonHeaders(),
-    body: JSON.stringify(body),
   });
 
   const data = await response.json().catch(() => ({}));
-
   if (!response.ok) {
     notifyClientUnauthorized(response.status);
-    const msg =
-      data?.message ?? data?.error ?? "No pudimos iniciar el pago con Mercado Pago. Intentá nuevamente.";
-    throw new Error(msg);
+    const msg = data?.message ?? data?.error ?? "No pudimos cargar el pedido";
+    const error = new Error(msg);
+    error.status = response.status;
+    throw error;
   }
-
   return data;
 }
 
-export async function getPaymentStatus(orderId) {
-  if (!orderId) throw new Error("Falta el identificador del pedido.");
-
-  const data = await getMyOrders();
-  const list = Array.isArray(data) ? data : data?.data ?? [];
-  const order = list.find((o) => String(o.id) === String(orderId));
-  if (!order) {
-    throw new Error("No pudimos verificar el estado del pago.");
-  }
-
-  const paymentStatus = (order.payment_status ?? order.paymentStatus ?? "").toLowerCase();
-  return {
-    orderId: order.id,
-    status: order.status,
-    paymentStatus: paymentStatus || String(order.status ?? "").toLowerCase(),
-  };
-}
-
-export async function getMyOrders() {
+export async function getMyOrders({ page = 1, limit = 10 } = {}) {
   const base = requireApiBaseUrl();
-  const url = `${base}${apiPaths.orders.myList}`;
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(Math.min(Math.max(limit, 1), 100)),
+  });
+  const url = `${base}${apiPaths.orders.myList}?${params}`;
   logApiRequest("GET", url);
   const response = await fetch(url, {
     method: "GET",

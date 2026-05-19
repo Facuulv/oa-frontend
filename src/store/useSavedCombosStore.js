@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import appConfig from "@/config/app.config";
+import {
+  getClienteCombos,
+  createClienteCombo,
+  deleteClienteCombo,
+} from "@/services/clientesCombosService";
 
 const ICE_BAG_UNIT_PRICE = 2500;
 const DEFAULT_COMBO_NAME = "Mi Combo Custom";
@@ -72,6 +77,8 @@ export const useSavedCombosStore = create(
   persist(
     (set, get) => ({
       combos: [],
+      syncing: false,
+      hasSyncedFromApi: false,
 
       saveCombo: ({ name, base, mixer, extras = {}, iceBags = 0 }) => {
         const cleanName = String(name ?? "").trim();
@@ -92,6 +99,7 @@ export const useSavedCombosStore = create(
         set((state) => ({
           combos: [entry, ...state.combos].slice(0, max),
         }));
+        void get().saveComboRemote(entry);
         return entry;
       },
 
@@ -99,6 +107,61 @@ export const useSavedCombosStore = create(
         set((state) => ({
           combos: state.combos.filter((c) => c.id !== id),
         })),
+
+      saveComboRemote: async (entry) => {
+        try {
+          const created = await createClienteCombo(entry);
+          if (!created?.id) return null;
+          set((state) => ({
+            combos: state.combos.map((combo) =>
+              combo.id === entry.id
+                ? { ...combo, ...created, id: String(created.id), savedAt: created.savedAt ?? combo.savedAt }
+                : combo
+            ),
+          }));
+          return created;
+        } catch {
+          return null;
+        }
+      },
+
+      removeComboRemote: async (id) => {
+        try {
+          await deleteClienteCombo(id);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+
+      removeComboWithSync: async (id) => {
+        const prev = get().combos;
+        set((state) => ({ combos: state.combos.filter((c) => c.id !== id) }));
+        const looksRemoteId = /^\d+$/.test(String(id));
+        if (!looksRemoteId) return true;
+        const ok = await get().removeComboRemote(id);
+        if (!ok) {
+          set({ combos: prev });
+          return false;
+        }
+        return true;
+      },
+
+      syncCombosFromApi: async () => {
+        if (get().syncing) return;
+        set({ syncing: true });
+        try {
+          const remote = await getClienteCombos();
+          set({
+            combos: Array.isArray(remote) ? remote : [],
+            hasSyncedFromApi: true,
+          });
+        } catch {
+          set({ hasSyncedFromApi: true });
+        } finally {
+          set({ syncing: false });
+        }
+      },
 
       getComboById: (id) => get().combos.find((c) => c.id === id) ?? null,
     }),
