@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import ImageWithFade from "@/components/ImageWithFade";
 import { PLACEHOLDER_CATEGORY } from "@/constants/images";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
+import { HOME_CATEGORY_CARD_CLASS } from "@/constants/homeTheme";
 
 export default function CategoryCard({ category, index = 0 }) {
   const imgSrc =
@@ -13,24 +14,27 @@ export default function CategoryCard({ category, index = 0 }) {
   return (
     <Link
       href={`/categoria/${category.slug ?? category.id}`}
-      className="card-fade-in group relative flex h-28 items-end overflow-hidden rounded-2xl shadow-md"
+      className={HOME_CATEGORY_CARD_CLASS}
       style={{ animationDelay: `${index * 80}ms` }}
     >
       <ImageWithFade
         src={imgSrc}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+        className="home-category-card__image absolute inset-0 h-full w-full object-cover object-center"
         aria-hidden
         onError={(e) => {
           e.currentTarget.src = PLACEHOLDER_CATEGORY;
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-      <div className="relative z-10 flex w-full items-center justify-between px-4 pb-3">
-        <span className="text-base font-bold text-white drop-shadow">
+      <div className="home-category-card__overlay-dark absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/22 to-transparent" />
+      <div className="home-category-card__overlay-brand absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-transparent" />
+      <div className="relative z-10 flex w-full items-end justify-between gap-3 px-3.5 pb-3.5 md:px-4 md:pb-4">
+        <span className="line-clamp-2 text-[0.98rem] font-extrabold leading-tight tracking-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] md:text-[1.02rem]">
           {category.nombre}
         </span>
-        <ChevronRight size={18} className="text-white/80" />
+        <span className="home-category-card__arrow flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/22 text-white/90 ring-1 ring-white/25 backdrop-blur-[2px]">
+          <ChevronRight size={16} className="home-category-card__arrow-icon" aria-hidden />
+        </span>
       </div>
     </Link>
   );

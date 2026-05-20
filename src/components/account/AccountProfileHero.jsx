@@ -20,9 +20,6 @@ export default function AccountProfileHero({ user, displayName, email }) {
       <div className="relative flex items-start gap-4">
         <UserInitialsAvatar user={user} size="lg" variant="surface" showSessionDot />
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="text-xs font-medium tracking-wide text-red-100/90">
-            {greeting}, {firstName} 👋
-          </p>
           <h1 className="mt-1 text-2xl font-black leading-tight tracking-tight">
             {displayName}
           </h1>
@@ -34,7 +31,7 @@ export default function AccountProfileHero({ user, displayName, email }) {
 
       <div className="relative mt-4 rounded-2xl border border-white/12 bg-white/[0.06] px-3.5 py-3 backdrop-blur-sm">
         <p className="text-sm leading-snug text-zinc-100">
-          Tu espacio en OA! — pedidos, combos y datos siempre a mano.
+          Tu espacio en OA! — Pedidos, combos y más.
         </p>
       </div>
     </div>

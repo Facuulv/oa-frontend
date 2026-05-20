@@ -20,6 +20,17 @@
   --text-secondary: #6b7280;
   --error: #ef4444;
   --success: #22c55e;
+  /* Home público (canvas, ritmo, elevación de cards) */
+  --home-canvas: #fff1f2;
+  --home-section-gap: 1.5rem;
+  --home-section-gap-md: 2rem;
+  --home-pad-x: 1rem;
+  --home-pad-x-md: 1.5rem;
+  --home-pad-x-lg: 2rem;
+  --home-radius-card: 1rem;
+  --home-shadow-card: 0 4px 14px rgba(193, 18, 31, 0.08);
+  --home-shadow-card-hover: 0 8px 22px rgba(193, 18, 31, 0.12);
+  --home-ring: 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 @theme inline {
@@ -36,7 +47,365 @@
   --color-surface: var(--surface);
   --color-error: var(--error);
   --color-success: var(--success);
+  --color-home-canvas: var(--home-canvas);
   --font-sans: var(--font-inter);
+}
+
+/* ——— Home público: layout, ritmo y utilidades ——— */
+.home-page {
+  background-color: var(--home-canvas);
+}
+
+.home-content {
+  width: 100%;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--home-pad-x);
+  padding-right: var(--home-pad-x);
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .home-content {
+    padding-left: var(--home-pad-x-md);
+    padding-right: var(--home-pad-x-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-content {
+    padding-left: var(--home-pad-x-lg);
+    padding-right: var(--home-pad-x-lg);
+  }
+}
+
+.home-section {
+  padding-top: var(--home-section-gap);
+}
+
+.home-section--lead {
+  padding-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .home-section {
+    padding-top: var(--home-section-gap-md);
+  }
+
+  .home-section--lead {
+    padding-top: 1.25rem;
+  }
+}
+
+.home-section-header {
+  margin-bottom: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .home-section-header {
+    margin-bottom: 1rem;
+  }
+}
+
+.home-section-header__accent {
+  border-left: 4px solid var(--primary);
+  padding-left: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .home-section-header__accent {
+    padding-left: 0.875rem;
+  }
+}
+
+.home-card-surface {
+  border-radius: var(--home-radius-card);
+  box-shadow: var(--home-shadow-card), var(--home-ring);
+}
+
+/* Carrusel Destacados: sombras dentro del viewport (padding en track + slide) */
+.home-carousel {
+  position: relative;
+}
+
+.home-carousel-viewport {
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .home-carousel {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .home-carousel-viewport {
+    flex: 1;
+  }
+}
+
+.home-carousel-track {
+  display: flex;
+  touch-action: pan-y pinch-zoom;
+  padding-top: 0.375rem;
+  padding-bottom: 1.25rem;
+  padding-right: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .home-carousel-track {
+    padding-top: 0.5rem;
+    padding-bottom: 1.5rem;
+    padding-left: 0.125rem;
+    padding-right: 1.25rem;
+  }
+}
+
+.home-featured-slide {
+  flex: 0 0 78%;
+  min-width: 0;
+  max-width: 22rem;
+  padding: 0.25rem 0.375rem 0.25rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .home-featured-slide {
+    flex: 0 0 17.5rem;
+    max-width: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .home-featured-slide {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-featured-slide {
+    flex: 0 0 18.5rem;
+    padding-left: 0.5625rem;
+    padding-right: 0.5625rem;
+  }
+}
+
+.home-carousel-arrow {
+  display: none;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(193, 18, 31, 0.1);
+  background-color: rgba(255, 255, 255, 0.92);
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(193, 18, 31, 0.06);
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    box-shadow 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.home-carousel-arrow:hover:not(:disabled) {
+  border-color: rgba(193, 18, 31, 0.22);
+  background-color: #fff;
+  box-shadow: 0 4px 14px rgba(193, 18, 31, 0.1);
+}
+
+.home-carousel-arrow:disabled {
+  pointer-events: none;
+  opacity: 0.32;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+}
+
+@media (min-width: 768px) {
+  .home-carousel-arrow {
+    display: flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-carousel {
+    gap: 1rem;
+  }
+
+  .home-carousel-arrow {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
+.home-featured-card__media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: linear-gradient(145deg, #fafafa 0%, #f4f4f5 100%);
+}
+
+.home-section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--home-section-gap);
+}
+
+@media (min-width: 768px) {
+  .home-section-stack {
+    gap: var(--home-section-gap-md);
+  }
+}
+
+/* Home CTAs (Etapa 3): jerarquía primario/secundario + ritmo consistente */
+.home-cta-group {
+  margin-bottom: var(--home-section-gap);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .home-cta-group {
+    gap: 0.875rem;
+  }
+}
+
+.home-cta-primary-shadow {
+  box-shadow:
+    0 8px 22px rgba(193, 18, 31, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.home-cta-secondary-shadow {
+  box-shadow:
+    0 5px 14px rgba(193, 18, 31, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+
+/* Categorías (Etapa 4): tiles premium de navegación */
+.home-category-grid {
+  align-items: stretch;
+}
+
+/* CategoryCard: hover/tap suave (zoom + flecha + overlay) */
+@media (prefers-reduced-motion: no-preference) {
+  .home-category-card {
+    transition: box-shadow 220ms ease-out;
+  }
+
+  .home-category-card__image {
+    transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+
+  .home-category-card:hover .home-category-card__image,
+  .home-category-card:focus-visible .home-category-card__image {
+    transform: scale(1.03);
+  }
+
+  .home-category-card__overlay-brand {
+    transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity: 0.82;
+  }
+
+  .home-category-card:hover .home-category-card__overlay-brand,
+  .home-category-card:focus-visible .home-category-card__overlay-brand {
+    opacity: 1;
+  }
+
+  .home-category-card__arrow {
+    transition:
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 300ms ease-out;
+  }
+
+  .home-category-card__arrow-icon {
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .home-category-card:hover .home-category-card__arrow,
+  .home-category-card:focus-visible .home-category-card__arrow {
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+
+  .home-category-card:hover .home-category-card__arrow-icon,
+  .home-category-card:focus-visible .home-category-card__arrow-icon {
+    transform: translateX(0.125rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-category-card,
+  .home-category-card__image,
+  .home-category-card__overlay-dark,
+  .home-category-card__overlay-brand,
+  .home-category-card__arrow,
+  .home-category-card__arrow-icon {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-carousel-arrow,
+  .home-carousel-arrow:hover:not(:disabled),
+  .home-carousel-arrow:disabled {
+    transition: none;
+  }
+}
+
+/**
+ * Home público: feedback táctil (sin hover:scale agresivo).
+ * Combinar `.public-pressable` + `.public-card-lift` en cards/CTAs (etapas 2+).
+ */
+.public-card-lift {
+  -webkit-tap-highlight-color: transparent;
+  transition-property: transform, box-shadow, background-color, border-color;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+.public-pressable {
+  -webkit-tap-highlight-color: transparent;
+  transition-property: transform, box-shadow, background-color, color, border-color, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .public-pressable.public-card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--home-shadow-card-hover);
+  }
+
+  .public-pressable.public-card-lift:active {
+    transform: translateY(0) scale(0.995);
+  }
+
+  .public-pressable:active {
+    transform: scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-pressable,
+  .public-card-lift {
+    transition-duration: 0ms;
+  }
+
+  .public-pressable.public-card-lift:hover,
+  .public-pressable.public-card-lift:active,
+  .public-pressable:active {
+    transform: none;
+  }
 }
 
 html {
