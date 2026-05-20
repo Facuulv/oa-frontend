@@ -79,3 +79,41 @@ export const HOME_CATEGORY_CARD_CLASS = cn(
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
   "md:min-h-[8.6rem] lg:min-h-[9.5rem]",
 );
+
+/** Pantalla /promociones: misma base visual que el Home (P0). */
+export const PROMO_PAGE_CLASS = HOME_PAGE_CLASS;
+export const PROMO_CONTENT_CLASS = HOME_CONTENT_CLASS;
+export const PROMO_SECTION_CLASS = HOME_SECTION_LEAD_CLASS;
+
+/** Grilla del listado /promociones (P2). */
+export const PROMO_LIST_GRID_CLASS =
+  "grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3";
+
+/** Badge de PromoCard (P4). */
+export const PROMO_BADGE_CLASS =
+  "inline-flex w-fit max-w-full shrink-0 rounded-full bg-primary/8 px-2.5 py-0.5 text-[0.6875rem] font-medium leading-none text-primary ring-1 ring-inset ring-primary/10";
+
+/** Link de PromoCard: listado mobile + tile desktop. */
+export const PROMO_CARD_LINK_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  PUBLIC_PRESSABLE_CLASS,
+  PUBLIC_CARD_LIFT_CLASS,
+  "promo-card group flex h-full w-full overflow-hidden rounded-2xl border border-zinc-100/90 bg-white",
+  "flex-row items-stretch gap-3 p-3.5",
+  "md:flex-col md:gap-0 md:p-0",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+);
+
+/** Shell estático para skeleton de PromoCard (P3). */
+export const PROMO_CARD_SHELL_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "flex h-full w-full overflow-hidden rounded-2xl border border-zinc-100/90 bg-white/90",
+  "flex-row items-stretch gap-3 p-3.5",
+  "md:flex-col md:gap-0 md:p-0",
+);
+
+/** Empty / error de /promociones (P3). */
+export const PROMO_STATUS_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "rounded-2xl border border-zinc-100/90 bg-white p-6 text-center md:p-8",
+);

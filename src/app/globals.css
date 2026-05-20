@@ -408,6 +408,39 @@
   }
 }
 
+/* PromoCard (/promociones P4): imagen y chevron con motion acotado */
+@media (prefers-reduced-motion: no-preference) {
+  .promo-card__image {
+    transition: transform 280ms ease-out;
+  }
+
+  .promo-card:hover .promo-card__image,
+  .promo-card:focus-visible .promo-card__image {
+    transform: scale(1.01);
+  }
+
+  .promo-card__chevron {
+    transition: transform 180ms ease-out;
+  }
+
+  .promo-card:hover .promo-card__chevron,
+  .promo-card:focus-visible .promo-card__chevron {
+    transform: translateX(0.125rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-card__image,
+  .promo-card:hover .promo-card__image,
+  .promo-card:focus-visible .promo-card__image,
+  .promo-card__chevron,
+  .promo-card:hover .promo-card__chevron,
+  .promo-card:focus-visible .promo-card__chevron {
+    transform: none;
+    transition: none;
+  }
+}
+
 html {
   background-color: var(--background);
 }
