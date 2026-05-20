@@ -89,6 +89,30 @@ body.has-public-navbar {
   min-height: calc(100dvh - var(--app-header-total-height));
 }
 
+/* Drawer móvil: debajo de la navbar fija, hasta el borde inferior del viewport */
+.app-public-sidebar {
+  position: fixed;
+  top: var(--app-header-total-height);
+  bottom: 0;
+  left: 0;
+  z-index: 45;
+  display: flex;
+  max-height: none;
+  height: auto;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.app-public-sidebar-overlay {
+  position: fixed;
+  top: var(--app-header-total-height);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+}
+
 /* Landscape móvil: laterales neutros; overscroll superior sigue rojo en shell público */
 @media (orientation: landscape) and (max-height: 32rem) {
   html:not(.has-public-navbar),

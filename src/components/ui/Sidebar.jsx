@@ -8,10 +8,7 @@ import {
   selectCanAccessAdminPanel,
   selectIsAuthenticatedCliente,
 } from "@/store/useAuthStore";
-import {
-  PUBLIC_CONTENT_HEIGHT_CLASS,
-  PUBLIC_SIDEBAR_WIDTH,
-} from "@/constants/layout";
+import { PUBLIC_SIDEBAR_CLASS, PUBLIC_SIDEBAR_WIDTH } from "@/constants/layout";
 import { adminSidebarLinks, globalNavLinks } from "@/config/publicSidebarNav";
 import NavItem from "@/components/ui/NavItem";
 import { cn } from "@/lib/cn";
@@ -70,56 +67,54 @@ export default function Sidebar({ isOpen, onClose, onInstallClick }) {
   return (
     <aside
       className={cn(
-        "absolute left-0 top-0 z-50 flex transform-gpu flex-col overflow-hidden border-r border-white/10 bg-zinc-950/98 shadow-2xl backdrop-blur-[1px] will-change-transform transition-transform duration-200 ease-out",
-        PUBLIC_CONTENT_HEIGHT_CLASS,
+        PUBLIC_SIDEBAR_CLASS,
+        "transform-gpu border-r border-white/10 bg-zinc-950/98 shadow-2xl backdrop-blur-[1px] will-change-transform transition-transform duration-200 ease-out",
         isOpen ? "translate-x-0" : "-translate-x-full",
       )}
       style={{ width: `min(${PUBLIC_SIDEBAR_WIDTH}, 85vw)` }}
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
-        <header className="shrink-0 px-4 pb-2 pt-4">
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 shadow-[0_16px_32px_rgba(0,0,0,0.35)]">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-base font-semibold leading-tight text-white">OA! Bebidas</p>
-                <p className="text-[11px] text-zinc-400">Un mundo de bebidas</p>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-zinc-300 transition-colors duration-200 hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
-                aria-label="Cerrar menú"
-              >
-                <X size={17} />
-              </button>
+      <header className="shrink-0 px-4 pb-2 pt-4">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 shadow-[0_16px_32px_rgba(0,0,0,0.35)]">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-base font-semibold leading-tight text-white">OA! Bebidas</p>
+              <p className="text-[11px] text-zinc-400">Un mundo de bebidas</p>
             </div>
-
-            <div className="mt-2.5 rounded-lg border border-white/10 bg-black/20 px-2.5 py-1.5">
-              <p className="text-[11px] text-zinc-400">{greeting} 👋</p>
-              <p className="text-xs font-medium text-zinc-100">¿Qué vas a tomar hoy?</p>
-            </div>
-          </div>
-        </header>
-
-        <nav
-          className="shrink-0 space-y-2 px-4 pb-2"
-          aria-label="Navegación principal"
-        >
-          {globalNavLinks.map(({ href, label, icon: Icon }) => (
-            <NavItem
-              key={href}
-              href={href}
-              label={label}
-              icon={Icon}
-              size="compact"
-              isActive={isLinkActive(href)}
+            <button
+              type="button"
               onClick={onClose}
-            />
-          ))}
-        </nav>
-      </div>
+              className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-zinc-300 transition-colors duration-200 hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
+              aria-label="Cerrar menú"
+            >
+              <X size={17} />
+            </button>
+          </div>
 
-      <footer className="shrink-0 space-y-2.5 border-t border-white/10 px-4 py-3.5 pb-[max(1.25rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))]">
+          <div className="mt-2.5 rounded-lg border border-white/10 bg-black/20 px-2.5 py-1.5">
+            <p className="text-[11px] text-zinc-400">{greeting} 👋</p>
+            <p className="text-xs font-medium text-zinc-100">¿Qué vas a tomar hoy?</p>
+          </div>
+        </div>
+      </header>
+
+      <nav
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain px-4 pb-2 [-webkit-overflow-scrolling:touch]"
+        aria-label="Navegación principal"
+      >
+        {globalNavLinks.map(({ href, label, icon: Icon }) => (
+          <NavItem
+            key={href}
+            href={href}
+            label={label}
+            icon={Icon}
+            size="compact"
+            isActive={isLinkActive(href)}
+            onClick={onClose}
+          />
+        ))}
+      </nav>
+
+      <footer className="shrink-0 space-y-2.5 border-t border-white/10 px-4 py-3.5 pb-[calc(env(safe-area-inset-bottom,0px)+16px)]">
         <button
           type="button"
           onClick={handleInstallClick}

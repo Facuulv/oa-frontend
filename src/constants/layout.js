@@ -10,7 +10,10 @@ export const PUBLIC_DESKTOP_BREAKPOINT_PX = 768;
 export const PUBLIC_MAIN_SHELL_CLASS = "app-public-main";
 export const PUBLIC_CONTENT_MIN_HEIGHT_CLASS =
   "min-h-[calc(100dvh-var(--app-header-total-height))]";
-/** Altura exacta del área bajo el navbar (sidebar, panel deslizable). */
+/** Altura exacta del área bajo el navbar (panel deslizable en flujo). */
 export const PUBLIC_CONTENT_HEIGHT_CLASS =
   "h-[calc(100dvh-var(--app-header-total-height))]";
+/** Drawer lateral fijo bajo navbar (viewport, no el padding de .app-public-main). */
+export const PUBLIC_SIDEBAR_CLASS = "app-public-sidebar";
+export const PUBLIC_SIDEBAR_OVERLAY_CLASS = "app-public-sidebar-overlay";
 export const OA_BRAND_PRIMARY_HEX = "#C1121F";

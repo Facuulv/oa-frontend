@@ -13,6 +13,7 @@ import { useShallow } from "zustand/react/shallow";
 import {
   PUBLIC_DESKTOP_BREAKPOINT_PX,
   PUBLIC_MAIN_SHELL_CLASS,
+  PUBLIC_SIDEBAR_OVERLAY_CLASS,
   PUBLIC_SIDEBAR_WIDTH,
 } from "@/constants/layout";
 import { formatPrice } from "@/utils/format/price";
@@ -94,7 +95,7 @@ export default function AppShell({ children }) {
 
         <div
           onClick={() => setIsSidebarOpen(false)}
-          className={`absolute inset-0 z-40 bg-black/65 transition-opacity duration-200 ease-out ${
+          className={`${PUBLIC_SIDEBAR_OVERLAY_CLASS} bg-black/65 transition-opacity duration-200 ease-out ${
             isSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
           aria-hidden="true"
