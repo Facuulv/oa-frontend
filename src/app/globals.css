@@ -5,6 +5,7 @@
   --background: #f0f0f2;
   --foreground: #1f2937;
   --public-header-height: 3.25rem;
+  --public-navbar-padding-x: 0.75rem;
   --public-header-offset: calc(
     var(--public-header-height) + env(safe-area-inset-top, 0px)
   );
@@ -46,6 +47,21 @@ body {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
+/*
+ * Shell público: franja superior roja en overscroll / status bar (viewport-fit: cover).
+ * El contenido claro sigue en body y en AppViewport.
+ */
+html.has-public-navbar {
+  background-color: var(--background);
+  background-image: linear-gradient(
+    180deg,
+    var(--primary) 0,
+    var(--primary) env(safe-area-inset-top, 0px),
+    var(--background) env(safe-area-inset-top, 0px),
+    var(--background) 100%
+  );
+}
+
 /* PWA público: navbar fija + safe-area (evita gap al scroll en iOS) */
 .app-public-navbar {
   position: fixed;
@@ -54,6 +70,7 @@ body {
   right: 0;
   z-index: 50;
   width: 100%;
+  box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   background-color: var(--primary);
   box-shadow:
@@ -61,14 +78,34 @@ body {
     0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
+/* Refuerzo: pinta el inset superior aunque el motor no extienda el bg del padding */
+.app-public-navbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background-color: var(--primary);
+  pointer-events: none;
+}
+
 .app-public-navbar__inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   height: var(--public-header-height);
   width: 100%;
   align-items: center;
   justify-content: space-between;
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
+  padding-left: max(
+    var(--public-navbar-padding-x),
+    env(safe-area-inset-left, 0px)
+  );
+  padding-right: max(
+    var(--public-navbar-padding-x),
+    env(safe-area-inset-right, 0px)
+  );
 }
 
 .app-public-navbar-spacer {

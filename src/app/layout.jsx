@@ -30,7 +30,8 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     title: "OA! Bebidas",
-    statusBarStyle: "default",
+    /* Contenido bajo status bar; la navbar pinta el rojo con safe-area-inset-top */
+    statusBarStyle: "black-translucent",
   },
 };
 
@@ -39,8 +40,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  /* Chrome PWA/letterbox: neutro; la barra roja la pinta `.app-public-navbar` + safe-area */
-  themeColor: "#f0f0f2",
+  themeColor: "#C1121F",
 };
 
 export default function RootLayout({ children }) {

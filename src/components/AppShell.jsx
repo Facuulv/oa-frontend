@@ -50,6 +50,21 @@ export default function AppShell({ children }) {
   }, []);
 
   useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("has-public-navbar");
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    const previousTheme = themeMeta?.getAttribute("content");
+    if (themeMeta) themeMeta.setAttribute("content", "#C1121F");
+
+    return () => {
+      root.classList.remove("has-public-navbar");
+      if (themeMeta && previousTheme != null) {
+        themeMeta.setAttribute("content", previousTheme);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const media = window.matchMedia(`(min-width: ${PUBLIC_DESKTOP_BREAKPOINT_PX}px)`);
     const onChange = (event) => setIsDesktop(event.matches);
     setIsDesktop(media.matches);
