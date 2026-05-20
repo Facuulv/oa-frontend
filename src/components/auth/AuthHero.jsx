@@ -8,8 +8,7 @@ import { AUTH_LOGO_SRC } from "@/components/auth/authForm";
  * @param {boolean} [showBebidas=true] Muestra el wordmark "Bebidas" junto al logo.
  */
 export default function AuthHero({
-  tagline = "Tu mundo de bebidas",
-  subtext = "Accedé para guardar pedidos, combos y más",
+  tagline = "Un mundo de bebidas",
   showBebidas = true,
 }) {
   return (

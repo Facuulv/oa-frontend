@@ -73,32 +73,25 @@ export default function Sidebar({ isOpen, onClose, onInstallClick }) {
       )}
       style={{ width: `min(${PUBLIC_SIDEBAR_WIDTH}, 85vw)` }}
     >
-      <header className="shrink-0 px-4 pb-2 pt-4">
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 shadow-[0_16px_32px_rgba(0,0,0,0.35)]">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-base font-semibold leading-tight text-white">OA! Bebidas</p>
-              <p className="text-[11px] text-zinc-400">Un mundo de bebidas</p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-zinc-300 transition-colors duration-200 hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
-              aria-label="Cerrar menú"
-            >
-              <X size={17} />
-            </button>
-          </div>
-
-          <div className="mt-2.5 rounded-lg border border-white/10 bg-black/20 px-2.5 py-1.5">
+      <header className="shrink-0 px-4 pb-3 pt-4">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-2 shadow-[0_16px_32px_rgba(0,0,0,0.35)]">
             <p className="text-[11px] text-zinc-400">{greeting} 👋</p>
             <p className="text-xs font-medium text-zinc-100">¿Qué vas a tomar hoy?</p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-zinc-300 transition-colors duration-200 hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
+            aria-label="Cerrar menú"
+          >
+            <X size={17} />
+          </button>
         </div>
       </header>
 
       <nav
-        className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain px-4 pb-2 [-webkit-overflow-scrolling:touch]"
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain px-4 pt-2 pb-2 [-webkit-overflow-scrolling:touch]"
         aria-label="Navegación principal"
       >
         {globalNavLinks.map(({ href, label, icon: Icon }) => (
