@@ -4,11 +4,13 @@
   /* Chrome exterior (whitesmoke / gris muy suave; distinto del blanco de cards) */
   --background: #f0f0f2;
   --foreground: #1f2937;
-  --public-header-height: 3.25rem;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --navbar-height: 3.25rem;
+  --app-header-total-height: calc(var(--safe-top) + var(--navbar-height));
+  /* Alias legado (sidebar, skeletons, etc.) */
+  --public-header-height: var(--navbar-height);
+  --public-header-offset: var(--app-header-total-height);
   --public-navbar-padding-x: 0.75rem;
-  --public-header-offset: calc(
-    var(--public-header-height) + env(safe-area-inset-top, 0px)
-  );
   --primary: #C1121F;
   --primary-dark: #A10E19;
   --primary-light: #D6454F;
@@ -47,22 +49,16 @@ body {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
-/*
- * Shell público: franja superior roja en overscroll / status bar (viewport-fit: cover).
- * El contenido claro sigue en body y en AppViewport.
- */
+/* Overscroll superior iOS: html rojo; body y contenido siguen claros */
 html.has-public-navbar {
-  background-color: var(--background);
-  background-image: linear-gradient(
-    180deg,
-    var(--primary) 0,
-    var(--primary) env(safe-area-inset-top, 0px),
-    var(--background) env(safe-area-inset-top, 0px),
-    var(--background) 100%
-  );
+  background-color: var(--primary);
 }
 
-/* PWA público: navbar fija + safe-area (evita gap al scroll en iOS) */
+body.has-public-navbar {
+  background-color: var(--background);
+}
+
+/* PWA público: navbar fija (safe-top + navbar-height en un solo bloque) */
 .app-public-navbar {
   position: fixed;
   top: 0;
@@ -71,52 +67,34 @@ html.has-public-navbar {
   z-index: 50;
   width: 100%;
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: var(--safe-top);
   background-color: var(--primary);
   box-shadow:
     0 10px 15px -3px rgb(0 0 0 / 0.1),
     0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-/* Refuerzo: pinta el inset superior aunque el motor no extienda el bg del padding */
-.app-public-navbar::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-top, 0px);
-  background-color: var(--primary);
-  pointer-events: none;
-}
-
 .app-public-navbar__inner {
-  position: relative;
-  z-index: 1;
   display: flex;
-  height: var(--public-header-height);
+  height: var(--navbar-height);
   width: 100%;
   align-items: center;
   justify-content: space-between;
-  padding-left: max(
-    var(--public-navbar-padding-x),
-    env(safe-area-inset-left, 0px)
-  );
-  padding-right: max(
-    var(--public-navbar-padding-x),
-    env(safe-area-inset-right, 0px)
-  );
+  padding-left: max(var(--public-navbar-padding-x), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--public-navbar-padding-x), env(safe-area-inset-right, 0px));
 }
 
-.app-public-navbar-spacer {
-  flex-shrink: 0;
-  height: var(--public-header-offset);
+/* Una sola compensación del header (sin spacer duplicado en el DOM) */
+.app-public-main {
+  box-sizing: border-box;
+  padding-top: var(--app-header-total-height);
+  min-height: calc(100dvh - var(--app-header-total-height));
 }
 
-/* Landscape móvil: chrome neutro, sin bandas rojas laterales (PWA / theme) */
+/* Landscape móvil: laterales neutros; overscroll superior sigue rojo en shell público */
 @media (orientation: landscape) and (max-height: 32rem) {
-  html,
-  body {
+  html:not(.has-public-navbar),
+  body:not(.has-public-navbar) {
     background-color: var(--background);
   }
 }

@@ -11,8 +11,8 @@ import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { useCartStore, selectCartTotal, selectCartCount } from "@/store/useCartStore";
 import { useShallow } from "zustand/react/shallow";
 import {
-  PUBLIC_CONTENT_MIN_HEIGHT_CLASS,
   PUBLIC_DESKTOP_BREAKPOINT_PX,
+  PUBLIC_MAIN_SHELL_CLASS,
   PUBLIC_SIDEBAR_WIDTH,
 } from "@/constants/layout";
 import { formatPrice } from "@/utils/format/price";
@@ -51,13 +51,16 @@ export default function AppShell({ children }) {
 
   useEffect(() => {
     const root = document.documentElement;
+    const body = document.body;
     root.classList.add("has-public-navbar");
+    body.classList.add("has-public-navbar");
     const themeMeta = document.querySelector('meta[name="theme-color"]');
     const previousTheme = themeMeta?.getAttribute("content");
     if (themeMeta) themeMeta.setAttribute("content", "#C1121F");
 
     return () => {
       root.classList.remove("has-public-navbar");
+      body.classList.remove("has-public-navbar");
       if (themeMeta && previousTheme != null) {
         themeMeta.setAttribute("content", previousTheme);
       }
@@ -79,13 +82,10 @@ export default function AppShell({ children }) {
   }, [isSidebarOpen]);
 
   return (
-    <AppViewport variant="public" innerClassName="flex flex-col bg-surface ring-1 ring-black/5">
+    <AppViewport variant="public" innerClassName="flex min-h-dvh flex-col ring-1 ring-black/5">
       <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
-      <div className="app-public-navbar-spacer" aria-hidden="true" />
 
-      <div
-        className={`relative min-h-0 flex-1 overflow-hidden ${PUBLIC_CONTENT_MIN_HEIGHT_CLASS}`}
-      >
+      <div className={`${PUBLIC_MAIN_SHELL_CLASS} relative min-h-0 flex-1 overflow-hidden`}>
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
@@ -105,7 +105,7 @@ export default function AppShell({ children }) {
             isSidebarOpen ? "translate-x-[17.5rem]" : "translate-x-0"
           }`}
         >
-          <main className={`w-full ${PUBLIC_CONTENT_MIN_HEIGHT_CLASS}`}>{children}</main>
+          <main className="w-full min-h-full">{children}</main>
         </div>
       </div>
 
