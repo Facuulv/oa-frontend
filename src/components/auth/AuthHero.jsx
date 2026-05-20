@@ -9,6 +9,7 @@ import { AUTH_LOGO_SRC } from "@/components/auth/authForm";
  */
 export default function AuthHero({
   tagline = "Un mundo de bebidas",
+  subtext = "Accedé para realizar tus pedidos",
   showBebidas = true,
 }) {
   return (
