@@ -38,7 +38,9 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#C1121F",
+  viewportFit: "cover",
+  /* Chrome PWA/letterbox: neutro; la barra roja la pinta `.app-public-navbar` + safe-area */
+  themeColor: "#f0f0f2",
 };
 
 export default function RootLayout({ children }) {

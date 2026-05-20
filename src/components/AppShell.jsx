@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import AppViewport, { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
+import AppViewport from "@/components/layout/AppViewport";
 import Sidebar from "@/components/ui/Sidebar";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import usePwaInstallPrompt from "@/hooks/usePwaInstallPrompt";
@@ -64,10 +64,13 @@ export default function AppShell({ children }) {
   }, [isSidebarOpen]);
 
   return (
-    <AppViewport variant="public" innerClassName="overflow-hidden bg-surface ring-1 ring-black/5">
+    <AppViewport variant="public" innerClassName="flex flex-col bg-surface ring-1 ring-black/5">
       <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
+      <div className="app-public-navbar-spacer" aria-hidden="true" />
 
-      <div className={`relative overflow-hidden ${PUBLIC_CONTENT_MIN_HEIGHT_CLASS}`}>
+      <div
+        className={`relative min-h-0 flex-1 overflow-hidden ${PUBLIC_CONTENT_MIN_HEIGHT_CLASS}`}
+      >
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
@@ -93,12 +96,12 @@ export default function AppShell({ children }) {
 
       {cartBarVisible && (
         <div
-          className={`fixed bottom-0 left-1/2 z-30 w-full ${APP_VIEWPORT_MAX_CLASS} transition-all duration-[400ms] ease-out`}
+          className="fixed bottom-0 left-0 right-0 z-30 w-full transition-all duration-[400ms] ease-out"
           style={{
             transform:
-              isDesktop || !isSidebarOpen
-                ? "translateX(-50%)"
-                : `translate(calc(-50% + ${PUBLIC_SIDEBAR_WIDTH}), 0)`,
+              !isSidebarOpen || isDesktop
+                ? undefined
+                : `translateX(${PUBLIC_SIDEBAR_WIDTH})`,
           }}
         >
           <button

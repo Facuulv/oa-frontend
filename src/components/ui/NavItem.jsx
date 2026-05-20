@@ -10,8 +10,8 @@ const sizeStyles = {
     iconSize: 16,
   },
   compact: {
-    link: "gap-2.5 rounded-xl px-2.5 py-2",
-    icon: "h-7 w-7 rounded-lg",
+    link: "gap-2.5 rounded-xl px-2.5 py-2.5",
+    icon: "h-8 w-8 rounded-lg",
     iconSize: 15,
   },
 };

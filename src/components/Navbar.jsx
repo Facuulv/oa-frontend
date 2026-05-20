@@ -67,8 +67,8 @@ export default function Navbar({ onMenuClick }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-primary shadow-lg">
-      <div className="flex h-13 w-full items-center justify-between px-3">
+    <header className="app-public-navbar">
+      <div className="app-public-navbar__inner">
         {isSearchOpen ? (
           <>
             <div className="flex items-center gap-1">
