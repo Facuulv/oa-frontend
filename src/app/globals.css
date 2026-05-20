@@ -55,7 +55,7 @@ html.has-public-navbar {
 }
 
 body.has-public-navbar {
-  background-color: var(--background);
+  background-color: var(--primary);
 }
 
 /* PWA público: navbar fija (safe-top + navbar-height en un solo bloque) */
@@ -69,9 +69,7 @@ body.has-public-navbar {
   box-sizing: border-box;
   padding-top: var(--safe-top);
   background-color: var(--primary);
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 0.1),
-    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  box-shadow: none;
 }
 
 .app-public-navbar__inner {

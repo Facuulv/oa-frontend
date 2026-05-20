@@ -82,7 +82,7 @@ export default function AppShell({ children }) {
   }, [isSidebarOpen]);
 
   return (
-    <AppViewport variant="public" innerClassName="flex min-h-dvh flex-col ring-1 ring-black/5">
+    <AppViewport variant="public" innerClassName="flex min-h-dvh flex-col">
       <Navbar onMenuClick={() => setIsSidebarOpen((prev) => !prev)} />
 
       <div className={`${PUBLIC_MAIN_SHELL_CLASS} relative min-h-0 flex-1 overflow-hidden`}>
