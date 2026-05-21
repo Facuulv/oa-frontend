@@ -1,4 +1,7 @@
-import { PUBLIC_CONTENT_MIN_HEIGHT_CLASS } from "@/constants/layout";
+import {
+  PUBLIC_CONTENT_HEIGHT_CLASS,
+  PUBLIC_CONTENT_MIN_HEIGHT_CLASS,
+} from "@/constants/layout";
 import { cn } from "@/lib/cn";
 
 /** Contenedor raíz del home (fondo + min-height + espacio carrito). */
@@ -117,3 +120,100 @@ export const PROMO_STATUS_CARD_CLASS = cn(
   HOME_CARD_SURFACE_CLASS,
   "rounded-2xl border border-zinc-100/90 bg-white p-6 text-center md:p-8",
 );
+
+/**
+ * /arma-tu-combo (C0–C1): misma base que Home/Promociones, sin pb-16 del carrito.
+ * Columna flex: área scroll + barra de acción en flujo (evita fixed + clipping AppShell).
+ */
+export const COMBO_PAGE_CLASS = cn(
+  PUBLIC_CONTENT_MIN_HEIGHT_CLASS,
+  PUBLIC_CONTENT_HEIGHT_CLASS,
+  "home-page flex min-h-0 flex-col text-foreground",
+);
+
+/** Contenedor home-content + columna wizard centrada (480px). */
+export const COMBO_CONTENT_CLASS = cn(
+  HOME_CONTENT_CLASS,
+  "flex min-h-0 w-full flex-1 flex-col",
+);
+
+/**
+ * Columna del wizard: ancho cómodo en mobile, más amplio en desktop (sin layout 2 cols).
+ */
+export const COMBO_WIZARD_COLUMN_CLASS =
+  "mx-auto flex w-full min-h-0 max-w-xl flex-1 flex-col md:max-w-2xl";
+
+/** Chrome fijo del wizard: volver, título y stepper (fuera del scroll). */
+export const COMBO_WIZARD_CHROME_CLASS = "combo-wizard-chrome shrink-0 px-4 pt-3";
+
+/** Solo contenido de pasos; scroll funcional sin scrollbar visible. */
+export const COMBO_SCROLL_AREA_CLASS = cn(
+  "combo-scroll-area no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-2",
+);
+
+/**
+ * Contenedor del footer en flujo (C1): sin fondo oscuro; safe-area en globals.
+ */
+export const COMBO_ACTION_BAR_CLASS = "combo-action-bar shrink-0 w-full px-4 pt-2";
+
+/** Superficie premium de la barra de acción (C2). */
+export const COMBO_ACTION_BAR_SURFACE_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "combo-action-bar-surface w-full rounded-2xl border border-zinc-100/90 bg-white/95 ring-1 ring-black/5",
+  "supports-[backdrop-filter]:bg-white/88 backdrop-blur-md",
+);
+
+/** Header del wizard (C3). */
+export const COMBO_WIZARD_HEADER_CLASS = "mb-2";
+
+/** Stepper del wizard (C3). */
+export const COMBO_STEPPER_CLASS = "mb-3";
+
+/** Fila seleccionable Base/Mix (C4). */
+export const COMBO_PRODUCT_ROW_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  PUBLIC_PRESSABLE_CLASS,
+  PUBLIC_CARD_LIFT_CLASS,
+  "flex w-full items-center gap-3 rounded-2xl border bg-white p-3 text-left",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+);
+
+export const COMBO_PRODUCT_ROW_SELECTED_CLASS =
+  "border-primary bg-primary/[0.03] ring-2 ring-primary/20";
+export const COMBO_PRODUCT_ROW_IDLE_CLASS =
+  "border-zinc-100/90 hover:border-primary/25";
+
+/** Lista de extras/hielo (C4). */
+export const COMBO_EXTRAS_LIST_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "overflow-hidden rounded-2xl border border-zinc-100/90 bg-white",
+);
+
+/** Botón + de extras/hielo (C4). */
+export const COMBO_ADD_BUTTON_CLASS = cn(
+  PUBLIC_PRESSABLE_CLASS,
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-sm",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+);
+
+/** Stepper de cantidad en fila de extra/hielo (C4). */
+export const COMBO_QUANTITY_CONTROL_CLASS = cn(
+  "flex shrink-0 items-center gap-0.5 rounded-full border border-zinc-200/90 bg-white p-0.5 shadow-sm",
+);
+
+/** Card resumen final “Tu Combo Personalizado” (C5). */
+export const COMBO_SUMMARY_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "mt-6 overflow-hidden rounded-2xl border border-zinc-100/90 bg-white p-4 ring-1 ring-black/5 sm:p-5",
+);
+
+export const COMBO_SUMMARY_INPUT_CLASS = cn(
+  "mt-1.5 h-11 w-full rounded-xl border border-zinc-200/90 bg-white px-3 text-sm font-semibold text-foreground outline-none transition",
+  "placeholder:font-normal placeholder:text-zinc-400",
+  "focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus-visible:outline-none",
+);
+
+export const COMBO_SAVE_OPTION_ACTIVE_CLASS =
+  "border-primary bg-primary/5 ring-1 ring-primary/15";
+export const COMBO_SAVE_OPTION_IDLE_CLASS =
+  "border-zinc-200/90 bg-zinc-50/50 hover:border-primary/20";

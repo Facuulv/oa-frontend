@@ -21,7 +21,7 @@
   --error: #ef4444;
   --success: #22c55e;
   /* Home público (canvas, ritmo, elevación de cards) */
-  --home-canvas: #fff1f2;
+  --home-canvas: #fff7f7;
   --home-section-gap: 1.5rem;
   --home-section-gap-md: 2rem;
   --home-pad-x: 1rem;
@@ -681,6 +681,32 @@ body.has-public-navbar {
 .card-fade-in {
   animation: cardFadeIn 0.4s ease-out both;
   opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-fade-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* /arma-tu-combo: barra de acción en flujo + safe-area inferior (PWA) */
+.combo-action-bar {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* Sombra hacia arriba para separar la barra del contenido scrollable */
+.combo-action-bar-surface {
+  box-shadow:
+    0 -6px 18px rgba(193, 18, 31, 0.08),
+    var(--home-shadow-card),
+    var(--home-ring);
+}
+
+/* /arma-tu-combo: scroll de pasos sin scrollbar visible (scroll sigue funcionando) */
+.combo-scroll-area {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Admin /admin: quick links cascade (reuses `cardFadeIn`, snappier duration) */
