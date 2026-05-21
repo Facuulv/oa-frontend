@@ -60,7 +60,7 @@ export default function ComboSummaryCard({
           type="text"
           value={comboName}
           onChange={(e) => onComboNameChange(e.target.value)}
-          placeholder="Mi Combo Custom"
+          placeholder="Mi Combo Personalizado"
           maxLength={48}
           className={COMBO_SUMMARY_INPUT_CLASS}
           autoComplete="off"
@@ -112,7 +112,7 @@ export default function ComboSummaryCard({
           </p>
           <p className="mt-1 text-xs leading-snug text-zinc-500">
             {canSaveCombo
-              ? "Lo vas a encontrar en la barra lateral, listo para volver a pedirlo."
+              ? "Lo vas a encontrar en tu perfil, en la sección de Mis Combos."
               : "Elegí base y mix para poder guardarlo."}
           </p>
         </div>

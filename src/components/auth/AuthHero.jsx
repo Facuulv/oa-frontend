@@ -6,19 +6,26 @@ import { AUTH_LOGO_SRC } from "@/components/auth/authForm";
 /**
  * Hero de marca para pantallas auth.
  * @param {boolean} [showBebidas=true] Muestra el wordmark "Bebidas" junto al logo.
+ * @param {boolean} [compact=false] Reduce espacio entre logo, textos y el formulario.
  */
 export default function AuthHero({
   tagline = "Un mundo de bebidas",
   subtext = "Accedé para realizar tus pedidos",
   showBebidas = true,
+  compact = false,
 }) {
   return (
-    <header className="mb-4 flex flex-col items-center text-center sm:mb-5">
+    <header
+      className={cn(
+        "flex flex-col items-center text-center",
+        compact ? "mb-2.5 sm:mb-3" : "mb-4 sm:mb-5",
+      )}
+    >
       <Link
         href="/"
         className={cn(
           "inline-flex shrink-0 items-center justify-center",
-          showBebidas ? "gap-2 sm:gap-2.5" : "mb-0.5",
+          showBebidas ? "gap-2 sm:gap-2.5" : compact ? null : "mb-0.5",
         )}
         aria-label="Ir al inicio de OA! Bebidas"
       >
@@ -43,10 +50,24 @@ export default function AuthHero({
         ) : null}
       </Link>
       {tagline ? (
-        <p className="mt-2 text-[1.0625rem] font-semibold tracking-tight text-foreground">{tagline}</p>
+        <p
+          className={cn(
+            "text-[1.0625rem] font-semibold tracking-tight text-foreground",
+            compact ? "mt-1.5" : "mt-2",
+          )}
+        >
+          {tagline}
+        </p>
       ) : null}
       {subtext ? (
-        <p className="mx-auto mt-1 max-w-[18rem] text-[0.8125rem] leading-snug text-zinc-500">{subtext}</p>
+        <p
+          className={cn(
+            "mx-auto max-w-[18rem] text-[0.8125rem] leading-snug text-zinc-500",
+            compact ? "mt-0.5" : "mt-1",
+          )}
+        >
+          {subtext}
+        </p>
       ) : null}
     </header>
   );

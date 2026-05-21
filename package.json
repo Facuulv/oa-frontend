@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test src/features/combo/expandComboOrderLines.test.js src/utils/checkout/checkoutOrder.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

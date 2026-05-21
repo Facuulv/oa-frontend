@@ -1,37 +1,52 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Beer, CupSoda, Loader2, Search } from "lucide-react";
+import { Beer, CupSoda, Package, Search } from "lucide-react";
 import ComboActionBar from "@/components/combo/ComboActionBar";
+import ComboBuilderSkeleton, {
+  ComboActionBarSkeleton,
+  ComboSummaryPanelSkeleton,
+} from "@/components/combo/ComboBuilderSkeleton";
+import { ComboEmptyState, ComboErrorState } from "@/components/combo/ComboStatusCard";
 import ComboExtraRow from "@/components/combo/ComboExtraRow";
-import ComboIceRow from "@/components/combo/ComboIceRow";
 import ComboProductRow from "@/components/combo/ComboProductRow";
 import ComboSectionList from "@/components/combo/ComboSectionList";
 import ComboSummaryCard from "@/components/combo/ComboSummaryCard";
+import ComboSummaryPanel from "@/components/combo/ComboSummaryPanel";
 import ComboStepper from "@/components/combo/ComboStepper";
 import ComboWizardHeader from "@/components/combo/ComboWizardHeader";
-import { useCartStore } from "@/store/useCartStore";
-import { useSavedCombosStore } from "@/store/useSavedCombosStore";
+import { useCartStore, CUSTOM_COMBO_LINE_KIND } from "@/store/useCartStore";
+import {
+  useSavedCombosStore,
+  resolveComboName,
+} from "@/store/useSavedCombosStore";
+import {
+  useAuthStore,
+  selectIsAuthenticatedCliente,
+  selectIsSessionLoaded,
+} from "@/store/useAuthStore";
 import { toast } from "@/lib/toast";
 import { formatPrice } from "@/utils/format/price";
 import {
   PRODUCTOS_ENDPOINT,
-  ICE_BAG_PRICE,
   AUTO_ADVANCE_MS,
   classifyProducts,
   filterByText,
   mapSelectableProduct,
   paginateList,
+  sumSelectionMap,
 } from "@/features/combo/combo.constants";
 import {
-  COMBO_ACTION_BAR_CLASS,
+  COMBO_ACTION_BAR_MOBILE_CLASS,
   COMBO_CONTENT_CLASS,
   COMBO_PAGE_CLASS,
   COMBO_SCROLL_AREA_CLASS,
   COMBO_WIZARD_CHROME_CLASS,
-  COMBO_WIZARD_COLUMN_CLASS,
+  COMBO_WIZARD_LAYOUT_CLASS,
+  COMBO_WIZARD_MAIN_CLASS,
 } from "@/constants/homeTheme";
+import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 
 /**
  * ArmaTuCombo — Wizard paginado por pasos (Base → Mix → Combo).
@@ -60,7 +75,7 @@ function ListPaginationControls({ page, totalPages, onPageChange }) {
           type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="flex-1 rounded-xl border border-zinc-200 bg-white py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex-1 rounded-xl border border-zinc-200 bg-white py-2.5 text-sm font-semibold text-zinc-800 motion-safe:transition hover:bg-zinc-50 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Anterior
         </button>
@@ -68,7 +83,7 @@ function ListPaginationControls({ page, totalPages, onPageChange }) {
           type="button"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="flex-1 rounded-xl border border-zinc-200 bg-white py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex-1 rounded-xl border border-zinc-200 bg-white py-2.5 text-sm font-semibold text-zinc-800 motion-safe:transition hover:bg-zinc-50 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Siguiente
         </button>
@@ -102,19 +117,21 @@ function PaginatedProductList({ items, page, onPageChange, listAnchorRef, emptyS
 
 // ───────────────────────────── Subcomponentes ─────────────────────────────
 
-function SearchInput({ value, onChange, placeholder, className = "" }) {
+function SearchInput({ value, onChange, placeholder, className = "", ariaLabel }) {
   return (
     <div className={`relative ${className}`}>
       <Search
         size={16}
         className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+        aria-hidden
       />
       <input
-        type="text"
+        type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+        aria-label={ariaLabel ?? placeholder}
+        className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-sm text-zinc-900 outline-none motion-safe:transition placeholder:text-zinc-400 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus-visible:outline-none"
       />
     </div>
   );
@@ -134,6 +151,7 @@ function ArmaTuComboContent() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Wizard
   const [currentStep, setCurrentStep] = useState(1);
@@ -141,8 +159,7 @@ function ArmaTuComboContent() {
   // Selecciones
   const [selectedBase, setSelectedBase] = useState(null);
   const [selectedMixer, setSelectedMixer] = useState(null);
-  const [extras, setExtras] = useState({}); // { [id]: { product, cantidad } }
-  const [iceBags, setIceBags] = useState(0);
+  const [extras, setExtras] = useState({}); // { [id]: { product, cantidad } } — categoría Extras (hielo + snacks)
 
   // Personalización del combo final
   const [comboName, setComboName] = useState("");
@@ -161,48 +178,52 @@ function ArmaTuComboContent() {
   const listTopRef = useRef(null);
 
   const addItem = useCartStore((s) => s.addItem);
-  const saveCombo = useSavedCombosStore((s) => s.saveCombo);
+  const saveComboForCliente = useSavedCombosStore((s) => s.saveComboForCliente);
   const syncCombosFromApi = useSavedCombosStore((s) => s.syncCombosFromApi);
   const getComboById = useSavedCombosStore((s) => s.getComboById);
 
   useEffect(() => {
     setMounted(true);
-    void syncCombosFromApi();
+    if (selectIsAuthenticatedCliente(useAuthStore.getState())) {
+      void syncCombosFromApi();
+    }
     return () => {
       if (advanceTimer.current) clearTimeout(advanceTimer.current);
     };
   }, [syncCombosFromApi]);
 
+  const fetchProducts = useCallback(async (signal) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch(PRODUCTOS_ENDPOINT, {
+        cache: "no-store",
+        signal,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const raw = Array.isArray(json) ? json : (json?.data ?? []);
+      const normalized = raw
+        .filter((p) => p && (p.disponible === undefined || p.disponible))
+        .map(mapSelectableProduct)
+        .filter(Boolean);
+      setProducts(normalized);
+    } catch (err) {
+      if (err?.name === "AbortError") return;
+      setError(err?.message || "No pudimos cargar los productos");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!mounted) return;
     const controller = new AbortController();
-
-    (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch(PRODUCTOS_ENDPOINT, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        const raw = Array.isArray(json) ? json : (json?.data ?? []);
-        const normalized = raw
-          .filter((p) => p && (p.disponible === undefined || p.disponible))
-          .map(mapSelectableProduct)
-          .filter(Boolean);
-        setProducts(normalized);
-      } catch (err) {
-        if (err?.name === "AbortError") return;
-        setError(err?.message || "No pudimos cargar los productos");
-      } finally {
-        setLoading(false);
-      }
-    })();
-
+    void fetchProducts(controller.signal);
     return () => controller.abort();
-  }, [mounted]);
+  }, [mounted, fetchProducts, retryKey]);
+
+  const showLoadingSkeleton = useDelayedLoading(loading);
 
   useEffect(() => {
     setListPage((p) => ({ ...p, 1: 1 }));
@@ -224,13 +245,22 @@ function ArmaTuComboContent() {
     const applySavedCombo = () => {
       const saved = getComboById(loadComboId);
       if (!saved) return false;
+      if (!saved.base || !saved.mixer) {
+        toast.error("Este combo guardado está incompleto. Armá uno nuevo.");
+        return false;
+      }
       loadedComboRef.current = loadComboId;
-      setSelectedBase(saved.base ?? null);
-      setSelectedMixer(saved.mixer ?? null);
+      setSelectedBase(saved.base);
+      setSelectedMixer(saved.mixer);
       setExtras(saved.extras ?? {});
-      setIceBags(saved.iceBags ?? 0);
+      setComboName(saved.name ?? "");
       setCurrentStep(3);
       toast.success("Combo cargado desde Tus combos");
+      if (saved.legacyIceSkipped) {
+        toast.info(
+          "El hielo de este combo usaba un formato anterior. Agregalo de nuevo desde Extras si lo necesitás."
+        );
+      }
       return true;
     };
 
@@ -286,15 +316,12 @@ function ArmaTuComboContent() {
     let sum = 0;
     if (selectedBase) sum += Number(selectedBase.precio) || 0;
     if (selectedMixer) sum += Number(selectedMixer.precio) || 0;
-    for (const id in extras) {
-      sum += (Number(extras[id].product.precio) || 0) * extras[id].cantidad;
-    }
-    sum += iceBags * ICE_BAG_PRICE;
+    sum += sumSelectionMap(extras);
     return sum;
-  }, [selectedBase, selectedMixer, extras, iceBags]);
+  }, [selectedBase, selectedMixer, extras]);
 
   const comboSummaryLabel = useMemo(() => {
-    if (selectedBase && selectedMixer) return "1 Combo personalizado";
+    if (selectedBase && selectedMixer) return "Total";
     if (selectedBase) return "Elegí tu mix";
     if (currentStep === 2 && selectedMixer) return "Elegí tu base";
     return "Armá tu combo";
@@ -302,10 +329,15 @@ function ArmaTuComboContent() {
 
   const canSaveCombo = Boolean(selectedBase && selectedMixer);
 
-  const resolvedComboName = useMemo(() => {
-    const trimmed = comboName.trim();
-    return trimmed.length > 0 ? trimmed : "Mi Combo Custom";
-  }, [comboName]);
+  const resolvedComboName = useMemo(
+    () =>
+      resolveComboName({
+        name: comboName,
+        base: selectedBase,
+        mixer: selectedMixer,
+      }),
+    [comboName, selectedBase, selectedMixer]
+  );
 
   /** Lista legible de ingredientes para descripción/observaciones del combo. */
   const ingredientList = useMemo(() => {
@@ -316,9 +348,8 @@ function ArmaTuComboContent() {
       const { product, cantidad } = extras[id];
       lines.push(`${cantidad}× ${product.nombre}`);
     }
-    if (iceBags > 0) lines.push(`${iceBags}× Bolsa de Hielo`);
     return lines;
-  }, [selectedBase, selectedMixer, extras, iceBags]);
+  }, [selectedBase, selectedMixer, extras]);
 
   // Auto-advance helper
   const scheduleAdvance = (toStep) => {
@@ -396,27 +427,45 @@ function ArmaTuComboContent() {
     }
   };
 
-  const handleFinalize = () => {
+  const handleFinalize = async () => {
     if (!selectedBase || !selectedMixer) {
       toast.error("Elegí una base y un acompañante para armar tu combo");
       return;
     }
 
-    // 1) Persistir en "Tus combos" si el usuario lo pidió.
     if (saveOnFinalize) {
-      saveCombo({
-        name: resolvedComboName,
+      const authState = useAuthStore.getState();
+      if (!selectIsSessionLoaded(authState)) {
+        await authState.validateSession({ force: true });
+      }
+
+      const result = await saveComboForCliente({
+        name: comboName,
         base: selectedBase,
         mixer: selectedMixer,
         extras,
-        iceBags,
       });
+
+      if (result.reason === "unauthenticated") {
+        toast.info("Iniciá sesión para guardar combos");
+        return;
+      } else if (result.ok) {
+        toast.success("Combo guardado en Mis Combos");
+      } else {
+        toast.error("No pudimos guardar el combo. Intentá nuevamente.");
+      }
     }
 
-    // 2) Agregar al carrito como un único ítem agrupado.
     const stamp = Date.now();
     const description = ingredientList.join(" + ");
     addItem({
+      lineKind: CUSTOM_COMBO_LINE_KIND,
+      comboComponents: {
+        displayName: resolvedComboName,
+        base: selectedBase,
+        mixer: selectedMixer,
+        extras: { ...extras },
+      },
       articuloId: `combo-personalizado-${stamp}`,
       slug: `combo-personalizado-${stamp}`,
       nombre: resolvedComboName,
@@ -427,16 +476,11 @@ function ArmaTuComboContent() {
       observaciones: `Combo Personalizado · ${description}`,
     });
 
-    toast.success(
-      saveOnFinalize
-        ? "¡Combo creado y guardado en «Tus combos»!"
-        : "¡Combo creado y agregado al carrito!"
-    );
+    toast.success("¡Combo creado y agregado al carrito!");
 
     setSelectedBase(null);
     setSelectedMixer(null);
     setExtras({});
-    setIceBags(0);
     setComboName("");
     setSaveOnFinalize(false);
     setCurrentStep(1);
@@ -454,47 +498,31 @@ function ArmaTuComboContent() {
 
   // ─── Render ───
   if (!mounted) {
-    return (
-      <div className={COMBO_PAGE_CLASS}>
-        <div className={COMBO_CONTENT_CLASS}>
-          <div className={COMBO_WIZARD_COLUMN_CLASS}>
-            <div className={COMBO_WIZARD_CHROME_CLASS}>
-              <div className="h-6 w-40 animate-pulse rounded bg-zinc-100" />
-              <div className="mt-3 h-8 w-full animate-pulse rounded-lg bg-zinc-100" />
-            </div>
-            <div className={COMBO_SCROLL_AREA_CLASS}>
-              <div className="mt-2 h-24 animate-pulse rounded-xl bg-zinc-100" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <ComboBuilderSkeleton mode="page" />;
   }
 
   return (
     <div className={COMBO_PAGE_CLASS}>
       <div className={COMBO_CONTENT_CLASS}>
-        <div className={COMBO_WIZARD_COLUMN_CLASS}>
-          <div className={COMBO_WIZARD_CHROME_CLASS}>
-            <ComboWizardHeader
-              title="Armá tu Combo"
-              currentStep={currentStep}
-              onBack={handleBack}
-            />
-            <ComboStepper currentStep={currentStep} />
-          </div>
+        <div className={COMBO_WIZARD_LAYOUT_CLASS}>
+          <div className={COMBO_WIZARD_MAIN_CLASS}>
+            <div className={COMBO_WIZARD_CHROME_CLASS}>
+              <ComboWizardHeader
+                title="Armá tu Combo"
+                currentStep={currentStep}
+                onBack={handleBack}
+              />
+              <ComboStepper currentStep={currentStep} />
+            </div>
 
-          <div className={COMBO_SCROLL_AREA_CLASS}>
-        {error && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex min-h-[40vh] items-center justify-center text-zinc-400">
-            <Loader2 className="animate-spin" size={28} />
-          </div>
+            <div className={COMBO_SCROLL_AREA_CLASS}>
+        {error ? (
+          <ComboErrorState
+            message={error}
+            onRetry={() => setRetryKey((k) => k + 1)}
+          />
+        ) : showLoadingSkeleton ? (
+          <ComboBuilderSkeleton mode="content" />
         ) : (
           <>
             {/* ─────────── Paso 1 — La Base ─────────── */}
@@ -520,11 +548,19 @@ function ArmaTuComboContent() {
                   onPageChange={(p) => goToListPage(1, p)}
                   listAnchorRef={listTopRef}
                   emptyState={
-                    <p className="rounded-xl bg-zinc-50 p-4 text-center text-sm text-zinc-400">
-                      {searchBase
-                        ? "No encontramos coincidencias."
-                        : "No hay bebidas base disponibles."}
-                    </p>
+                    <ComboEmptyState
+                      icon={searchBase ? Search : Beer}
+                      title={
+                        searchBase
+                          ? "No encontramos productos"
+                          : "No hay bebidas base disponibles"
+                      }
+                      description={
+                        searchBase
+                          ? "Probá con otra búsqueda."
+                          : "Volvé a intentar más tarde."
+                      }
+                    />
                   }
                 >
                   {(p) => (
@@ -563,11 +599,19 @@ function ArmaTuComboContent() {
                   onPageChange={(p) => goToListPage(2, p)}
                   listAnchorRef={listTopRef}
                   emptyState={
-                    <p className="rounded-xl bg-zinc-50 p-4 text-center text-sm text-zinc-400">
-                      {searchMixer
-                        ? "No encontramos coincidencias."
-                        : "No hay acompañantes disponibles."}
-                    </p>
+                    <ComboEmptyState
+                      icon={searchMixer ? Search : CupSoda}
+                      title={
+                        searchMixer
+                          ? "No encontramos productos"
+                          : "No hay acompañantes disponibles"
+                      }
+                      description={
+                        searchMixer
+                          ? "Probá con otra búsqueda."
+                          : "Volvé a intentar más tarde."
+                      }
+                    />
                   }
                 >
                   {(p) => (
@@ -591,7 +635,7 @@ function ArmaTuComboContent() {
                     ¿Te quedaste manija?
                   </h2>
                   <p className="text-sm text-zinc-500">
-                    Sumá snacks, extras y bolsas de hielo. Todo opcional.
+                    Sumá extras de la categoría Extras (hielo, snacks y más). Todo opcional.
                   </p>
                 </div>
 
@@ -605,18 +649,22 @@ function ArmaTuComboContent() {
                 <div ref={listTopRef} className="scroll-mt-24" tabIndex={-1} />
 
                 <ComboSectionList>
-                  <ComboIceRow
-                    quantity={iceBags}
-                    unitPrice={ICE_BAG_PRICE}
-                    onInc={() => setIceBags((c) => c + 1)}
-                    onDec={() => setIceBags((c) => Math.max(0, c - 1))}
-                  />
                   {filteredExtras.length === 0 ? (
-                    <p className="border-t border-zinc-100/80 px-4 py-6 text-center text-sm text-zinc-400">
-                      {searchExtras
-                        ? "No encontramos coincidencias."
-                        : "No hay extras disponibles."}
-                    </p>
+                    <ComboEmptyState
+                      compact
+                      className="border-t border-zinc-100/80"
+                      icon={searchExtras ? Search : Package}
+                      title={
+                        searchExtras
+                          ? "No encontramos productos"
+                          : "No hay productos en Extras"
+                      }
+                      description={
+                        searchExtras
+                          ? "Probá con otra búsqueda."
+                          : "Cargá productos en la categoría Extras en el admin."
+                      }
+                    />
                   ) : (
                     extrasPaginated.pageItems.map((p) => (
                       <ComboExtraRow
@@ -650,19 +698,44 @@ function ArmaTuComboContent() {
             )}
           </>
         )}
+            </div>
+
+            {showLoadingSkeleton || error ? (
+              <div className={COMBO_ACTION_BAR_MOBILE_CLASS} aria-hidden>
+                <ComboActionBarSkeleton />
+              </div>
+            ) : (
+              <footer
+                className={COMBO_ACTION_BAR_MOBILE_CLASS}
+                aria-label="Resumen y acción del combo"
+              >
+                <ComboActionBar
+                  currentStep={currentStep}
+                  total={total}
+                  summaryLabel={comboSummaryLabel}
+                  nextDisabled={nextDisabled}
+                  primaryActionLabel={nextLabel}
+                  onPrimaryAction={handleNext}
+                />
+              </footer>
+            )}
           </div>
 
-          {/* Barra de acción en flujo (no fixed): evita clipping AppShell + tapa contenido */}
-          <footer className={COMBO_ACTION_BAR_CLASS} aria-label="Resumen y acción del combo">
-            <ComboActionBar
+          {showLoadingSkeleton || error ? (
+            <ComboSummaryPanelSkeleton />
+          ) : (
+            <ComboSummaryPanel
               currentStep={currentStep}
               total={total}
               summaryLabel={comboSummaryLabel}
-              nextDisabled={nextDisabled}
               primaryActionLabel={nextLabel}
+              nextDisabled={nextDisabled}
               onPrimaryAction={handleNext}
+              selectedBase={selectedBase}
+              selectedMixer={selectedMixer}
+              ingredientList={ingredientList}
             />
-          </footer>
+          )}
         </div>
       </div>
     </div>
@@ -670,21 +743,7 @@ function ArmaTuComboContent() {
 }
 
 function ArmaTuComboFallback() {
-  return (
-    <div className={COMBO_PAGE_CLASS}>
-      <div className={COMBO_CONTENT_CLASS}>
-        <div className={COMBO_WIZARD_COLUMN_CLASS}>
-          <div className={COMBO_WIZARD_CHROME_CLASS}>
-            <div className="h-6 w-40 animate-pulse rounded bg-zinc-100" />
-            <div className="mt-3 h-8 w-full animate-pulse rounded-lg bg-zinc-100" />
-          </div>
-          <div className={COMBO_SCROLL_AREA_CLASS}>
-            <div className="mt-2 h-24 animate-pulse rounded-xl bg-zinc-100" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <ComboBuilderSkeleton mode="page" />;
 }
 
 export default function ArmaTuCombo() {

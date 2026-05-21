@@ -30,7 +30,7 @@ export function getOrderCustomerSummary(status) {
 
 export function getDeliveryLabel(order) {
   const tipo = String(order?.tipo_entrega ?? "").toUpperCase();
-  if (tipo === "ENVIO") return "Delivery";
+  if (tipo === "DELIVERY" || tipo === "ENVIO") return "Delivery";
   if (tipo === "RETIRO") return "Retiro en local";
   return "Entrega";
 }

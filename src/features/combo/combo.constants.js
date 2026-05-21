@@ -1,5 +1,7 @@
 import { TIPO_PRODUCTO } from "@/constants/tipoProducto";
+import { isExtrasCategoryProduct } from "@/features/combo/comboExtrasCategory";
 
+/** @deprecated Precios vienen del catálogo; no usar en totales ni pedidos. */
 export const ICE_BAG_PRICE = 2500;
 export const AUTO_ADVANCE_MS = 280;
 export const PRODUCTS_PER_PAGE = 5;
@@ -140,21 +142,38 @@ export const mapSelectableProduct = (raw) => {
     imagen_url: raw.imagen_url ?? raw.image_url ?? null,
     categoria_nombre: raw.categoria_nombre ?? raw.category_name ?? null,
     categoria_id: raw.categoria_id ?? raw.category_id ?? null,
+    categoria_slug: raw.categoria_slug ?? raw.category_slug ?? null,
   };
 };
 
+/**
+ * Base/mix por keywords; paso 3 solo categoría Extras (config), incluye hielo con producto_id real.
+ */
 export const classifyProducts = (products) => {
   const bases = [];
   const mixers = [];
   const extras = [];
   for (const p of products) {
+    if (isExtrasCategoryProduct(p)) {
+      extras.push(p);
+      continue;
+    }
     const blob = `${p.nombre ?? ""} ${p.categoria_nombre ?? ""}`;
     if (includesAny(blob, BASE_KEYWORDS)) bases.push(p);
     else if (includesAny(blob, MIXER_KEYWORDS)) mixers.push(p);
-    else extras.push(p);
   }
   return { bases, mixers, extras };
 };
+
+/** Suma precios de selecciones { [id]: { product, cantidad } }. */
+export function sumSelectionMap(selections = {}) {
+  let sum = 0;
+  for (const key in selections) {
+    const entry = selections[key];
+    sum += (Number(entry?.product?.precio) || 0) * (entry?.cantidad ?? 0);
+  }
+  return sum;
+}
 
 export const filterByText = (list, query) => {
   const q = (query || "").trim().toLowerCase();

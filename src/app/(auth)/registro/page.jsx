@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 import { ApiError } from "@/utils/api/apiError";
 import { toast } from "@/lib/toast";
+import { Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { validateDni, validateEmail, validateLastName, validateName } from "@/lib/validations";
 import { CLIENTE_ERROR_CODES } from "@/services/clientesService";
 import AuthHero from "@/components/auth/AuthHero";
@@ -24,6 +26,7 @@ function RegistroForm() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const [form, setForm] = useState({ nombre: "", apellido: "", dni: "", email: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
   const [autoLogin, setAutoLogin] = useState(true);
 
   const nextPath = useMemo(() => {
@@ -97,9 +100,13 @@ function RegistroForm() {
 
   return (
     <div className="w-full">
-      <AuthHero tagline="Creá tu cuenta" subtext="Completá tus datos para empezar a pedir" />
+      <AuthHero showBebidas={false} />
 
-      <AuthCard>
+      <AuthCard softTopGlow>
+        <p className="mb-4 text-center text-sm font-medium text-zinc-600">
+          Completá tus datos para crear tu cuenta
+        </p>
+
         <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4" noValidate>
           <div>
             <label htmlFor="registro-nombre" className={authLabelClass}>
@@ -170,15 +177,29 @@ function RegistroForm() {
             <label htmlFor="registro-password" className={authLabelClass}>
               Contraseña
             </label>
-            <input
-              id="registro-password"
-              type="password"
-              value={form.password}
-              onChange={(e) => updateField("password", e.target.value)}
-              autoComplete="new-password"
-              className={authInputClass(fieldErrors.password)}
-              placeholder="Mínimo 6 caracteres"
-            />
+            <div className="relative">
+              <input
+                id="registro-password"
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(e) => updateField("password", e.target.value)}
+                autoComplete="new-password"
+                className={cn(authInputClass(fieldErrors.password), "pr-11")}
+                placeholder="Mínimo 6 caracteres"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? (
+                  <Eye className="h-4 w-4 shrink-0" aria-hidden />
+                ) : (
+                  <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+                )}
+              </button>
+            </div>
             {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
           </div>
 
@@ -192,7 +213,11 @@ function RegistroForm() {
             Iniciar sesión automáticamente
           </label>
 
-          <button type="submit" disabled={isLoading} className={authPrimaryButtonClass}>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={cn(authPrimaryButtonClass, "mt-5 sm:mt-6")}
+          >
             {isLoading ? "Creando cuenta..." : "Crear cuenta"}
           </button>
         </form>
@@ -215,13 +240,11 @@ function RegistroFallback() {
   return (
     <div className="w-full">
       <header className="mb-4 flex flex-col items-center sm:mb-5">
-        <div className="inline-flex items-center gap-2 sm:gap-2.5">
-          <div className="h-10 w-24 translate-y-px animate-pulse rounded-sm bg-zinc-200/70 sm:h-11 sm:w-[7rem] sm:translate-y-[2px]" />
-          <div className="h-7 w-[4.5rem] animate-pulse rounded-sm bg-zinc-200/70 sm:h-8 sm:w-20" />
-        </div>
-        <div className="mt-2 h-5 w-36 animate-pulse rounded-sm bg-zinc-200/60" />
+        <div className="h-11 w-28 animate-pulse rounded-sm bg-zinc-200/70 sm:h-12 sm:w-32 lg:h-14 lg:w-36" />
+        <div className="mt-2 h-5 w-40 animate-pulse rounded-sm bg-zinc-200/60" />
+        <div className="mt-1 h-4 w-52 max-w-[18rem] animate-pulse rounded-sm bg-zinc-200/50" />
       </header>
-      <div className="rounded-[1.25rem] border border-black/[0.06] bg-white px-5 py-8 text-center text-sm text-zinc-500 shadow-lg">
+      <div className="rounded-[1.25rem] border border-black/[0.06] border-t-primary/[0.08] bg-white px-5 py-8 text-center text-sm text-zinc-500 shadow-lg ring-1 ring-primary/5">
         Cargando…
       </div>
     </div>

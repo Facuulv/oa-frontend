@@ -1,12 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import appConfig from "@/config/app.config";
+import { CUSTOM_COMBO_LINE_KIND } from "@/constants/cartLineKinds";
+
+export { CUSTOM_COMBO_LINE_KIND };
 
 /**
  * Cart item shape (field names match backend API contract):
  * { id, articuloId, slug, nombre, precioBase, extrasSeleccionados,
  *   observaciones, cantidad, precioUnitario, subtotal,
  *   categoria_nombre, imagen_url }
+ *
+ * Combo personalizado (solo UI + snapshot para checkout):
+ * { lineKind: "CUSTOM_COMBO", comboComponents: { displayName, base, mixer, extras } }
+ * articuloId/slug combo-personalizado-* no se envían al API de pedidos.
  */
 
 const getExtraIds = (item) => {
@@ -60,6 +67,12 @@ export const useCartStore = create(
           const incomingIds = getExtraIds({ extrasSeleccionados: incomingExtras });
 
           const existingIndex = state.items.findIndex((current) => {
+            if (
+              current.lineKind === CUSTOM_COMBO_LINE_KIND ||
+              item.lineKind === CUSTOM_COMBO_LINE_KIND
+            ) {
+              return false;
+            }
             const currentIds = getExtraIds(current);
             return (
               current.slug === item.slug &&
@@ -90,6 +103,8 @@ export const useCartStore = create(
             subtotal,
             categoria_nombre: item.categoria_nombre ?? null,
             imagen_url: item.imagen_url ?? null,
+            ...(item.lineKind ? { lineKind: item.lineKind } : {}),
+            ...(item.comboComponents ? { comboComponents: item.comboComponents } : {}),
           };
 
           if (existingIndex !== -1) {

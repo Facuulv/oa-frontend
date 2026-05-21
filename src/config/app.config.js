@@ -41,6 +41,22 @@ const appConfig = {
     maxItems: 10,
   },
 
+  /** Paso 3 del wizard: solo productos de estas categorías (hielo, snacks, etc.). */
+  combo: {
+    extrasCategoryNames: (
+      process.env.NEXT_PUBLIC_COMBO_EXTRAS_CATEGORY_NAMES || "Extras"
+    )
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    extrasCategorySlugs: (
+      process.env.NEXT_PUBLIC_COMBO_EXTRAS_CATEGORY_SLUGS || "extras"
+    )
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  },
+
   pwa: {
     themeColor: "#C1121F",
     backgroundColor: "#f5f5f5",

@@ -40,6 +40,7 @@ export default function ComboActionBar({
           onClick={onPrimaryAction}
           disabled={nextDisabled}
           aria-disabled={nextDisabled || undefined}
+          aria-label={primaryActionLabel}
           className={cn(
             PUBLIC_PRESSABLE_CLASS,
             "home-cta-primary-shadow inline-flex min-h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-bold text-white",

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { authForgotPassword } from "@/services/authSessionService";
+import { cn } from "@/lib/cn";
 import { validateEmail } from "@/lib/validations";
 import { toast } from "@/lib/toast";
 import AuthHero from "@/components/auth/AuthHero";
@@ -57,14 +58,11 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="w-full">
-      <AuthHero
-        tagline="Recuperá tu contraseña"
-        subtext="Te enviaremos un enlace a tu email para restablecer el acceso"
-      />
+      <AuthHero showBebidas={false} />
 
-      <AuthCard>
+      <AuthCard softTopGlow>
         <p className="mb-4 text-center text-sm font-medium text-zinc-600">
-          Ingresá el email de tu cuenta
+          Ingresá el email de tu cuenta para recuperar la contraseña
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4" noValidate>
@@ -100,7 +98,11 @@ export default function ForgotPasswordPage() {
             </div>
           )}
 
-          <button type="submit" disabled={isSubmitting} className={authPrimaryButtonClass}>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={cn(authPrimaryButtonClass, "mt-5 sm:mt-6")}
+          >
             {isSubmitting ? "Enviando..." : "Enviar enlace"}
           </button>
         </form>

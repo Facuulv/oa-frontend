@@ -138,10 +138,25 @@ export const COMBO_CONTENT_CLASS = cn(
 );
 
 /**
- * Columna del wizard: ancho cómodo en mobile, más amplio en desktop (sin layout 2 cols).
+ * Layout wizard: 1 columna mobile; 2 columnas desde lg (armado + panel sticky).
  */
-export const COMBO_WIZARD_COLUMN_CLASS =
-  "mx-auto flex w-full min-h-0 max-w-xl flex-1 flex-col md:max-w-2xl";
+export const COMBO_WIZARD_LAYOUT_CLASS = cn(
+  "flex min-h-0 w-full flex-1 flex-col",
+  "lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-6",
+  "xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-8",
+);
+
+/** Columna izquierda: armado (centrada en mobile; ancho fluido en desktop). */
+export const COMBO_WIZARD_MAIN_CLASS = cn(
+  "mx-auto flex w-full min-h-0 max-w-xl flex-1 flex-col md:max-w-2xl",
+  "lg:mx-0 lg:max-w-none",
+);
+
+/** Panel lateral sticky (solo desktop). */
+export const COMBO_SUMMARY_PANEL_CLASS = cn(
+  "combo-summary-panel hidden shrink-0 lg:block lg:w-full",
+  "lg:sticky lg:top-[calc(var(--app-header-total-height)+1rem)] lg:self-start",
+);
 
 /** Chrome fijo del wizard: volver, título y stepper (fuera del scroll). */
 export const COMBO_WIZARD_CHROME_CLASS = "combo-wizard-chrome shrink-0 px-4 pt-3";
@@ -155,6 +170,9 @@ export const COMBO_SCROLL_AREA_CLASS = cn(
  * Contenedor del footer en flujo (C1): sin fondo oscuro; safe-area en globals.
  */
 export const COMBO_ACTION_BAR_CLASS = "combo-action-bar shrink-0 w-full px-4 pt-2";
+
+/** Footer mobile: oculto en desktop cuando el panel lateral tiene el CTA. */
+export const COMBO_ACTION_BAR_MOBILE_CLASS = cn(COMBO_ACTION_BAR_CLASS, "lg:hidden");
 
 /** Superficie premium de la barra de acción (C2). */
 export const COMBO_ACTION_BAR_SURFACE_CLASS = cn(
@@ -217,3 +235,9 @@ export const COMBO_SAVE_OPTION_ACTIVE_CLASS =
   "border-primary bg-primary/5 ring-1 ring-primary/15";
 export const COMBO_SAVE_OPTION_IDLE_CLASS =
   "border-zinc-200/90 bg-zinc-50/50 hover:border-primary/20";
+
+/** Empty / error de /arma-tu-combo (C7). */
+export const COMBO_STATUS_CARD_CLASS = PROMO_STATUS_CARD_CLASS;
+
+/** Pulso skeleton con reduced-motion (C7). */
+export const COMBO_SKELETON_PULSE_CLASS = "animate-pulse motion-reduce:animate-none";

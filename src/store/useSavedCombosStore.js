@@ -1,14 +1,17 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import appConfig from "@/config/app.config";
+import { sumSelectionMap } from "@/features/combo/combo.constants";
 import {
   getClienteCombos,
   createClienteCombo,
   deleteClienteCombo,
 } from "@/services/clientesCombosService";
+import { useAuthStore, selectIsAuthenticatedCliente } from "@/store/useAuthStore";
 
-const ICE_BAG_UNIT_PRICE = 2500;
-const DEFAULT_COMBO_NAME = "Mi Combo Custom";
+export const FALLBACK_COMBO_NAME = "Mi Combo Personalizado";
+
+const LEGACY_ICE_PRODUCT_ID = "hielo-bag";
 
 function buildAutoLabel(base, mixer) {
   const b = (base?.nombre ?? "Base").trim();
@@ -16,22 +19,66 @@ function buildAutoLabel(base, mixer) {
   return `${b} + ${m}`;
 }
 
-function computeSavedComboTotal(base, mixer, extras = {}, iceBags = 0) {
+/** Nombre para guardar/mostrar: input del usuario, auto "Combo Base + Mix", o fallback. */
+export function resolveComboName({ name, base, mixer }) {
+  const trimmed = String(name ?? "").trim();
+  if (trimmed.length > 0) return trimmed;
+  const b = base?.nombre?.trim();
+  const m = mixer?.nombre?.trim();
+  if (b && m) return `Combo ${b} + ${m}`;
+  return FALLBACK_COMBO_NAME;
+}
+
+function isValidExtraProductId(id) {
+  const n = Number(id);
+  return Number.isInteger(n) && n > 0;
+}
+
+/**
+ * Extras reales para wizard/checkout: mapa { [productId]: { product, cantidad } }.
+ * Fusiona legacy `ice` y descarta hielo-bag / entradas inválidas.
+ */
+export function normalizeExtrasFromSaved(saved) {
+  const merged = { ...(saved?.extras ?? {}) };
+
+  if (saved?.ice && typeof saved.ice === "object") {
+    for (const key in saved.ice) {
+      const entry = saved.ice[key];
+      if (!entry) continue;
+      const pid = entry.product?.id ?? key;
+      if (String(pid) === LEGACY_ICE_PRODUCT_ID) continue;
+      if (!isValidExtraProductId(pid)) continue;
+      merged[String(pid)] = entry;
+    }
+  }
+
+  const clean = {};
+  for (const key in merged) {
+    const entry = merged[key];
+    const product = entry?.product;
+    const pid = product?.id ?? key;
+    if (String(pid) === LEGACY_ICE_PRODUCT_ID) continue;
+    if (!product || !isValidExtraProductId(pid)) continue;
+    clean[String(pid)] = {
+      product,
+      cantidad: Math.max(0, Number(entry.cantidad ?? entry.quantity ?? 0)),
+    };
+  }
+  return clean;
+}
+
+function computeSavedComboTotal(base, mixer, extras = {}) {
   let sum = 0;
   if (base) sum += Number(base.precio) || 0;
   if (mixer) sum += Number(mixer.precio) || 0;
-  for (const id in extras) {
-    sum += (Number(extras[id].product?.precio) || 0) * (extras[id].cantidad ?? 0);
-  }
-  sum += Number(iceBags) * ICE_BAG_UNIT_PRICE;
+  sum += sumSelectionMap(extras);
   return sum;
 }
 
 /**
- * Aplana las selecciones del wizard a una lista normalizada de "componentes"
- * con IDs y cantidades, para poder reconstruir el combo más adelante.
+ * Lista normalizada de componentes con producto_id reales (sin hielo ficticio).
  */
-function buildItems(base, mixer, extras = {}, iceBags = 0) {
+function buildItems(base, mixer, extras = {}) {
   const items = [];
   if (base) {
     items.push({
@@ -53,24 +100,82 @@ function buildItems(base, mixer, extras = {}, iceBags = 0) {
   }
   for (const key in extras) {
     const entry = extras[key];
+    const pid = entry.product?.id ?? key;
+    if (!isValidExtraProductId(pid)) continue;
+    const qty = Number(entry.cantidad ?? 0);
+    if (qty <= 0) continue;
     items.push({
-      id: entry.product?.id ?? key,
+      id: pid,
       role: "extra",
       nombre: entry.product?.nombre ?? "Extra",
-      cantidad: entry.cantidad ?? 1,
+      cantidad: qty,
       precio: Number(entry.product?.precio) || 0,
     });
   }
-  if (iceBags > 0) {
-    items.push({
-      id: "hielo-bag",
-      role: "ice",
-      nombre: "Bolsa de Hielo",
-      cantidad: Number(iceBags) || 0,
-      precio: ICE_BAG_UNIT_PRICE,
-    });
-  }
   return items;
+}
+
+function buildComboEntry({ name, base, mixer, extras = {} }) {
+  const normalizedExtras = normalizeExtrasFromSaved({ extras });
+  return {
+    name: resolveComboName({ name, base, mixer }),
+    label: buildAutoLabel(base, mixer),
+    base,
+    mixer,
+    extras: normalizedExtras,
+    items: buildItems(base, mixer, normalizedExtras),
+    total: computeSavedComboTotal(base, mixer, normalizedExtras),
+  };
+}
+
+/**
+ * Normaliza combo desde API o persist local (legacy iceBags / hielo-bag).
+ * @returns {object|null}
+ */
+export function normalizeSavedCombo(raw) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const base = raw.base ?? null;
+  const mixer = raw.mixer ?? null;
+  const extras = normalizeExtrasFromSaved(raw);
+  const legacyIceBags = Number(raw.iceBags) > 0;
+  const legacyIceSkipped =
+    legacyIceBags &&
+    !Object.values(extras).some((e) =>
+      String(e?.product?.nombre ?? "")
+        .toLowerCase()
+        .includes("hielo")
+    );
+
+  const name =
+    String(raw.name ?? "").trim() ||
+    resolveComboName({ name: "", base, mixer });
+
+  return {
+    ...raw,
+    id: raw.id != null ? String(raw.id) : raw.id,
+    name,
+    label: raw.label ?? buildAutoLabel(base, mixer),
+    base,
+    mixer,
+    extras,
+    items: buildItems(base, mixer, extras),
+    total: computeSavedComboTotal(base, mixer, extras),
+    legacyIceSkipped,
+  };
+}
+
+/** Solo campos aceptados por el validador Zod strict del backend. */
+export function toClienteComboApiPayload(entry) {
+  return {
+    name: entry.name,
+    label: entry.label,
+    total: entry.total,
+    base: entry.base,
+    mixer: entry.mixer,
+    extras: entry.extras,
+    items: entry.items,
+  };
 }
 
 export const useSavedCombosStore = create(
@@ -80,50 +185,45 @@ export const useSavedCombosStore = create(
       syncing: false,
       hasSyncedFromApi: false,
 
-      saveCombo: ({ name, base, mixer, extras = {}, iceBags = 0 }) => {
-        const cleanName = String(name ?? "").trim();
-        const finalName = cleanName.length > 0 ? cleanName : DEFAULT_COMBO_NAME;
-        const entry = {
-          id: `combo-${Date.now()}`,
-          name: finalName,
-          label: buildAutoLabel(base, mixer),
-          savedAt: Date.now(),
-          base,
-          mixer,
-          extras: { ...extras },
-          iceBags: Number(iceBags) || 0,
-          items: buildItems(base, mixer, extras, iceBags),
-          total: computeSavedComboTotal(base, mixer, extras, iceBags),
-        };
-        const max = appConfig.savedCombos?.maxItems ?? 10;
-        set((state) => ({
-          combos: [entry, ...state.combos].slice(0, max),
-        }));
-        void get().saveComboRemote(entry);
-        return entry;
+      /**
+       * Guarda plantilla en API + state solo si hay sesión de cliente.
+       * @returns {{ ok: boolean, reason?: 'unauthenticated'|'error', combo?: object }}
+       */
+      saveComboForCliente: async ({ name, base, mixer, extras = {} }) => {
+        if (!selectIsAuthenticatedCliente(useAuthStore.getState())) {
+          return { ok: false, reason: "unauthenticated" };
+        }
+
+        const entry = buildComboEntry({ name, base, mixer, extras });
+
+        try {
+          const created = await createClienteCombo(toClienteComboApiPayload(entry));
+          if (!created?.id) {
+            return { ok: false, reason: "error" };
+          }
+
+          const merged = normalizeSavedCombo({
+            ...entry,
+            ...created,
+            id: String(created.id),
+            savedAt: created.savedAt ?? Date.now(),
+          });
+
+          const max = appConfig.savedCombos?.maxItems ?? 10;
+          set((state) => ({
+            combos: [merged, ...state.combos].slice(0, max),
+          }));
+
+          return { ok: true, combo: merged };
+        } catch {
+          return { ok: false, reason: "error" };
+        }
       },
 
       removeCombo: (id) =>
         set((state) => ({
           combos: state.combos.filter((c) => c.id !== id),
         })),
-
-      saveComboRemote: async (entry) => {
-        try {
-          const created = await createClienteCombo(entry);
-          if (!created?.id) return null;
-          set((state) => ({
-            combos: state.combos.map((combo) =>
-              combo.id === entry.id
-                ? { ...combo, ...created, id: String(created.id), savedAt: created.savedAt ?? combo.savedAt }
-                : combo
-            ),
-          }));
-          return created;
-        } catch {
-          return null;
-        }
-      },
 
       removeComboRemote: async (id) => {
         try {
@@ -148,12 +248,16 @@ export const useSavedCombosStore = create(
       },
 
       syncCombosFromApi: async () => {
+        if (!selectIsAuthenticatedCliente(useAuthStore.getState())) return;
         if (get().syncing) return;
         set({ syncing: true });
         try {
           const remote = await getClienteCombos();
+          const combos = Array.isArray(remote)
+            ? remote.map((row) => normalizeSavedCombo(row)).filter(Boolean)
+            : [];
           set({
-            combos: Array.isArray(remote) ? remote : [],
+            combos,
             hasSyncedFromApi: true,
           });
         } catch {
@@ -163,11 +267,21 @@ export const useSavedCombosStore = create(
         }
       },
 
-      getComboById: (id) => get().combos.find((c) => c.id === id) ?? null,
+      getComboById: (id) => {
+        const found = get().combos.find((c) => String(c.id) === String(id));
+        return found ? normalizeSavedCombo(found) : null;
+      },
     }),
     {
       name: appConfig.savedCombos?.storageKey ?? "tus_combos",
       partialize: (state) => ({ combos: state.combos }),
+      merge: (persisted, current) => {
+        const p = persisted ?? {};
+        const combos = Array.isArray(p.combos)
+          ? p.combos.map((c) => normalizeSavedCombo(c)).filter(Boolean)
+          : [];
+        return { ...current, ...p, combos };
+      },
     }
   )
 );

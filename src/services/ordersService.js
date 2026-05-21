@@ -1,6 +1,9 @@
 import { apiPaths } from "@/config/apiPaths";
 import { requireApiBaseUrl } from "@/utils/api/baseUrl";
 import { logApiRequest } from "@/utils/api/requestLog";
+import { toBackendOrderBody } from "@/utils/checkout/toBackendOrderBody";
+
+export { toBackendOrderBody };
 
 function jsonHeaders() {
   return { "Content-Type": "application/json" };
@@ -10,63 +13,6 @@ function notifyClientUnauthorized(status) {
   if (status === 401 && typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("auth:unauthorized"));
   }
-}
-
-const PAYMENT_METHOD_MAP = {
-  efectivo: "CASH",
-  cash: "CASH",
-  transferencia: "TRANSFER",
-  transfer: "TRANSFER",
-  CASH: "CASH",
-  TRANSFER: "TRANSFER",
-};
-
-function mapPaymentMethod(raw) {
-  const key = String(raw ?? "efectivo").trim().toLowerCase();
-  return PAYMENT_METHOD_MAP[key] || PAYMENT_METHOD_MAP[raw] || "CASH";
-}
-
-function toBackendOrderBody(payload) {
-  const customer = payload.customer ?? {};
-  const customerName = String(customer.nombre ?? customer.name ?? "").trim();
-  const customerPhone = String(customer.telefono ?? customer.phone ?? "").trim() || null;
-  let customerEmail = String(customer.email ?? "").trim();
-  if (!customerEmail) {
-    customerEmail = "noreply@example.com";
-  }
-
-  const items = (payload.items ?? []).map((item) => ({
-    productId: Number(item.productId ?? item.articuloId ?? item.id),
-    quantity: Number(item.quantity ?? item.cantidad ?? 1),
-    unitPrice: Number(item.precioUnitario ?? item.unitPrice ?? 0),
-    notes: String(item.observations ?? item.observaciones ?? "").trim() || null,
-  }));
-
-  const deliveryAddress =
-    payload.deliveryType === "DELIVERY"
-      ? String(payload.address ?? customer.direccion ?? "").trim() || null
-      : null;
-
-  const meta = [];
-  if (payload.deliveryType) meta.push(`deliveryType:${payload.deliveryType}`);
-  if (payload.when) meta.push(`when:${payload.when}`);
-  if (payload.scheduledTime) meta.push(`scheduledTime:${payload.scheduledTime}`);
-  const notesBase = String(payload.notes ?? "").trim();
-  const notesExtra = meta.length ? meta.join(" | ") : "";
-  const notes = [notesBase, notesExtra].filter(Boolean).join(" — ") || null;
-  const tipoEntrega = payload.deliveryType === "DELIVERY" ? "ENVIO" : "RETIRO";
-
-  return {
-    items,
-    couponCode: String(payload.couponCode ?? "").trim() || null,
-    deliveryAddress,
-    customerName,
-    customerEmail,
-    customerPhone,
-    notes,
-    tipoEntrega,
-    paymentMethod: mapPaymentMethod(payload.paymentMethod),
-  };
 }
 
 export async function createOrder(payload) {

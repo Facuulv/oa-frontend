@@ -160,7 +160,12 @@ export function useCheckoutFinalize() {
 
     setIsSubmitting(true);
     try {
-      const { payload } = buildCheckoutPayload({ normalized, items });
+      const { payload, error: payloadError } = buildCheckoutPayload({ normalized, items });
+      if (payloadError || !payload) {
+        toast.error(payloadError ?? "No pudimos preparar el pedido. Revisá el carrito.");
+        return { ok: false };
+      }
+
       const created = await createOrder(payload);
       const { orderId } = resolveCreatedOrderMeta(created);
       if (!orderId) {
