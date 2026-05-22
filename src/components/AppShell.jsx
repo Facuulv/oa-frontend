@@ -11,11 +11,14 @@ import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { useCartStore, selectCartTotal, selectCartCount } from "@/store/useCartStore";
 import { useShallow } from "zustand/react/shallow";
 import {
+  CART_BAR_MAX_WIDTH_CLASS,
   PUBLIC_DESKTOP_BREAKPOINT_PX,
   PUBLIC_MAIN_SHELL_CLASS,
   PUBLIC_SIDEBAR_OVERLAY_CLASS,
   PUBLIC_SIDEBAR_WIDTH,
 } from "@/constants/layout";
+import { isCartBarRoute } from "@/config/cartBarRoutes";
+import { cn } from "@/lib/cn";
 import { formatPrice } from "@/utils/format/price";
 
 export default function AppShell({ children }) {
@@ -34,17 +37,7 @@ export default function AppShell({ children }) {
   );
   const hasItems = itemCount > 0;
 
-  const isCheckout = pathname?.startsWith("/checkout");
-  const isProductDetail = pathname?.startsWith("/producto/");
-  const isSearch = pathname === "/buscar";
-  const isArmaTuCombo = pathname === "/arma-tu-combo";
-  const cartBarVisible =
-    mounted &&
-    hasItems &&
-    !isCheckout &&
-    !isProductDetail &&
-    !isSearch &&
-    !isArmaTuCombo;
+  const cartBarVisible = mounted && hasItems && isCartBarRoute(pathname);
 
   useEffect(() => {
     setMounted(true);
@@ -112,7 +105,7 @@ export default function AppShell({ children }) {
 
       {cartBarVisible && (
         <div
-          className="fixed bottom-0 left-0 right-0 z-30 w-full transition-all duration-[400ms] ease-out"
+          className="cart-global-bar fixed bottom-0 left-0 right-0 z-30 flex w-full justify-center px-0 transition-all duration-[400ms] ease-out md:bottom-4 md:px-4"
           style={{
             transform:
               !isSidebarOpen || isDesktop
@@ -123,7 +116,12 @@ export default function AppShell({ children }) {
           <button
             type="button"
             onClick={() => router.push("/checkout")}
-            className="flex h-[45px] w-full items-center justify-between bg-primary p-[0.9em] text-base font-medium leading-none text-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)] transition-all duration-200 hover:brightness-110"
+            className={cn(
+              "flex h-11 w-full min-h-[44px] items-center justify-between bg-primary p-[0.9em] text-base font-medium leading-none text-white",
+              "shadow-[0_-4px_12px_rgba(0,0,0,0.08)] transition-all duration-200 hover:brightness-110",
+              "md:rounded-2xl md:border md:border-primary/20 md:shadow-[0_-8px_24px_rgba(0,0,0,0.12)] md:ring-1 md:ring-black/5",
+              CART_BAR_MAX_WIDTH_CLASS,
+            )}
           >
             <span>Ver mi pedido</span>
             <span className="whitespace-nowrap text-[1.2em] font-extrabold">

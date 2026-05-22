@@ -55,7 +55,7 @@ export default function HomeFeaturedCards() {
             Armá tu combo a medida
           </span>
           <span className="mt-1 block text-sm font-medium leading-snug text-zinc-600">
-            Elegí base, mix y extras en un solo producto
+            Elegí base, mix y extras en un solo combo personalizado
           </span>
         </span>
         <ChevronRight

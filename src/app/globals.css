@@ -691,6 +691,11 @@ body.has-public-navbar {
   }
 }
 
+/* Barra global "Ver mi pedido" (AppShell): safe-area inferior en PWA */
+.cart-global-bar {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
 /* /arma-tu-combo: barra de acción en flujo + safe-area inferior (PWA) */
 .combo-action-bar {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));

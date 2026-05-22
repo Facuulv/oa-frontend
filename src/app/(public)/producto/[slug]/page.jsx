@@ -1,19 +1,138 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useCatalogStore, selectProductDetail, selectProductDetailLoading, selectProductDetailError } from "@/store/useCatalogStore";
+import {
+  useCatalogStore,
+  selectProductDetail,
+  selectProductDetailLoading,
+  selectProductDetailError,
+} from "@/store/useCatalogStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 import { useProductPricing } from "@/hooks/product/useProductPricing";
 import ImageWithFade from "@/components/ImageWithFade";
 import ProductDetailSkeleton from "@/components/skeletons/ProductDetailSkeleton";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
+import ProductDetailShell from "@/components/product/ProductDetailShell";
+import ProductDetailActionBar from "@/components/product/ProductDetailActionBar";
+import ProductPurchasePanel from "@/components/product/ProductPurchasePanel";
+import ProductExtrasList from "@/components/product/ProductExtrasList";
 import { PLACEHOLDER_PRODUCT_DETAIL } from "@/constants/images";
+import {
+  PRODUCT_DETAIL_BACK_BUTTON_CLASS,
+  PRODUCT_DETAIL_GRID_CLASS,
+  PRODUCT_DETAIL_IMAGE_CARD_CLASS,
+  PRODUCT_DETAIL_IMAGE_MOBILE_CLASS,
+  PRODUCT_DETAIL_MOBILE_BAR_CLASS,
+  PRODUCT_DETAIL_SURFACE_CARD_CLASS,
+  PROMO_BADGE_CLASS,
+  PROMO_STATUS_CARD_CLASS,
+  COMBO_SUMMARY_INPUT_CLASS,
+} from "@/constants/homeTheme";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { formatPrice } from "@/utils/format/price";
-import { ArrowLeft, Plus, Check } from "lucide-react";
+import { cn } from "@/lib/cn";
+import { AlertCircle, ArrowLeft, Package } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { APP_VIEWPORT_MAX_CLASS } from "@/components/layout/AppViewport";
+
+function ProductDetailImage({
+  src,
+  alt,
+  className,
+  imageClassName,
+  showMobileBack,
+  onBack,
+}) {
+  return (
+    <div className={className}>
+      <ImageWithFade
+        src={src}
+        alt={alt}
+        className={cn("h-full w-full object-cover object-center", imageClassName)}
+        loading="eager"
+        fetchPriority="high"
+        onError={(e) => {
+          e.currentTarget.src = PLACEHOLDER_PRODUCT_DETAIL;
+        }}
+      />
+      {showMobileBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Volver"
+          className={PRODUCT_DETAIL_BACK_BUTTON_CLASS}
+        >
+          <ArrowLeft size={20} strokeWidth={2.25} aria-hidden />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function ProductDetailErrorState({ message, onRetry }) {
+  return (
+    <ProductDetailShell ariaLabel="Error al cargar producto">
+      <div className={PROMO_STATUS_CARD_CLASS} role="alert">
+        <AlertCircle size={40} className="mx-auto mb-3 text-red-400" aria-hidden />
+        <h2 className="text-base font-bold text-foreground">No pudimos cargar el producto</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-zinc-600">{message}</p>
+        <div className="mt-5 flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={onRetry}
+            className={cn(
+              "inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white",
+              "motion-safe:transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            )}
+          >
+            Reintentar
+          </button>
+          <Link
+            href="/"
+            className={cn(
+              "inline-flex min-h-11 items-center justify-center rounded-xl border border-primary/20 bg-white px-4 text-sm font-semibold text-primary",
+              "motion-safe:transition-colors hover:border-primary/35 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            )}
+          >
+            Ir al inicio
+          </Link>
+        </div>
+      </div>
+    </ProductDetailShell>
+  );
+}
+
+function ProductDetailNotFoundState() {
+  return (
+    <ProductDetailShell ariaLabel="Producto no encontrado">
+      <div className={PROMO_STATUS_CARD_CLASS}>
+        <span
+          className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+          aria-hidden
+        >
+          <Package size={22} strokeWidth={2.25} />
+        </span>
+        <h2 className="text-base font-bold tracking-tight text-foreground md:text-lg">
+          Producto no encontrado
+        </h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-snug text-zinc-500">
+          Revisá el enlace o explorá otras categorías.
+        </p>
+        <Link
+          href="/"
+          className={cn(
+            "mx-auto mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white",
+            "motion-safe:transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          )}
+        >
+          Ir al inicio
+        </Link>
+      </div>
+    </ProductDetailShell>
+  );
+}
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
@@ -63,130 +182,132 @@ export default function ProductDetailPage() {
     router.back();
   };
 
+  const handleBack = () => router.back();
+
   if (showSkeleton) return <ProductDetailSkeleton />;
 
   if (error) {
     return (
-      <div className="px-4 py-16 text-center">
-        <p className="text-sm text-red-500">{error}</p>
-        <button
-          type="button"
-          onClick={() => fetchDetail(slug, { force: true })}
-          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm text-white"
-        >
-          Reintentar
-        </button>
-      </div>
+      <ProductDetailErrorState
+        message={error}
+        onRetry={() => fetchDetail(slug, { force: true })}
+      />
     );
+  }
+
+  if (!isLoading && !product) {
+    return <ProductDetailNotFoundState />;
   }
 
   if (!product) return null;
 
   const imgSrc =
-    getOptimizedImageUrl(product.imagen_url, { preset: "productDetail" }) || PLACEHOLDER_PRODUCT_DETAIL;
+    getOptimizedImageUrl(product.imagen_url, { preset: "productDetail" }) ||
+    PLACEHOLDER_PRODUCT_DETAIL;
+
+  const lineTotal = pricing.total * cantidad;
+  const totalFormatted = formatPrice(lineTotal);
+  const unitPriceFormatted = formatPrice(pricing.total);
+  const headerSubtitle = product.categoria_nombre ?? undefined;
+
+  const mobileHero = (
+    <ProductDetailImage
+      src={imgSrc}
+      alt={product.nombre}
+      className={PRODUCT_DETAIL_IMAGE_MOBILE_CLASS}
+      showMobileBack
+      onBack={handleBack}
+    />
+  );
 
   return (
-    <div className="pb-24">
-      <div className="relative">
-        <ImageWithFade
+    <ProductDetailShell hero={mobileHero} ariaLabel={product.nombre}>
+      <div className="hidden lg:block">
+        <PublicPageHeader
+          title={product.nombre}
+          subtitle={headerSubtitle}
+          onBack={handleBack}
+          className="mb-4 md:mb-5"
+        />
+      </div>
+
+      <div className={PRODUCT_DETAIL_GRID_CLASS}>
+        <ProductDetailImage
           src={imgSrc}
           alt={product.nombre}
-          className="h-60 w-full rounded-b-2xl object-cover object-center"
-          loading="eager"
-          fetchPriority="high"
-          onError={(e) => { e.currentTarget.src = PLACEHOLDER_PRODUCT_DETAIL; }}
+          className={PRODUCT_DETAIL_IMAGE_CARD_CLASS}
         />
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white"
-        >
-          <ArrowLeft size={18} />
-        </button>
-      </div>
 
-      <div className="px-4 pt-4">
-        <h1 className="text-lg font-bold text-gray-800">{product.nombre}</h1>
-        <p className="product-price mt-1 text-xl text-primary">{formatPrice(pricing.total * cantidad)}</p>
+        <div className="min-w-0 space-y-5 lg:space-y-6">
+          <div className="space-y-2 lg:hidden">
+            {product.categoria_nombre ? (
+              <span className={PROMO_BADGE_CLASS}>{product.categoria_nombre}</span>
+            ) : null}
+            <h1 className="text-lg font-bold tracking-tight text-foreground md:text-xl">
+              {product.nombre}
+            </h1>
+            <p className="product-price text-2xl leading-none text-primary">
+              {unitPriceFormatted}
+            </p>
+          </div>
 
-        {product.descripcion && (
-          <p className="mt-3 text-sm text-gray-600">{product.descripcion}</p>
-        )}
-
-        {product.extras?.length > 0 && (
-          <div className="mt-5">
-            <h3 className="mb-2 text-sm font-semibold text-gray-700">Extras</h3>
-            <div className="space-y-2">
-              {product.extras.map((extra) => {
-                const isSelected = selectedExtras.some((e) => e.id === extra.id);
-                return (
-                  <button
-                    key={extra.id}
-                    type="button"
-                    onClick={() => toggleExtra(extra)}
-                    className={`flex w-full items-center justify-between rounded-lg border p-3 text-sm transition ${
-                      isSelected ? "border-primary bg-primary/5" : "border-gray-200"
-                    }`}
-                  >
-                    <span className="text-gray-700">{extra.nombre}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">+{formatPrice(extra.precio)}</span>
-                      {isSelected && <Check size={16} className="text-primary" />}
-                    </div>
-                  </button>
-                );
-              })}
+          {product.descripcion ? (
+            <div className={PRODUCT_DETAIL_SURFACE_CARD_CLASS}>
+              <h2 className="mb-2 text-sm font-bold tracking-tight text-foreground">
+                Descripción
+              </h2>
+              <p className="text-sm leading-relaxed text-zinc-600 whitespace-pre-wrap break-words">
+                {product.descripcion}
+              </p>
             </div>
-          </div>
-        )}
+          ) : null}
 
-        <div className="mt-5">
-          <label className="mb-1 block text-sm font-semibold text-gray-700">
-            Observaciones
-          </label>
-          <textarea
-            value={observaciones}
-            onChange={(e) => setObservaciones(e.target.value)}
-            maxLength={200}
-            placeholder="Algún comentario sobre tu pedido..."
-            className="h-20 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <ProductExtrasList
+            extras={product.extras}
+            selectedExtras={selectedExtras}
+            onToggle={toggleExtra}
           />
-          <p className="text-right text-xs text-gray-400">{observaciones.length}/200</p>
-        </div>
-      </div>
 
-      <div
-        className={`fixed bottom-0 left-1/2 z-30 w-full ${APP_VIEWPORT_MAX_CLASS} -translate-x-1/2 border-t bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-2 py-1">
-            <button
-              type="button"
-              onClick={() => setCantidad((c) => Math.max(1, c - 1))}
-              className="h-7 w-7 text-center text-gray-500 transition hover:text-gray-700"
+          <div className={PRODUCT_DETAIL_SURFACE_CARD_CLASS}>
+            <label
+              htmlFor="product-observaciones"
+              className="mb-2 block text-sm font-bold tracking-tight text-foreground"
             >
-              -
-            </button>
-            <span className="w-6 text-center text-sm font-bold">{cantidad}</span>
-            <button
-              type="button"
-              onClick={() => setCantidad((c) => c + 1)}
-              className="h-7 w-7 text-center text-gray-500 transition hover:text-gray-700"
-            >
-              +
-            </button>
+              Observaciones
+            </label>
+            <textarea
+              id="product-observaciones"
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              maxLength={200}
+              placeholder="Algún comentario sobre tu pedido..."
+              className={cn(COMBO_SUMMARY_INPUT_CLASS, "h-24 resize-none")}
+            />
+            <p className="mt-1.5 text-right text-xs tabular-nums text-zinc-400">
+              {observaciones.length}/200
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-black py-2.5 text-sm font-medium text-white transition active:bg-gray-900"
-          >
-            <Plus size={16} />
-            Agregar {formatPrice(pricing.total * cantidad)}
-          </button>
+          <ProductPurchasePanel
+            cantidad={cantidad}
+            onDecrement={() => setCantidad((c) => Math.max(1, c - 1))}
+            onIncrement={() => setCantidad((c) => c + 1)}
+            unitPriceFormatted={unitPriceFormatted}
+            totalFormatted={totalFormatted}
+            onAdd={handleAddToCart}
+          />
         </div>
       </div>
-    </div>
+
+      <footer className={PRODUCT_DETAIL_MOBILE_BAR_CLASS} aria-label="Agregar al pedido">
+        <ProductDetailActionBar
+          cantidad={cantidad}
+          onDecrement={() => setCantidad((c) => Math.max(1, c - 1))}
+          onIncrement={() => setCantidad((c) => c + 1)}
+          totalFormatted={totalFormatted}
+          onAdd={handleAddToCart}
+        />
+      </footer>
+    </ProductDetailShell>
   );
 }

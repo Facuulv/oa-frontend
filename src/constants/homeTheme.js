@@ -128,27 +128,30 @@ export const PROMO_STATUS_CARD_CLASS = cn(
 export const COMBO_PAGE_CLASS = cn(
   PUBLIC_CONTENT_MIN_HEIGHT_CLASS,
   PUBLIC_CONTENT_HEIGHT_CLASS,
-  "home-page flex min-h-0 flex-col text-foreground",
+  "home-page flex min-h-0 min-w-0 w-full max-w-full flex-col text-foreground",
 );
+
+/** Aire horizontal en scroll/footer (sombras de cards; el header no lleva este pad). */
+export const COMBO_WIZARD_BODY_PAD_CLASS = "px-2";
 
 /** Contenedor home-content + columna wizard centrada (480px). */
 export const COMBO_CONTENT_CLASS = cn(
   HOME_CONTENT_CLASS,
-  "flex min-h-0 w-full flex-1 flex-col",
+  "flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col",
 );
 
 /**
  * Layout wizard: 1 columna mobile; 2 columnas desde lg (armado + panel sticky).
  */
 export const COMBO_WIZARD_LAYOUT_CLASS = cn(
-  "flex min-h-0 w-full flex-1 flex-col",
+  "flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col",
   "lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-6",
   "xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-8",
 );
 
 /** Columna izquierda: armado (centrada en mobile; ancho fluido en desktop). */
 export const COMBO_WIZARD_MAIN_CLASS = cn(
-  "mx-auto flex w-full min-h-0 max-w-xl flex-1 flex-col md:max-w-2xl",
+  "mx-auto flex w-full min-h-0 min-w-0 max-w-xl flex-1 flex-col md:max-w-2xl",
   "lg:mx-0 lg:max-w-none",
 );
 
@@ -158,18 +161,25 @@ export const COMBO_SUMMARY_PANEL_CLASS = cn(
   "lg:sticky lg:top-[calc(var(--app-header-total-height)+1rem)] lg:self-start",
 );
 
-/** Chrome fijo del wizard: volver, título y stepper (fuera del scroll). */
-export const COMBO_WIZARD_CHROME_CLASS = "combo-wizard-chrome shrink-0 px-4 pt-3";
+/** Chrome fijo del wizard: volver, título y stepper (mismo ritmo que /promociones). */
+export const COMBO_WIZARD_CHROME_CLASS = cn(
+  "combo-wizard-chrome min-w-0 max-w-full shrink-0",
+  HOME_SECTION_LEAD_CLASS,
+);
 
 /** Solo contenido de pasos; scroll funcional sin scrollbar visible. */
 export const COMBO_SCROLL_AREA_CLASS = cn(
-  "combo-scroll-area no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-2",
+  "combo-scroll-area no-scrollbar min-h-0 min-w-0 max-w-full flex-1 overflow-x-clip overflow-y-auto overscroll-y-contain pb-2",
+  COMBO_WIZARD_BODY_PAD_CLASS,
 );
 
 /**
  * Contenedor del footer en flujo (C1): sin fondo oscuro; safe-area en globals.
  */
-export const COMBO_ACTION_BAR_CLASS = "combo-action-bar shrink-0 w-full px-4 pt-2";
+export const COMBO_ACTION_BAR_CLASS = cn(
+  "combo-action-bar min-w-0 max-w-full shrink-0 w-full pt-2",
+  COMBO_WIZARD_BODY_PAD_CLASS,
+);
 
 /** Footer mobile: oculto en desktop cuando el panel lateral tiene el CTA. */
 export const COMBO_ACTION_BAR_MOBILE_CLASS = cn(COMBO_ACTION_BAR_CLASS, "lg:hidden");
@@ -180,9 +190,6 @@ export const COMBO_ACTION_BAR_SURFACE_CLASS = cn(
   "combo-action-bar-surface w-full rounded-2xl border border-zinc-100/90 bg-white/95 ring-1 ring-black/5",
   "supports-[backdrop-filter]:bg-white/88 backdrop-blur-md",
 );
-
-/** Header del wizard (C3). */
-export const COMBO_WIZARD_HEADER_CLASS = "mb-2";
 
 /** Stepper del wizard (C3). */
 export const COMBO_STEPPER_CLASS = "mb-3";
@@ -241,3 +248,84 @@ export const COMBO_STATUS_CARD_CLASS = PROMO_STATUS_CARD_CLASS;
 
 /** Pulso skeleton con reduced-motion (C7). */
 export const COMBO_SKELETON_PULSE_CLASS = "animate-pulse motion-reduce:animate-none";
+
+/** /producto/[slug]: misma base visual que Home/Promociones. */
+export const PRODUCT_DETAIL_PAGE_CLASS = PROMO_PAGE_CLASS;
+export const PRODUCT_DETAIL_CONTENT_CLASS = PROMO_CONTENT_CLASS;
+
+export const PRODUCT_DETAIL_SECTION_CLASS = cn(
+  PROMO_SECTION_CLASS,
+  "pb-28 lg:pb-6",
+);
+
+export const PRODUCT_DETAIL_GRID_CLASS = cn(
+  "grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-start lg:gap-6 xl:gap-8",
+);
+
+/** Imagen mobile full-bleed (fuera del padding horizontal del content). */
+export const PRODUCT_DETAIL_IMAGE_MOBILE_CLASS = cn(
+  "relative aspect-[4/3] max-h-[min(18rem,42vh)] w-full overflow-hidden",
+  "bg-gradient-to-br from-zinc-50 to-zinc-100 rounded-b-2xl lg:hidden",
+);
+
+/** Imagen desktop en card con aspect ratio controlado. */
+export const PRODUCT_DETAIL_IMAGE_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "relative hidden overflow-hidden rounded-2xl border border-zinc-100/90 bg-white lg:block",
+  "aspect-square max-h-[min(28rem,50vh)] w-full",
+);
+
+export const PRODUCT_DETAIL_BACK_BUTTON_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  PUBLIC_PRESSABLE_CLASS,
+  "absolute left-3 top-3 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-xl",
+  "bg-white/90 text-zinc-800 ring-1 ring-black/5 supports-[backdrop-filter]:backdrop-blur-md",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+);
+
+export const PRODUCT_DETAIL_PURCHASE_PANEL_CLASS = cn(
+  "hidden shrink-0 lg:block lg:sticky lg:top-[calc(var(--app-header-total-height)+1rem)] lg:self-start lg:w-full",
+);
+
+/** Barra fija mobile; safe-area vía .combo-action-bar en globals. */
+export const PRODUCT_DETAIL_MOBILE_BAR_CLASS = cn(
+  "combo-action-bar fixed bottom-0 left-0 right-0 z-30 w-full px-4 pt-2 lg:hidden",
+);
+
+export const PRODUCT_DETAIL_SURFACE_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "rounded-2xl border border-zinc-100/90 bg-white p-4 md:p-5",
+);
+
+export const PRODUCT_DETAIL_SKELETON_PULSE_CLASS = COMBO_SKELETON_PULSE_CLASS;
+
+/** /checkout (Mi carrito): misma base visual que Home/Promociones. */
+export const CHECKOUT_PAGE_CLASS = PROMO_PAGE_CLASS;
+export const CHECKOUT_CONTENT_CLASS = PROMO_CONTENT_CLASS;
+export const CHECKOUT_STATUS_CARD_CLASS = PROMO_STATUS_CARD_CLASS;
+
+export const CHECKOUT_SECTION_CLASS = cn(
+  PROMO_SECTION_CLASS,
+  "pb-28 lg:pb-6",
+);
+
+export const CHECKOUT_LAYOUT_CLASS = cn(
+  "grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-6",
+  "xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-8",
+);
+
+export const CHECKOUT_LIST_CLASS = "flex min-w-0 flex-col gap-3";
+
+export const CHECKOUT_SUMMARY_PANEL_CLASS = cn(
+  "hidden shrink-0 lg:block lg:sticky lg:top-[calc(var(--app-header-total-height)+1rem)] lg:self-start lg:w-full",
+);
+
+/** Barra fija mobile; safe-area vía .combo-action-bar en globals. */
+export const CHECKOUT_MOBILE_BAR_CLASS = cn(
+  "combo-action-bar fixed bottom-0 left-0 right-0 z-30 w-full px-4 pt-2 lg:hidden",
+);
+
+export const CHECKOUT_ITEM_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "overflow-hidden rounded-2xl border border-zinc-100/90 bg-white p-3.5 sm:p-4",
+);

@@ -11,16 +11,18 @@ import { cn } from "@/lib/cn";
  * @param {string} props.title
  * @param {string} [props.subtitle]
  * @param {string} [props.className]
+ * @param {() => void} [props.onBack] — por defecto `router.back()`
  */
-export default function PublicPageHeader({ title, subtitle, className }) {
+export default function PublicPageHeader({ title, subtitle, className, onBack }) {
   const router = useRouter();
+  const handleBack = onBack ?? (() => router.back());
 
   return (
     <div className={cn(className)}>
       <div className="mb-3 md:mb-4">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={handleBack}
           aria-label="Volver"
           className="-ml-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-zinc-700 transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >

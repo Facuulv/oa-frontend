@@ -17,3 +17,6 @@ export const PUBLIC_CONTENT_HEIGHT_CLASS =
 export const PUBLIC_SIDEBAR_CLASS = "app-public-sidebar";
 export const PUBLIC_SIDEBAR_OVERLAY_CLASS = "app-public-sidebar-overlay";
 export const OA_BRAND_PRIMARY_HEX = "#C1121F";
+
+/** Ancho máximo de la pastilla "Ver mi pedido" en desktop (alineado a AppViewport legado). */
+export const CART_BAR_MAX_WIDTH_CLASS = "max-w-[480px]";

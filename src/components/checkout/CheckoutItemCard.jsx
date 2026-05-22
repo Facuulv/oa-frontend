@@ -1,67 +1,152 @@
 "use client";
 
+
+
 import { memo } from "react";
-import { Minus, Plus, Trash2 } from "lucide-react";
+
+import { Trash2 } from "lucide-react";
+
 import ImageWithFade from "@/components/ImageWithFade";
+
+import ProductQuantityStepper from "@/components/product/ProductQuantityStepper";
+
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
+
+import { CHECKOUT_ITEM_CARD_CLASS, PUBLIC_PRESSABLE_CLASS } from "@/constants/homeTheme";
+
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
+
+import { cn } from "@/lib/cn";
+
 import { formatPrice } from "@/utils/format/price";
+
 import { getItemUnitPrice } from "@/store/useCartStore";
 
+
+
 function CheckoutItemCard({ item, onUpdateQuantity, onRemove }) {
+
   const imgSrc =
+
     getOptimizedImageUrl(item.imagen_url, { preset: "checkoutLine" }) || PLACEHOLDER_PRODUCT_CARD;
+
   const unitPrice = getItemUnitPrice(item);
+
   const cantidad = item.cantidad ?? 1;
 
+
+
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
-      <ImageWithFade
-        src={imgSrc}
-        alt={item.nombre}
-        className="h-16 w-16 shrink-0 rounded-xl object-cover object-center"
-        onError={(e) => { e.currentTarget.src = PLACEHOLDER_PRODUCT_CARD; }}
-      />
 
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-gray-800 line-clamp-1">{item.nombre}</p>
-        {item.extrasSeleccionados?.length > 0 && (
-          <p className="text-xs text-gray-500 line-clamp-1">
-            {item.extrasSeleccionados.map((e) => e.nombre).join(", ")}
+    <article className={CHECKOUT_ITEM_CARD_CLASS}>
+
+      <div className="flex gap-3">
+
+        <ImageWithFade
+
+          src={imgSrc}
+
+          alt={item.nombre}
+
+          className="h-[5.25rem] w-[5.25rem] shrink-0 rounded-xl object-cover object-center bg-gradient-to-br from-zinc-50 to-zinc-100"
+
+          onError={(e) => {
+
+            e.currentTarget.src = PLACEHOLDER_PRODUCT_CARD;
+
+          }}
+
+        />
+
+
+
+        <div className="min-w-0 flex-1">
+
+          <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
+
+            {item.nombre}
+
           </p>
-        )}
-        <p className="mt-1 text-sm font-bold text-primary">{formatPrice(unitPrice * cantidad)}</p>
+
+          {item.extrasSeleccionados?.length > 0 && (
+
+            <p className="mt-0.5 line-clamp-1 text-xs leading-snug text-zinc-500">
+
+              {item.extrasSeleccionados.map((e) => e.nombre).join(", ")}
+
+            </p>
+
+          )}
+
+          <p className="product-price mt-1.5 text-base leading-none text-primary">
+
+            {formatPrice(unitPrice * cantidad)}
+
+          </p>
+
+          {cantidad > 1 ? (
+
+            <p className="mt-0.5 text-xs text-zinc-500">{formatPrice(unitPrice)} c/u</p>
+
+          ) : null}
+
+        </div>
+
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+
+
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-zinc-100/90 pt-3">
+
+        <ProductQuantityStepper
+
+          quantity={cantidad}
+
+          onDecrement={() => onUpdateQuantity(item.id, cantidad - 1)}
+
+          onIncrement={() => onUpdateQuantity(item.id, cantidad + 1)}
+
+          decrementDisabled={false}
+
+        />
+
         <button
+
           type="button"
-          onClick={() => onUpdateQuantity(item.id, cantidad - 1)}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-500 transition hover:bg-gray-100"
-          aria-label="Reducir cantidad"
-        >
-          <Minus size={14} />
-        </button>
-        <span className="w-5 text-center text-sm font-bold">{cantidad}</span>
-        <button
-          type="button"
-          onClick={() => onUpdateQuantity(item.id, cantidad + 1)}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-500 transition hover:bg-gray-100"
-          aria-label="Aumentar cantidad"
-        >
-          <Plus size={14} />
-        </button>
-        <button
-          type="button"
+
           onClick={() => onRemove(item.id)}
-          className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-red-400 transition hover:bg-red-50 hover:text-red-600"
+
           aria-label="Eliminar producto"
+
+          className={cn(
+
+            PUBLIC_PRESSABLE_CLASS,
+
+            "inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 text-sm font-medium text-zinc-500",
+
+            "transition-colors hover:bg-red-50 hover:text-red-600",
+
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+
+          )}
+
         >
-          <Trash2 size={14} />
+
+          <Trash2 size={16} strokeWidth={2.25} aria-hidden />
+
+          <span className="sr-only sm:not-sr-only sm:inline">Eliminar</span>
+
         </button>
+
       </div>
-    </div>
+
+    </article>
+
   );
+
 }
 
+
+
 export default memo(CheckoutItemCard);
+

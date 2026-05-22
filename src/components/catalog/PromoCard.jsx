@@ -10,11 +10,12 @@ import { formatPrice } from "@/utils/format/price";
 import { PROMO_BADGE_CLASS, PROMO_CARD_LINK_CLASS } from "@/constants/homeTheme";
 import { cn } from "@/lib/cn";
 
-function PromoCard({ product }) {
+function PromoCard({ product, badgeLabel = "Promoción" }) {
   const imgSrc =
     getOptimizedImageUrl(product.imagen_url, { preset: "productCard" }) ||
     PLACEHOLDER_PRODUCT_CARD;
   const href = `/producto/${product.slug ?? product.id}`;
+  const showBadge = badgeLabel != null && badgeLabel !== false && badgeLabel !== "";
 
   return (
     <Link href={href} className={PROMO_CARD_LINK_CLASS}>
@@ -37,7 +38,7 @@ function PromoCard({ product }) {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-2 py-0.5 md:gap-2.5 md:p-3 md:py-3">
         <div className="min-w-0 space-y-1.5 md:space-y-1.5">
-          <span className={PROMO_BADGE_CLASS}>Promoción</span>
+          {showBadge ? <span className={PROMO_BADGE_CLASS}>{badgeLabel}</span> : null}
           <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
             {product.nombre}
           </p>

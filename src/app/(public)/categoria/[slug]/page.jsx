@@ -1,7 +1,17 @@
+import Link from "next/link";
 import { getCategories, getProductsByCategory } from "@/services/catalogService";
 import { mapCategory, mapProduct } from "@/lib/mappers/catalogMapper";
-import ProductListItemCard from "@/components/catalog/ProductListItemCard";
-import { AlertCircle } from "lucide-react";
+import PromoCard from "@/components/catalog/PromoCard";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
+import {
+  PROMO_CONTENT_CLASS,
+  PROMO_LIST_GRID_CLASS,
+  PROMO_PAGE_CLASS,
+  PROMO_SECTION_CLASS,
+  PROMO_STATUS_CARD_CLASS,
+} from "@/constants/homeTheme";
+import { cn } from "@/lib/cn";
+import { AlertCircle, FolderOpen, Package } from "lucide-react";
 
 function toSlug(str) {
   if (!str || typeof str !== "string") return "";
@@ -17,6 +27,109 @@ function toSlug(str) {
 function normalizePlural(slugNorm = "") {
   // tolera "vino" vs "vinos" (solo para casos simples)
   return slugNorm.endsWith("s") ? slugNorm.slice(0, -1) : slugNorm;
+}
+
+function buildCategorySubtitle(slugStr, productCount, categoryNotFound) {
+  if (categoryNotFound) return undefined;
+  if (slugStr === "all") return "Catálogo completo";
+  if (productCount > 0) {
+    return productCount === 1 ? "1 producto" : `${productCount} productos`;
+  }
+  return "Sin productos por ahora";
+}
+
+function CategoryShell({ title, subtitle, ariaLabel, children }) {
+  return (
+    <div className={PROMO_PAGE_CLASS}>
+      <div className={PROMO_CONTENT_CLASS}>
+        <section className={PROMO_SECTION_CLASS} aria-label={ariaLabel ?? title}>
+          <PublicPageHeader title={title} subtitle={subtitle} className="mb-4 md:mb-5" />
+          {children}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function CategoryEmptyState() {
+  return (
+    <div className={PROMO_STATUS_CARD_CLASS}>
+      <span
+        className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+        aria-hidden
+      >
+        <Package size={22} strokeWidth={2.25} />
+      </span>
+      <h2 className="text-base font-bold tracking-tight text-foreground md:text-lg">
+        No hay productos en esta categoría
+      </h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-snug text-zinc-500">
+        Volvé a revisar más tarde o explorá otras categorías.
+      </p>
+      <div className="mt-5 flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center">
+        <Link
+          href="/"
+          className={cn(
+            "inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white",
+            "motion-safe:transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          )}
+        >
+          Ir al inicio
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function CategoryNotFoundState() {
+  return (
+    <div className={PROMO_STATUS_CARD_CLASS}>
+      <span
+        className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+        aria-hidden
+      >
+        <FolderOpen size={22} strokeWidth={2.25} />
+      </span>
+      <h2 className="text-base font-bold tracking-tight text-foreground md:text-lg">
+        No se encontró la categoría
+      </h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-snug text-zinc-500">
+        Revisá el enlace o volvé al inicio para elegir otra categoría.
+      </p>
+      <div className="mt-5 flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center">
+        <Link
+          href="/"
+          className={cn(
+            "inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white",
+            "motion-safe:transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          )}
+        >
+          Ir al inicio
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function CategoryErrorState({ message }) {
+  return (
+    <CategoryShell title="Categoría" ariaLabel="Error al cargar categoría">
+      <div className={PROMO_STATUS_CARD_CLASS} role="alert">
+        <AlertCircle size={40} className="mx-auto mb-3 text-red-400" aria-hidden />
+        <h2 className="text-base font-bold text-foreground">No pudimos cargar los productos</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-zinc-600">{message}</p>
+        <Link
+          href="/"
+          className={cn(
+            "mx-auto mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white",
+            "motion-safe:transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          )}
+        >
+          Ir al inicio
+        </Link>
+      </div>
+    </CategoryShell>
+  );
 }
 
 export default async function CategoryPage({ params }) {
@@ -60,6 +173,7 @@ export default async function CategoryPage({ params }) {
 
   const categoriaId = match?.id ?? null;
   const categoriaNombre = slugStr === "all" ? "Todos los productos" : match?.nombre ?? "Categoría";
+  const categoryNotFound = slugStr !== "all" && categoriaId == null;
 
   let productos = [];
   let error = null;
@@ -76,31 +190,24 @@ export default async function CategoryPage({ params }) {
   }
 
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-        <AlertCircle size={40} className="bg-zinc-50" />
-        <p className="mb-4 text-sm text-gray-600">{error}</p>
-      </div>
-    );
+    return <CategoryErrorState message={error} />;
   }
 
+  const subtitle = buildCategorySubtitle(slugStr, productos.length, categoryNotFound);
+
   return (
-    <div className="min-h-screen bg-red-50 px-4 py-4">
-      <h1 className="mb-4 text-lg font-bold text-neutral-900">{categoriaNombre}</h1>
-
-      {slugStr !== "all" && categoriaId == null ? (
-        <p className="py-6 text-center text-sm text-gray-500">No se encontró la categoría</p>
-      ) : null}
-
-      {productos.length > 0 ? (
-        <div className="space-y-3">
+    <CategoryShell title={categoriaNombre} subtitle={subtitle} ariaLabel={categoriaNombre}>
+      {categoryNotFound ? (
+        <CategoryNotFoundState />
+      ) : productos.length > 0 ? (
+        <div className={PROMO_LIST_GRID_CLASS}>
           {productos.map((p) => (
-            <ProductListItemCard key={p.id} product={p} />
+            <PromoCard key={p.id} product={p} badgeLabel={null} />
           ))}
         </div>
       ) : (
-        <p className="py-12 text-center text-sm text-gray-400">No hay productos en esta categoría</p>
+        <CategoryEmptyState />
       )}
-    </div>
+    </CategoryShell>
   );
 }

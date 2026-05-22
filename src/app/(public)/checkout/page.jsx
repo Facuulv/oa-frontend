@@ -1,7 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useCartStore, selectCartItems, selectCartTotal } from "@/store/useCartStore";
+import {
+  useCartStore,
+  selectCartItems,
+  selectCartTotal,
+  selectCartCount,
+} from "@/store/useCartStore";
 import {
   useAuthStore,
   selectAuthLoading,
@@ -12,18 +18,36 @@ import {
   redirectToCheckoutLogin,
 } from "@/hooks/checkout/useCheckoutFinalize";
 import { toast } from "@/lib/toast";
+import CheckoutShell from "@/components/checkout/CheckoutShell";
 import CheckoutItemCard from "@/components/checkout/CheckoutItemCard";
 import CheckoutEmptyState from "@/components/checkout/CheckoutEmptyState";
-import CheckoutFooter from "@/components/checkout/CheckoutFooter";
-import { ArrowLeft } from "lucide-react";
+import CheckoutSummaryCard from "@/components/checkout/CheckoutSummaryCard";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
+import { CHECKOUT_LAYOUT_CLASS, CHECKOUT_LIST_CLASS, CHECKOUT_SUMMARY_PANEL_CLASS } from "@/constants/homeTheme";
+
+function buildCartHeaderSubtitle(lineCount, unitCount) {
+  if (lineCount === 0) return undefined;
+  if (unitCount === lineCount) {
+    return lineCount === 1 ? "1 producto" : `${lineCount} productos`;
+  }
+  const lines = lineCount === 1 ? "1 producto" : `${lineCount} productos`;
+  const units = unitCount === 1 ? "1 unidad" : `${unitCount} unidades`;
+  return `${lines} · ${units}`;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
   const items = useCartStore(selectCartItems);
   const total = useCartStore(selectCartTotal);
+  const unitCount = useCartStore(selectCartCount);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
   const authLoading = useAuthStore(selectAuthLoading);
+
+  const headerSubtitle = useMemo(
+    () => buildCartHeaderSubtitle(items.length, unitCount),
+    [items.length, unitCount],
+  );
 
   const handleFinalizePedido = () => {
     if (authLoading) {
@@ -46,33 +70,43 @@ export default function CheckoutPage() {
   if (items.length === 0) return <CheckoutEmptyState />;
 
   return (
-    <div className="pb-24">
-      <div className="flex items-center gap-2 px-4 pt-4 pb-2">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="rounded-md p-1 text-gray-500 transition hover:bg-gray-100"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-lg font-bold text-gray-800">Mi carrito</h1>
-      </div>
+    <CheckoutShell>
+      <PublicPageHeader
+        title="Mi carrito"
+        subtitle={headerSubtitle}
+        className="mb-4 md:mb-5"
+      />
 
-      <div className="space-y-3 px-4">
-        {items.map((item) => (
-          <CheckoutItemCard
-            key={item.id}
-            item={item}
-            onUpdateQuantity={updateQuantity}
-            onRemove={removeItem}
+      <div className={CHECKOUT_LAYOUT_CLASS}>
+        <div className={CHECKOUT_LIST_CLASS}>
+          {items.map((item) => (
+            <CheckoutItemCard
+              key={item.id}
+              item={item}
+              onUpdateQuantity={updateQuantity}
+              onRemove={removeItem}
+            />
+          ))}
+        </div>
+
+        <div className={CHECKOUT_SUMMARY_PANEL_CLASS}>
+          <CheckoutSummaryCard
+            variant="desktop-panel"
+            total={total}
+            itemLineCount={items.length}
+            unitCount={unitCount}
+            onCheckout={handleFinalizePedido}
           />
-        ))}
+        </div>
       </div>
 
-      <CheckoutFooter
+      <CheckoutSummaryCard
+        variant="mobile-bar"
         total={total}
+        itemLineCount={items.length}
+        unitCount={unitCount}
         onCheckout={handleFinalizePedido}
       />
-    </div>
+    </CheckoutShell>
   );
 }
