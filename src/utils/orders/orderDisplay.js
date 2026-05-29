@@ -85,3 +85,89 @@ export function normalizeMyOrderDetail(data) {
 export function createEmptyPagination(limit = 10) {
   return { ...EMPTY_PAGINATION, limit };
 }
+
+const WHEN_LABELS = {
+  CUANTO_ANTES: "Lo antes posible",
+  PROGRAMADO: "Programado",
+};
+
+const DELIVERY_TYPE_LABELS = {
+  DELIVERY: "Delivery",
+  RETIRO: "Retiro en local",
+  ENVIO: "Delivery",
+};
+
+function parseMetaPairs(metaString) {
+  if (!metaString?.trim()) return [];
+  return metaString
+    .split(/\s*\|\s*/)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function humanizeMetaPair(pair, { omitDeliveryType }) {
+  const colon = pair.indexOf(":");
+  if (colon < 0) return pair;
+
+  const key = pair.slice(0, colon).trim().toLowerCase();
+  const value = pair.slice(colon + 1).trim();
+  if (!value) return null;
+
+  if (key === "deliverytype") {
+    if (omitDeliveryType) return null;
+    return DELIVERY_TYPE_LABELS[value.toUpperCase()] ?? `Entrega: ${value}`;
+  }
+  if (key === "when") {
+    return WHEN_LABELS[value.toUpperCase()] ?? `Cuándo: ${value.replace(/_/g, " ").toLowerCase()}`;
+  }
+  if (key === "scheduledtime") {
+    return `Horario: ${value}`;
+  }
+
+  return null;
+}
+
+/**
+ * Separa notas del usuario y metadata técnica del checkout para mostrar en detalle.
+ * @param {string | null | undefined} notes
+ * @param {{ omitDeliveryType?: boolean }} [options]
+ * @returns {{ userText: string | null, metaLines: string[], hasContent: boolean, fallback: string | null }}
+ */
+export function formatOrderNotesForDisplay(notes, { omitDeliveryType = true } = {}) {
+  const raw = String(notes ?? "").trim();
+  if (!raw) {
+    return { userText: null, metaLines: [], hasContent: false, fallback: null };
+  }
+
+  const metaSeparator = " — ";
+  const separatorIndex = raw.indexOf(metaSeparator);
+  let userText = "";
+  let metaString = "";
+
+  if (separatorIndex >= 0) {
+    userText = raw.slice(0, separatorIndex).trim();
+    metaString = raw.slice(separatorIndex + metaSeparator.length).trim();
+  } else if (/^\w+:[^|]+(\s*\|\s*\w+:[^|]+)*$/.test(raw)) {
+    metaString = raw;
+  } else {
+    return { userText: raw, metaLines: [], hasContent: true, fallback: null };
+  }
+
+  const metaLines = [];
+  for (const pair of parseMetaPairs(metaString)) {
+    const line = humanizeMetaPair(pair, { omitDeliveryType });
+    if (line) metaLines.push(line);
+  }
+
+  const hasContent = Boolean(userText) || metaLines.length > 0;
+  if (!hasContent) {
+    return { userText: null, metaLines: [], hasContent: true, fallback: raw };
+  }
+
+  return {
+    userText: userText || null,
+    metaLines,
+    hasContent: true,
+    fallback: null,
+  };
+}

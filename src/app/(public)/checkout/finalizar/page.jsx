@@ -24,6 +24,11 @@ export default function CheckoutFinalizarPage() {
     savedAddresses,
     updateField,
     submit,
+    checkoutBlocked,
+    checkoutBlockedReason,
+    storeStatusLoading,
+    configLoading,
+    nextOpeningText,
   } = useCheckoutFinalize();
 
   if (authLoading || !isAuthenticatedCliente || authUser?.origen === "ADMIN") {
@@ -58,14 +63,16 @@ export default function CheckoutFinalizarPage() {
             ? "Si la pestaña no se abrió, tocá el botón de abajo."
             : "Tu pedido quedó guardado. Tocá el botón para abrir WhatsApp manualmente."}
         </p>
-        <a
-          href={orderSent.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-xl bg-[#C1121F] px-6 py-2.5 text-sm font-bold text-white"
-        >
-          Abrir WhatsApp
-        </a>
+        {orderSent.url ? (
+          <a
+            href={orderSent.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl bg-[#C1121F] px-6 py-2.5 text-sm font-bold text-white"
+          >
+            Abrir WhatsApp
+          </a>
+        ) : null}
         <button
           type="button"
           onClick={() => router.push("/")}
@@ -274,13 +281,29 @@ export default function CheckoutFinalizarPage() {
         <button
           type="button"
           onClick={() => void submit()}
-          disabled={isSubmitting || items.length === 0 || !isFormReady}
+          disabled={
+            isSubmitting ||
+            items.length === 0 ||
+            !isFormReady ||
+            checkoutBlocked
+          }
           className="min-h-[48px] w-full rounded-xl bg-[#C1121F] px-6 py-3.5 text-base font-bold text-white shadow-lg transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 disabled:shadow-none"
         >
-          {isSubmitting ? "Procesando..." : "Confirmar pedido"}
+          {isSubmitting
+            ? "Procesando..."
+            : storeStatusLoading || configLoading
+              ? "Verificando horario..."
+              : "Confirmar pedido"}
         </button>
 
-        {!isFormReady && (
+        {checkoutBlocked && !storeStatusLoading && !configLoading && checkoutBlockedReason ? (
+          <p className="text-center text-xs font-medium text-amber-800">
+            {checkoutBlockedReason}
+            {nextOpeningText ? ` ${nextOpeningText}` : ""}
+          </p>
+        ) : null}
+
+        {!isFormReady && !checkoutBlocked && (
           <p className="text-center text-xs font-medium text-zinc-500">
             Completá nombre, teléfono{isDelivery ? " y dirección" : ""} para continuar.
           </p>

@@ -2,20 +2,24 @@
 
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { useRouter } from "next/navigation";
-import {
-  User,
-  LogOut,
-  Package,
-  ChevronRight,
-  Sparkles,
-  MapPin,
-} from "lucide-react";
+import { User, LogOut, Package, Sparkles, MapPin } from "lucide-react";
 import AccountProfileHero from "@/components/account/AccountProfileHero";
+import AccountShell from "@/components/account/AccountShell";
+import AccountOptionCard from "@/components/account/AccountOptionCard";
 import { getUserDisplayName } from "@/utils/account/userDisplay";
 import { isProfileIncomplete } from "@/utils/account/profileHelpers";
 import ProfileIncompleteBanner from "@/components/account/ProfileIncompleteBanner";
-import { useSavedCombosStore, selectSavedCombos } from "@/store/useSavedCombosStore";
+import {
+  useSavedCombosStore,
+  selectSavedCombos,
+} from "@/store/useSavedCombosStore";
 import { useEffect } from "react";
+import {
+  ACCOUNT_LOGOUT_CARD_CLASS,
+  ACCOUNT_OPTIONS_GRID_CLASS,
+  PUBLIC_PRESSABLE_CLASS,
+} from "@/constants/homeTheme";
+import { cn } from "@/lib/cn";
 
 export default function MiCuentaPage() {
   const { user, isAuthenticated, logout, loading } = useClientAuth({
@@ -82,70 +86,48 @@ export default function MiCuentaPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50 px-4 py-4">
+    <AccountShell ariaLabel="Mi cuenta">
       <AccountProfileHero
         user={user}
         displayName={displayName}
         email={user?.email ?? ""}
       />
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 space-y-4 md:mt-5">
         {isProfileIncomplete(user) && <ProfileIncompleteBanner />}
 
-        {quickInfo.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
+        <div className={ACCOUNT_OPTIONS_GRID_CLASS}>
+          {quickInfo.map((item) => (
+            <AccountOptionCard
               key={item.key}
-              type="button"
-              onClick={item.onClick}
+              title={item.title}
+              subtitle={item.subtitle}
+              cta={item.cta}
+              icon={item.icon}
+              badge={item.badge}
               disabled={item.disabled}
-              className={`group w-full rounded-2xl border bg-white p-4 text-left shadow-sm transition ${
-                item.disabled
-                  ? "cursor-not-allowed border-zinc-100 opacity-75"
-                  : "border-zinc-200 active:scale-[0.99] hover:border-zinc-300 hover:shadow-md"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-zinc-900">{item.title}</p>
-                  <p className="mt-1 text-xs text-zinc-500">{item.subtitle}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {item.badge && (
-                    <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-600">
-                      {item.badge}
-                    </span>
-                  )}
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 transition group-hover:bg-red-50 group-hover:text-red-600">
-                    <Icon size={18} />
-                  </span>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-sm font-semibold text-primary">{item.cta}</span>
-                {!item.disabled && <ChevronRight size={16} className="text-zinc-400" />}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              onClick={item.onClick}
+            />
+          ))}
+        </div>
 
-      <div className="mt-3">
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center justify-between rounded-2xl border border-red-100 bg-white p-4 text-red-600 shadow-sm transition active:scale-[0.99] hover:border-red-200 hover:shadow-md"
+          className={cn(
+            ACCOUNT_LOGOUT_CARD_CLASS,
+            PUBLIC_PRESSABLE_CLASS,
+            "group flex items-center justify-between text-red-600 transition hover:border-red-200",
+          )}
         >
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
-              <LogOut size={18} />
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 transition group-hover:bg-red-100">
+              <LogOut size={18} strokeWidth={2.25} aria-hidden />
             </span>
             <span className="text-sm font-semibold">Cerrar sesión</span>
           </div>
-          <ChevronRight size={16} className="text-red-300" />
         </button>
       </div>
-    </div>
+    </AccountShell>
   );
 }

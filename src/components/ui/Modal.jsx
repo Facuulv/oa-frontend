@@ -36,6 +36,7 @@ function getFocusableElements(container) {
  * @param {string} [props.titleId] id del título para aria-labelledby (default: useId).
  * @param {boolean} [props.keepMountedOnClose] Si true, mantiene el modal montado al cerrar (mejor reapertura).
  * @param {boolean} [props.eagerMount] Si true y keepMountedOnClose=true, monta el contenido desde el inicio.
+ * @param {boolean} [props.centered] Si true, centra el panel verticalmente en todos los breakpoints.
  */
 export default function Modal({
   isOpen,
@@ -52,6 +53,7 @@ export default function Modal({
   titleId: titleIdProp,
   keepMountedOnClose = false,
   eagerMount = false,
+  centered = false,
 }) {
   const reactId = useId();
   const titleId = titleIdProp ?? `modal-title-${reactId.replace(/:/g, "")}`;
@@ -138,12 +140,15 @@ export default function Modal({
   };
 
   const panelAnim = animatePanelPop ? "modal-panel-pop" : "modal-slide-down";
+  const overlayLayoutClass = centered
+    ? "items-center justify-center px-4 py-6"
+    : "items-end justify-center px-3 pb-3 pt-10 sm:items-center sm:px-4 sm:pb-6 sm:pt-8";
 
   return (
     <div
       hidden={!isOpen}
       aria-hidden={!isOpen}
-      className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-3 pt-10 sm:items-center sm:px-4 sm:pb-6 sm:pt-8"
+      className={`fixed inset-0 z-50 flex ${overlayLayoutClass}`}
       role="presentation"
     >
       <div

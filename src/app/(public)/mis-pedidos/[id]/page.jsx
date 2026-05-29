@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { useMyOrderDetail } from "@/hooks/account/useMyOrderDetail";
 import { useDelayedLoading } from "@/hooks/useDelayedLoading";
+import AccountShell from "@/components/account/AccountShell";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
 import OrderDetail from "@/components/account/OrderDetail";
 import OrderDetailSkeleton from "@/components/account/OrderDetailSkeleton";
+import {
+  CHECKOUT_STATUS_CARD_CLASS,
+  PUBLIC_PRESSABLE_CLASS,
+} from "@/constants/homeTheme";
+import { cn } from "@/lib/cn";
 
 export default function MisPedidoDetallePage() {
   const router = useRouter();
@@ -24,42 +31,43 @@ export default function MisPedidoDetallePage() {
   });
   const showSkeleton = useDelayedLoading(loading && isAuthenticated);
 
+  const headerTitle = order?.id ? `Pedido #${order.id}` : `Pedido #${orderId}`;
+
   if (authLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-zinc-50 px-4 py-10">
+      <AccountShell ariaLabel="Detalle del pedido">
         <OrderDetailSkeleton />
-      </div>
+      </AccountShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 pb-8">
-      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-zinc-100 bg-white px-4 py-3 shadow-sm">
-        <button
-          type="button"
-          onClick={() => router.push("/mis-pedidos")}
-          aria-label="Volver a mis pedidos"
-          className="rounded-xl p-1.5 text-zinc-700 transition hover:bg-zinc-100"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-lg font-extrabold tracking-tight text-zinc-900">
-          Pedido #{orderId}
-        </h1>
-      </div>
+    <AccountShell ariaLabel="Detalle del pedido">
+      <PublicPageHeader
+        title={headerTitle}
+        subtitle="El local coordina confirmación y entrega por WhatsApp."
+        className="mb-4 md:mb-5"
+        onBack={() => router.push("/mis-pedidos")}
+      />
 
-      <div className="px-4 pt-4">
+      <div className="mx-auto w-full max-w-6xl">
         {showSkeleton && <OrderDetailSkeleton />}
 
         {!loading && notFound && (
-          <div className="rounded-xl border border-zinc-100 bg-white px-6 py-14 text-center shadow-sm">
-            <p className="mb-2 text-lg font-semibold text-zinc-800">Pedido no encontrado</p>
-            <p className="mb-6 text-sm text-zinc-500">
+          <div className={CHECKOUT_STATUS_CARD_CLASS}>
+            <h2 className="text-base font-bold tracking-tight text-foreground md:text-lg">
+              Pedido no encontrado
+            </h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-snug text-zinc-500">
               No existe o no tenés permiso para verlo.
             </p>
             <Link
               href="/mis-pedidos"
-              className="inline-block rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white"
+              className={cn(
+                PUBLIC_PRESSABLE_CLASS,
+                "home-cta-primary-shadow mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary to-primary-dark px-6 text-sm font-bold text-white",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              )}
             >
               Volver a mis pedidos
             </Link>
@@ -67,14 +75,18 @@ export default function MisPedidoDetallePage() {
         )}
 
         {!loading && error && (
-          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-6 text-center">
-            <p className="mb-4 text-sm text-red-700">{error}</p>
+          <div className={CHECKOUT_STATUS_CARD_CLASS}>
+            <p className="text-sm text-red-700">{error}</p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+              className={cn(
+                PUBLIC_PRESSABLE_CLASS,
+                "home-cta-primary-shadow mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-primary via-primary to-primary-dark px-5 text-sm font-bold text-white",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              )}
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={16} aria-hidden />
               Reintentar
             </button>
           </div>
@@ -82,6 +94,6 @@ export default function MisPedidoDetallePage() {
 
         {!loading && !error && !notFound && order && <OrderDetail order={order} />}
       </div>
-    </div>
+    </AccountShell>
   );
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getMyOrders } from "@/services/ordersService";
 import { createEmptyPagination, normalizeMyOrdersPage } from "@/utils/orders/orderDisplay";
 
-const DEFAULT_LIMIT = 10;
+const DEFAULT_LIMIT = 8;
 
 export function useMyOrders({ enabled = true, limit = DEFAULT_LIMIT } = {}) {
   const [page, setPage] = useState(1);

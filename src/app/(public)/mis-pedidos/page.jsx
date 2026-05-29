@@ -3,14 +3,22 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { useMyOrders } from "@/hooks/account/useMyOrders";
 import { useDelayedLoading } from "@/hooks/useDelayedLoading";
+import AccountShell from "@/components/account/AccountShell";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
 import OrderCard from "@/components/account/OrderCard";
 import OrdersEmptyState from "@/components/account/OrdersEmptyState";
 import OrdersListSkeleton from "@/components/account/OrdersListSkeleton";
 import OrdersPagination from "@/components/account/OrdersPagination";
+import {
+  CHECKOUT_LIST_CLASS,
+  CHECKOUT_STATUS_CARD_CLASS,
+  PUBLIC_PRESSABLE_CLASS,
+} from "@/constants/homeTheme";
+import { cn } from "@/lib/cn";
 
 export default function MisPedidosPage() {
   const router = useRouter();
@@ -29,6 +37,7 @@ export default function MisPedidosPage() {
     refetch,
   } = useMyOrders({
     enabled: isAuthenticated && !authLoading,
+    limit: 8,
   });
   const showSkeleton = useDelayedLoading(loading && isAuthenticated);
 
@@ -40,9 +49,9 @@ export default function MisPedidosPage() {
 
   if (authLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-zinc-50 px-4 py-10">
+      <AccountShell ariaLabel="Mis pedidos">
         <OrdersListSkeleton count={3} />
-      </div>
+      </AccountShell>
     );
   }
 
@@ -50,35 +59,30 @@ export default function MisPedidosPage() {
   const hasOrders = !loading && !error && orders.length > 0;
 
   return (
-    <div className="min-h-screen bg-zinc-50 pb-8">
-      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-zinc-100 bg-white px-4 py-3 shadow-sm">
-        <button
-          type="button"
-          onClick={() => router.push("/mi-cuenta")}
-          aria-label="Volver a mi cuenta"
-          className="rounded-xl p-1.5 text-zinc-700 transition hover:bg-zinc-100"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-lg font-extrabold tracking-tight text-zinc-900">Mis pedidos</h1>
-      </div>
+    <AccountShell ariaLabel="Mis pedidos">
+      <PublicPageHeader
+        title="Mis pedidos"
+        subtitle="Tus pedidos quedan registrados acá. El local te confirma todo por WhatsApp."
+        className="mb-4 md:mb-5"
+        onBack={() => router.push("/mi-cuenta")}
+      />
 
-      <div className="px-4 pt-4">
-        <p className="mb-4 text-xs text-zinc-500">
-          Tus pedidos quedan registrados acá. El local te confirma todo por WhatsApp.
-        </p>
-
+      <div className="mx-auto w-full max-w-2xl space-y-4">
         {showSkeleton && <OrdersListSkeleton />}
 
         {!loading && error && (
-          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-6 text-center">
-            <p className="mb-4 text-sm text-red-700">{error}</p>
+          <div className={CHECKOUT_STATUS_CARD_CLASS}>
+            <p className="text-sm text-red-700">{error}</p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+              className={cn(
+                PUBLIC_PRESSABLE_CLASS,
+                "home-cta-primary-shadow mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-primary via-primary to-primary-dark px-5 text-sm font-bold text-white",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              )}
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={16} aria-hidden />
               Reintentar
             </button>
           </div>
@@ -88,7 +92,7 @@ export default function MisPedidosPage() {
 
         {hasOrders && (
           <>
-            <ul className="space-y-3">
+            <ul className={CHECKOUT_LIST_CLASS}>
               {orders.map((order) => (
                 <li key={order.id}>
                   <OrderCard order={order} />
@@ -102,19 +106,18 @@ export default function MisPedidosPage() {
               onNext={goToNextPage}
               disabled={loading}
             />
-
-            <p className="mt-4 text-center text-xs text-zinc-500">
-              {pagination.total} pedido{pagination.total === 1 ? "" : "s"} en total
-            </p>
           </>
         )}
 
-        <p className="mt-6 text-center">
-          <Link href="/mi-cuenta" className="text-sm font-medium text-primary hover:underline">
+        <p className="pt-2 text-center">
+          <Link
+            href="/mi-cuenta"
+            className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm"
+          >
             Volver a mi cuenta
           </Link>
         </p>
       </div>
-    </div>
+    </AccountShell>
   );
 }

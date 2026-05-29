@@ -20,6 +20,8 @@ import {
 import { isCartBarRoute } from "@/config/cartBarRoutes";
 import { cn } from "@/lib/cn";
 import { formatPrice } from "@/utils/format/price";
+import StoreClosedBanner from "@/components/StoreClosedBanner";
+import { useStoreStatus } from "@/hooks/useStoreStatus";
 
 export default function AppShell({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -36,8 +38,16 @@ export default function AppShell({ children }) {
     }))
   );
   const hasItems = itemCount > 0;
+  const {
+    canAcceptOrders,
+    isLoading: storeStatusLoading,
+    mensaje: storeMensaje,
+    nextOpeningText,
+    fetchError: storeFetchError,
+  } = useStoreStatus();
 
-  const cartBarVisible = mounted && hasItems && isCartBarRoute(pathname);
+  const showClosedBanner = mounted && !storeStatusLoading && !canAcceptOrders;
+  const cartBarVisible = mounted && hasItems && isCartBarRoute(pathname) && canAcceptOrders;
 
   useEffect(() => {
     setMounted(true);
@@ -99,7 +109,16 @@ export default function AppShell({ children }) {
             isSidebarOpen ? "translate-x-[17.5rem]" : "translate-x-0"
           }`}
         >
-          <main className="w-full min-h-full">{children}</main>
+          <main className="w-full min-h-full">
+            {showClosedBanner ? (
+              <StoreClosedBanner
+                message={storeMensaje}
+                nextOpeningText={nextOpeningText}
+                fetchError={storeFetchError}
+              />
+            ) : null}
+            {children}
+          </main>
         </div>
       </div>
 

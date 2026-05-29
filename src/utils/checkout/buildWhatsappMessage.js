@@ -1,8 +1,5 @@
 import { formatPrice } from "@/utils/format/price";
 
-/** Número de WhatsApp del local OA! para confirmación de pedidos. */
-export const WHATSAPP_PHONE = "+542804648174";
-
 /**
  * Genera el texto del pedido para enviar por WhatsApp.
  * Soporta carrito local + datos del cliente + entrega + pago + notas.
@@ -55,7 +52,13 @@ export function buildWhatsappMessage({
   return lineas.join("\n");
 }
 
-/** Construye el URL `wa.me` con el mensaje encodeado. */
-export function buildWhatsappUrl(message) {
-  return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+/**
+ * Construye el URL `wa.me` con el mensaje encodeado.
+ * @param {string} message
+ * @param {string} whatsappPedidos Solo dígitos (ej. 5493511234567)
+ */
+export function buildWhatsappUrl(message, whatsappPedidos) {
+  const digits = String(whatsappPedidos ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }

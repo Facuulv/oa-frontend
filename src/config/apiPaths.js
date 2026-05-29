@@ -1,3 +1,7 @@
+/** PUT/GET email de recuperación (admin). */
+export const ADMIN_CONFIG_EMAIL_RECUPERACION_PATH =
+  "/admin/configuracion/email-recuperacion";
+
 export const apiPaths = {
   /** Registro público de cliente (alias histórico; preferir `auth.register`). */
   clientes: {
@@ -23,6 +27,8 @@ export const apiPaths = {
     promotions: "/public/promotions",
     couponsValidate: "/public/coupons/validate",
     orders: "/public/orders",
+    cartaEstado: "/public/carta/estado",
+    cartaConfig: "/public/carta/config",
   },
 
   orders: {
@@ -60,5 +66,10 @@ export const apiPaths = {
     usuarios: "/users",
     usuarioById: (id) => `/users/${encodeURIComponent(id)}`,
     usuarioPasswordById: (id) => `/users/${encodeURIComponent(id)}/password`,
+    configuracion: "/admin/configuracion",
+    configuracionCarta: "/admin/configuracion/carta",
+    configuracionHorariosDia: "/admin/configuracion/horarios/dia",
+    configuracionWhatsapp: "/admin/configuracion/whatsapp",
+    configuracionEmailRecuperacion: ADMIN_CONFIG_EMAIL_RECUPERACION_PATH,
   },
 };

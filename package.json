@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/config/cartBarRoutes.test.js src/features/combo/comboBuilder.test.js src/features/combo/expandComboOrderLines.test.js src/utils/checkout/checkoutOrder.test.js"
+    "test": "node --test src/config/cartBarRoutes.test.js src/features/combo/comboBuilder.test.js src/features/combo/expandComboOrderLines.test.js src/utils/checkout/checkoutOrder.test.js src/services/authApiHelpers.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

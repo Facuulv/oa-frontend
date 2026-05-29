@@ -9,6 +9,7 @@ import {
   Grid3X3,
   Tag,
   Users,
+  Settings,
   Menu,
   X,
   LogOut,
@@ -19,6 +20,7 @@ import AppViewport from "@/components/layout/AppViewport";
 import {
   useAuthStore,
   selectCanManageUsers,
+  selectIsAdminRole,
   selectAuthUser,
 } from "@/store/useAuthStore";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
@@ -35,7 +37,8 @@ const NAV_ITEMS = [
   { href: "/admin/productos", label: "Productos", icon: Package },
   { href: "/admin/promociones", label: "Combos", icon: Tag },
   { href: "/admin/categorias", label: "Categorías", icon: Grid3X3 },
-  { href: "/admin/usuarios", label: "Usuarios", icon: Users },
+  { href: "/admin/usuarios", label: "Usuarios", icon: Users, adminOnly: true },
+  { href: "/admin/configuracion", label: "Configuración", icon: Settings, adminOnly: true },
 ];
 
 function navItemActive(pathname, href) {
@@ -125,15 +128,18 @@ export default function AdminAppShell({ children }) {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore(selectAuthUser);
   const canManageUsers = useAuthStore(selectCanManageUsers);
+  const isAdminRole = useAuthStore(selectIsAdminRole);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isLg, setIsLg] = useState(false);
 
   const navItems = useMemo(
     () =>
-      NAV_ITEMS.filter(
-        (item) => item.href !== "/admin/usuarios" || canManageUsers
-      ),
-    [canManageUsers]
+      NAV_ITEMS.filter((item) => {
+        if (item.adminOnly) return isAdminRole;
+        if (item.href === "/admin/usuarios") return canManageUsers;
+        return true;
+      }),
+    [canManageUsers, isAdminRole]
   );
 
   useEffect(() => {

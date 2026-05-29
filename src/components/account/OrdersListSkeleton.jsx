@@ -1,10 +1,14 @@
+import { ACCOUNT_CARD_CLASS } from "@/constants/homeTheme";
+import { cn } from "@/lib/cn";
+
 export default function OrdersListSkeleton({ count = 4 }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse rounded-xl border border-zinc-100 bg-white p-4 shadow-sm"
+          className={cn(ACCOUNT_CARD_CLASS, "animate-pulse p-4")}
+          aria-hidden
         >
           <div className="mb-3 flex items-center justify-between">
             <div className="h-4 w-24 rounded bg-zinc-200" />

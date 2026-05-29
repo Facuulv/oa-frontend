@@ -8,6 +8,8 @@ import {
   getDeliveryLabel,
   getOrderCustomerSummary,
 } from "@/utils/orders/orderDisplay";
+import { ACCOUNT_OPTION_CARD_CLASS } from "@/constants/homeTheme";
+import { cn } from "@/lib/cn";
 
 export default function OrderCard({ order }) {
   const orderId = order?.id;
@@ -20,7 +22,7 @@ export default function OrderCard({ order }) {
   return (
     <Link
       href={`/mis-pedidos/${orderId}`}
-      className="block rounded-xl border border-zinc-100 bg-white p-4 shadow-sm transition hover:border-zinc-200 hover:shadow-md active:scale-[0.99]"
+      className={cn(ACCOUNT_OPTION_CARD_CLASS, "block no-underline")}
     >
       <article>
         <div className="mb-3 flex items-start justify-between gap-2">
@@ -33,11 +35,14 @@ export default function OrderCard({ order }) {
 
         <div className="mb-3">
           <span
-            className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${summary.className}`}
+            className={cn(
+              "inline-block rounded-full px-2.5 py-1 text-xs font-semibold",
+              summary.className,
+            )}
           >
             {summary.label}
           </span>
-          <p className="mt-1.5 text-xs text-zinc-500">{summary.hint}</p>
+          <p className="mt-1.5 text-xs leading-snug text-zinc-500">{summary.hint}</p>
         </div>
 
         <div className="space-y-1.5 text-sm text-zinc-600">
@@ -53,7 +58,9 @@ export default function OrderCard({ order }) {
           )}
         </div>
 
-        <p className="mt-3 text-lg font-extrabold tabular-nums text-primary">{formatPrice(total)}</p>
+        <p className="product-price mt-3 text-lg font-extrabold leading-none text-primary">
+          {formatPrice(total)}
+        </p>
       </article>
     </Link>
   );

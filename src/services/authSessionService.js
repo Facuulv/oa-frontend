@@ -2,7 +2,7 @@ import { apiPaths } from "@/config/apiPaths";
 import { requireApiBaseUrl } from "@/utils/api/baseUrl";
 import { logApiRequest } from "@/utils/api/requestLog";
 import { ApiError, flattenValidationErrors } from "@/utils/api/apiError";
-import { apiErrorMessage } from "@/services/authApiHelpers";
+import { apiErrorMessage, forgotPasswordUserMessage } from "@/services/authApiHelpers";
 
 /** `POST /auth/login` — cookie HttpOnly admin o cliente según identidad. */
 export async function authLogin({ email, password }) {
@@ -135,8 +135,9 @@ export async function authForgotPassword({ email }) {
 
   if (!response.ok) {
     const fieldErrors = flattenValidationErrors(data);
-    const msg = apiErrorMessage(data, "No pudimos procesar tu solicitud");
-    throw new ApiError(msg, { fieldErrors, status: response.status, body: data });
+    const code = typeof data.code === "string" ? data.code : undefined;
+    const msg = forgotPasswordUserMessage(data, response.status);
+    throw new ApiError(msg, { fieldErrors, status: response.status, body: data, code });
   }
 
   return data;

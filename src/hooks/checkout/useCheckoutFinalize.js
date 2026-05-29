@@ -14,6 +14,12 @@ import { createOrder } from "@/services/ordersService";
 import { validateCheckoutForm } from "@/utils/checkout/checkoutValidations";
 import { buildCheckoutPayload, resolveCreatedOrderMeta } from "@/utils/checkout/checkoutPayload";
 import { buildWhatsappMessage, buildWhatsappUrl } from "@/utils/checkout/buildWhatsappMessage";
+import { useStoreStatus } from "@/hooks/useStoreStatus";
+import { fetchConfigPublica } from "@/services/configPublicaService";
+import { fetchEstadoTienda } from "@/services/estadoTiendaService";
+
+const STORE_CLOSED_MESSAGE =
+  "Estamos cerrados. Podés volver a realizar tu pedido dentro del horario de atención.";
 
 export const CHECKOUT_FINALIZE_PATH = "/checkout/finalizar";
 export const CHECKOUT_FINALIZE_LOGIN_NEXT = `/login?next=${encodeURIComponent(CHECKOUT_FINALIZE_PATH)}`;
@@ -54,9 +60,35 @@ export function useCheckoutFinalize() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSent, setOrderSent] = useState(null);
+  const [whatsappPedidos, setWhatsappPedidos] = useState(null);
+  const [configLoading, setConfigLoading] = useState(true);
+
+  const {
+    canAcceptOrders,
+    isLoading: storeStatusLoading,
+    mensaje: storeMensaje,
+    nextOpeningText,
+    fetchError: storeFetchError,
+    refetch: refetchStoreStatus,
+  } = useStoreStatus();
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setConfigLoading(true);
+    fetchConfigPublica()
+      .then((cfg) => {
+        if (!cancelled) setWhatsappPedidos(cfg.whatsappPedidos);
+      })
+      .finally(() => {
+        if (!cancelled) setConfigLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -147,6 +179,30 @@ export function useCheckoutFinalize() {
       return { ok: false };
     }
 
+    const [estado, config] = await Promise.all([
+      fetchEstadoTienda({ force: true }),
+      fetchConfigPublica({ force: true }),
+    ]);
+    setWhatsappPedidos(config.whatsappPedidos);
+
+    if (!config.whatsappPedidos) {
+      toast.error(
+        "WhatsApp del local no configurado. No podemos finalizar el pedido en este momento.",
+      );
+      refetchStoreStatus();
+      return { ok: false };
+    }
+
+    if (!config.cartaHabilitada || !estado.canAcceptOrders) {
+      toast.error(
+        estado.mensaje ||
+          storeMensaje ||
+          STORE_CLOSED_MESSAGE,
+      );
+      refetchStoreStatus();
+      return { ok: false };
+    }
+
     setFieldErrors({});
     const { ok, errors, normalized } = validateCheckoutForm(formValues);
     if (!ok) {
@@ -194,19 +250,53 @@ export function useCheckoutFinalize() {
         notes: normalized.notes,
       });
 
-      const url = buildWhatsappUrl(message);
+      const url = buildWhatsappUrl(message, config.whatsappPedidos);
+      if (!url) {
+        toast.error(
+          "WhatsApp del local no configurado. Tu pedido quedó registrado; contactá al local por otro medio.",
+        );
+        clearCart();
+        setOrderSent({ orderId, url: null, whatsappOpened: false });
+        return { ok: true, orderId, url: null };
+      }
+
       const popup = window.open(url, "_blank", "noopener,noreferrer");
 
       clearCart();
       setOrderSent({ orderId, url, whatsappOpened: Boolean(popup) });
       return { ok: true, orderId, url };
     } catch (error) {
+      const code = error?.code;
+      if (code === "STORE_CLOSED" || code === "CARTA_CERRADA") {
+        toast.error(error?.message || STORE_CLOSED_MESSAGE);
+        refetchStoreStatus();
+        return { ok: false };
+      }
       toast.error(error?.message ?? "Error al crear el pedido. Intentá de nuevo.");
       return { ok: false };
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const checkoutBlocked =
+    storeStatusLoading ||
+    configLoading ||
+    !canAcceptOrders ||
+    !whatsappPedidos;
+
+  const checkoutBlockedReason = (() => {
+    if (storeStatusLoading || configLoading) return null;
+    if (!whatsappPedidos) {
+      return "WhatsApp del local no configurado. No podemos finalizar pedidos por ahora.";
+    }
+    if (!canAcceptOrders) {
+      return storeFetchError
+        ? storeMensaje
+        : storeMensaje || STORE_CLOSED_MESSAGE;
+    }
+    return null;
+  })();
 
   return {
     items,
@@ -223,5 +313,12 @@ export function useCheckoutFinalize() {
     savedAddresses,
     updateField,
     submit,
+    canAcceptOrders,
+    storeStatusLoading,
+    configLoading,
+    checkoutBlocked,
+    checkoutBlockedReason,
+    nextOpeningText,
+    storeFetchError,
   };
 }

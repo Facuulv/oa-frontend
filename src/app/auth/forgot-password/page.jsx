@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { authForgotPassword } from "@/services/authSessionService";
+import { FORGOT_PASSWORD_GENERIC_ERROR } from "@/services/authApiHelpers";
 import { cn } from "@/lib/cn";
 import { validateEmail } from "@/lib/validations";
 import { toast } from "@/lib/toast";
@@ -48,7 +49,7 @@ export default function ForgotPasswordPage() {
         data?.message || "Si el correo existe, enviaremos un enlace para restablecer tu contraseña.";
       setSuccessMessage(message);
     } catch (error) {
-      const message = error?.message || "No pudimos procesar tu solicitud";
+      const message = error?.message || FORGOT_PASSWORD_GENERIC_ERROR;
       setFormError(message);
       toast.error(message);
     } finally {

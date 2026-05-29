@@ -39,6 +39,8 @@ export async function createOrder(payload) {
     const msg = detailMessage ?? data?.message ?? data?.error ?? `Error ${response.status}`;
     const error = new Error(msg);
     error.details = validationDetails;
+    error.status = response.status;
+    error.code = typeof data?.code === "string" ? data.code : undefined;
     throw error;
   }
 

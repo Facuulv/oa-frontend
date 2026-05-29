@@ -24,6 +24,7 @@ import CheckoutEmptyState from "@/components/checkout/CheckoutEmptyState";
 import CheckoutSummaryCard from "@/components/checkout/CheckoutSummaryCard";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 import { CHECKOUT_LAYOUT_CLASS, CHECKOUT_LIST_CLASS, CHECKOUT_SUMMARY_PANEL_CLASS } from "@/constants/homeTheme";
+import { useStoreStatus } from "@/hooks/useStoreStatus";
 
 function buildCartHeaderSubtitle(lineCount, unitCount) {
   if (lineCount === 0) return undefined;
@@ -43,6 +44,12 @@ export default function CheckoutPage() {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
   const authLoading = useAuthStore(selectAuthLoading);
+  const {
+    canAcceptOrders,
+    isLoading: storeStatusLoading,
+    mensaje: storeMensaje,
+    nextOpeningText,
+  } = useStoreStatus();
 
   const headerSubtitle = useMemo(
     () => buildCartHeaderSubtitle(items.length, unitCount),
@@ -50,6 +57,13 @@ export default function CheckoutPage() {
   );
 
   const handleFinalizePedido = () => {
+    if (!canAcceptOrders) {
+      toast.error(
+        storeMensaje ||
+          "Estamos cerrados. Podés volver a realizar tu pedido dentro del horario de atención.",
+      );
+      return;
+    }
     if (authLoading) {
       router.push(CHECKOUT_FINALIZE_PATH);
       return;
@@ -96,6 +110,12 @@ export default function CheckoutPage() {
             itemLineCount={items.length}
             unitCount={unitCount}
             onCheckout={handleFinalizePedido}
+            checkoutDisabled={storeStatusLoading || !canAcceptOrders}
+            closedHint={
+              !canAcceptOrders && !storeStatusLoading
+                ? storeMensaje || nextOpeningText
+                : null
+            }
           />
         </div>
       </div>
@@ -106,6 +126,12 @@ export default function CheckoutPage() {
         itemLineCount={items.length}
         unitCount={unitCount}
         onCheckout={handleFinalizePedido}
+        checkoutDisabled={storeStatusLoading || !canAcceptOrders}
+        closedHint={
+          !canAcceptOrders && !storeStatusLoading
+            ? storeMensaje || nextOpeningText
+            : null
+        }
       />
     </CheckoutShell>
   );

@@ -26,9 +26,12 @@ export default function CheckoutSummaryCard({
   unitCount,
   onCheckout,
   isSubmitting = false,
+  checkoutDisabled = false,
+  closedHint = null,
   variant = "desktop-panel",
   className,
 }) {
+  const ctaDisabled = isSubmitting || checkoutDisabled;
   const subtitle = formatItemCountSubtitle(itemLineCount, unitCount);
 
   const surface = (
@@ -51,7 +54,11 @@ export default function CheckoutSummaryCard({
             </p>
             <p className="mt-0.5 truncate text-xs text-zinc-500">{subtitle}</p>
           </div>
-          <CheckoutCtaButton onCheckout={onCheckout} isSubmitting={isSubmitting} />
+          <CheckoutCtaButton
+            onCheckout={onCheckout}
+            isSubmitting={ctaDisabled}
+            disabled={ctaDisabled}
+          />
         </div>
       ) : (
         <div className="px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
@@ -63,10 +70,14 @@ export default function CheckoutSummaryCard({
           </p>
           <CheckoutCtaButton
             onCheckout={onCheckout}
-            isSubmitting={isSubmitting}
+            isSubmitting={ctaDisabled}
+            disabled={ctaDisabled}
             fullWidth
             className="mt-4"
           />
+          {closedHint ? (
+            <p className="mt-3 text-center text-xs font-medium text-amber-800">{closedHint}</p>
+          ) : null}
         </div>
       )}
     </div>
@@ -87,13 +98,14 @@ export default function CheckoutSummaryCard({
   );
 }
 
-function CheckoutCtaButton({ onCheckout, isSubmitting, fullWidth, className }) {
+function CheckoutCtaButton({ onCheckout, isSubmitting, disabled, fullWidth, className }) {
+  const isDisabled = disabled ?? isSubmitting;
   return (
     <button
       type="button"
       onClick={onCheckout}
-      disabled={isSubmitting}
-      aria-disabled={isSubmitting || undefined}
+      disabled={isDisabled}
+      aria-disabled={isDisabled || undefined}
       className={cn(
         PUBLIC_PRESSABLE_CLASS,
         "home-cta-primary-shadow inline-flex min-h-12 shrink-0 items-center justify-center whitespace-nowrap rounded-xl px-4 py-3 text-sm font-bold text-white",
