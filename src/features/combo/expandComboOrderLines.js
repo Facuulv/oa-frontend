@@ -57,6 +57,23 @@ function appendSelectionMap(lines, map, qtyMultiplier, comboLabel) {
   return null;
 }
 
+function normalizeSelectionMap(map, legacySingle) {
+  if (map && typeof map === "object" && Object.keys(map).length > 0) {
+    return map;
+  }
+  if (legacySingle?.id) {
+    return { [legacySingle.id]: { product: legacySingle, cantidad: 1 } };
+  }
+  return {};
+}
+
+function hasSelectionInMap(map = {}) {
+  for (const key in map) {
+    if ((map[key]?.cantidad ?? 0) > 0) return true;
+  }
+  return false;
+}
+
 /**
  * Expande snapshot de combo a líneas de pedido con productId reales.
  * @param {object} comboComponents
@@ -64,32 +81,28 @@ function appendSelectionMap(lines, map, qtyMultiplier, comboLabel) {
  * @returns {{ lines: object[] } | { error: string }}
  */
 export function buildComponentOrderLines(comboComponents, comboQuantity = 1) {
-  if (!comboComponents?.base || !comboComponents?.mixer) {
+  const bases = normalizeSelectionMap(
+    comboComponents?.bases,
+    comboComponents?.base
+  );
+  const mixers = normalizeSelectionMap(
+    comboComponents?.mixers,
+    comboComponents?.mixer
+  );
+
+  if (!hasSelectionInMap(bases) || !hasSelectionInMap(mixers)) {
     return { error: COMBO_REBUILD_MESSAGE };
   }
 
   const qtyMult = Math.max(1, Math.floor(Number(comboQuantity) || 1));
-  const baseId = resolveRealProductId(comboComponents.base);
-  const mixerId = resolveRealProductId(comboComponents.mixer);
-  if (!baseId || !mixerId) {
-    return { error: COMBO_REBUILD_MESSAGE };
-  }
-
   const label = String(comboComponents.displayName ?? "").trim();
   const lines = [];
 
-  pushLine(lines, {
-    productId: baseId,
-    quantity: qtyMult,
-    unitPrice: Number(comboComponents.base.precio) || 0,
-    observations: label ? `Parte de ${label}` : "",
-  });
-  pushLine(lines, {
-    productId: mixerId,
-    quantity: qtyMult,
-    unitPrice: Number(comboComponents.mixer.precio) || 0,
-    observations: label ? `Parte de ${label}` : "",
-  });
+  const basesErr = appendSelectionMap(lines, bases, qtyMult, label);
+  if (basesErr) return basesErr;
+
+  const mixersErr = appendSelectionMap(lines, mixers, qtyMult, label);
+  if (mixersErr) return mixersErr;
 
   const extrasErr = appendSelectionMap(
     lines,

@@ -11,6 +11,9 @@ const base = { id: 10, nombre: "Fernet", precio: 5000 };
 const mixer = { id: 20, nombre: "Coca", precio: 2000 };
 const extra = { id: 30, nombre: "Hielo 2.5kg", precio: 2500 };
 
+const bases = { 10: { product: base, cantidad: 1 } };
+const mixers = { 20: { product: mixer, cantidad: 1 } };
+
 describe("expandCartItemsToOrderLines", () => {
   it("producto normal queda igual", () => {
     const r = expandCartItemsToOrderLines([
@@ -22,7 +25,7 @@ describe("expandCartItemsToOrderLines", () => {
     assert.equal(r.lines[0].quantity, 2);
   });
 
-  it("combo se expande a base + mixer + extra", () => {
+  it("combo legacy (base/mixer únicos) se expande", () => {
     const r = expandCartItemsToOrderLines([
       {
         lineKind: CUSTOM_COMBO_LINE_KIND,
@@ -44,6 +47,24 @@ describe("expandCartItemsToOrderLines", () => {
     );
   });
 
+  it("combo con mapas de bases/mixers y cantidades", () => {
+    const r = expandCartItemsToOrderLines([
+      {
+        lineKind: CUSTOM_COMBO_LINE_KIND,
+        cantidad: 1,
+        comboComponents: {
+          displayName: "Combo x2",
+          bases: { 10: { product: base, cantidad: 2 } },
+          mixers: { 20: { product: mixer, cantidad: 3 } },
+          extras: {},
+        },
+      },
+    ]);
+    assert.equal(r.ok, true);
+    assert.equal(r.lines.find((l) => l.productId === 10).quantity, 2);
+    assert.equal(r.lines.find((l) => l.productId === 20).quantity, 3);
+  });
+
   it("cantidad del combo multiplica cantidades internas", () => {
     const r = expandCartItemsToOrderLines([
       {
@@ -51,8 +72,8 @@ describe("expandCartItemsToOrderLines", () => {
         cantidad: 2,
         comboComponents: {
           displayName: "Combo x2",
-          base,
-          mixer,
+          bases,
+          mixers,
           extras: { 30: { product: extra, cantidad: 1 } },
         },
       },
@@ -75,7 +96,12 @@ describe("expandCartItemsToOrderLines", () => {
     const r = expandCartItemsToOrderLines([
       {
         lineKind: CUSTOM_COMBO_LINE_KIND,
-        comboComponents: { displayName: "C", base, mixer, extras: {} },
+        comboComponents: {
+          displayName: "C",
+          bases,
+          mixers,
+          extras: {},
+        },
       },
     ]);
     assert.equal(r.ok, true);
@@ -92,8 +118,8 @@ describe("expandCartItemsToOrderLines", () => {
         lineKind: CUSTOM_COMBO_LINE_KIND,
         comboComponents: {
           displayName: "Mi Combo",
-          base,
-          mixer,
+          bases,
+          mixers,
           extras: {},
         },
       },
@@ -105,7 +131,13 @@ describe("expandCartItemsToOrderLines", () => {
 });
 
 describe("buildComponentOrderLines", () => {
-  it("legacy articulo sin components falla vía expand", () => {
+  it("mapas bases/mixers generan líneas", () => {
+    const r = buildComponentOrderLines({ bases, mixers, extras: {} });
+    assert.ok(r.lines);
+    assert.equal(r.lines.length, 2);
+  });
+
+  it("legacy base/mixer únicos siguen funcionando", () => {
     const r = buildComponentOrderLines({ base, mixer, extras: {} });
     assert.ok(r.lines);
     assert.equal(r.lines.length, 2);

@@ -67,64 +67,79 @@ export function normalizeExtrasFromSaved(saved) {
   return clean;
 }
 
-function computeSavedComboTotal(base, mixer, extras = {}) {
-  let sum = 0;
-  if (base) sum += Number(base.precio) || 0;
-  if (mixer) sum += Number(mixer.precio) || 0;
-  sum += sumSelectionMap(extras);
-  return sum;
+function getFirstProductFromMap(map = {}) {
+  for (const key in map) {
+    const entry = map[key];
+    if ((entry?.cantidad ?? 0) > 0 && entry?.product) return entry.product;
+  }
+  return null;
+}
+
+function normalizeSelectionMap(map, legacySingle) {
+  if (map && typeof map === "object" && Object.keys(map).length > 0) {
+    return map;
+  }
+  if (legacySingle?.id) {
+    return { [legacySingle.id]: { product: legacySingle, cantidad: 1 } };
+  }
+  return {};
+}
+
+function computeSavedComboTotal(bases = {}, mixers = {}, extras = {}) {
+  return (
+    sumSelectionMap(bases) + sumSelectionMap(mixers) + sumSelectionMap(extras)
+  );
 }
 
 /**
  * Lista normalizada de componentes con producto_id reales (sin hielo ficticio).
  */
-function buildItems(base, mixer, extras = {}) {
+function buildItems(bases = {}, mixers = {}, extras = {}) {
   const items = [];
-  if (base) {
-    items.push({
-      id: base.id,
-      role: "base",
-      nombre: base.nombre,
-      cantidad: 1,
-      precio: Number(base.precio) || 0,
-    });
-  }
-  if (mixer) {
-    items.push({
-      id: mixer.id,
-      role: "mixer",
-      nombre: mixer.nombre,
-      cantidad: 1,
-      precio: Number(mixer.precio) || 0,
-    });
-  }
-  for (const key in extras) {
-    const entry = extras[key];
-    const pid = entry.product?.id ?? key;
-    if (!isValidExtraProductId(pid)) continue;
-    const qty = Number(entry.cantidad ?? 0);
-    if (qty <= 0) continue;
-    items.push({
-      id: pid,
-      role: "extra",
-      nombre: entry.product?.nombre ?? "Extra",
-      cantidad: qty,
-      precio: Number(entry.product?.precio) || 0,
-    });
-  }
+  const pushFromMap = (map, role) => {
+    for (const key in map) {
+      const entry = map[key];
+      const pid = entry.product?.id ?? key;
+      if (!isValidExtraProductId(pid)) continue;
+      const qty = Number(entry.cantidad ?? 0);
+      if (qty <= 0) continue;
+      items.push({
+        id: pid,
+        role,
+        nombre: entry.product?.nombre ?? role,
+        cantidad: qty,
+        precio: Number(entry.product?.precio) || 0,
+      });
+    }
+  };
+
+  pushFromMap(bases, "base");
+  pushFromMap(mixers, "mixer");
+  pushFromMap(extras, "extra");
   return items;
 }
 
-function buildComboEntry({ name, base, mixer, extras = {} }) {
+function buildComboEntry({ name, bases, mixers, extras = {}, base, mixer }) {
+  const normalizedBases = normalizeSelectionMap(bases, base);
+  const normalizedMixers = normalizeSelectionMap(mixers, mixer);
   const normalizedExtras = normalizeExtrasFromSaved({ extras });
+  const legacyBase = getFirstProductFromMap(normalizedBases);
+  const legacyMixer = getFirstProductFromMap(normalizedMixers);
+
   return {
-    name: resolveComboName({ name, base, mixer }),
-    label: buildAutoLabel(base, mixer),
-    base,
-    mixer,
+    name: resolveComboName({ name, base: legacyBase, mixer: legacyMixer }),
+    label: buildAutoLabel(legacyBase, legacyMixer),
+    base: legacyBase,
+    mixer: legacyMixer,
+    bases: normalizedBases,
+    mixers: normalizedMixers,
     extras: normalizedExtras,
-    items: buildItems(base, mixer, normalizedExtras),
-    total: computeSavedComboTotal(base, mixer, normalizedExtras),
+    items: buildItems(normalizedBases, normalizedMixers, normalizedExtras),
+    total: computeSavedComboTotal(
+      normalizedBases,
+      normalizedMixers,
+      normalizedExtras
+    ),
   };
 }
 
@@ -137,6 +152,8 @@ export function normalizeSavedCombo(raw) {
 
   const base = raw.base ?? null;
   const mixer = raw.mixer ?? null;
+  const bases = normalizeSelectionMap(raw.bases, base);
+  const mixers = normalizeSelectionMap(raw.mixers, mixer);
   const extras = normalizeExtrasFromSaved(raw);
   const legacyIceBags = Number(raw.iceBags) > 0;
   const legacyIceSkipped =
@@ -156,11 +173,13 @@ export function normalizeSavedCombo(raw) {
     id: raw.id != null ? String(raw.id) : raw.id,
     name,
     label: raw.label ?? buildAutoLabel(base, mixer),
-    base,
-    mixer,
+    base: getFirstProductFromMap(bases),
+    mixer: getFirstProductFromMap(mixers),
+    bases,
+    mixers,
     extras,
-    items: buildItems(base, mixer, extras),
-    total: computeSavedComboTotal(base, mixer, extras),
+    items: buildItems(bases, mixers, extras),
+    total: computeSavedComboTotal(bases, mixers, extras),
     legacyIceSkipped,
   };
 }
@@ -189,12 +208,26 @@ export const useSavedCombosStore = create(
        * Guarda plantilla en API + state solo si hay sesión de cliente.
        * @returns {{ ok: boolean, reason?: 'unauthenticated'|'error', combo?: object }}
        */
-      saveComboForCliente: async ({ name, base, mixer, extras = {} }) => {
+      saveComboForCliente: async ({
+        name,
+        bases,
+        mixers,
+        extras = {},
+        base,
+        mixer,
+      }) => {
         if (!selectIsAuthenticatedCliente(useAuthStore.getState())) {
           return { ok: false, reason: "unauthenticated" };
         }
 
-        const entry = buildComboEntry({ name, base, mixer, extras });
+        const entry = buildComboEntry({
+          name,
+          bases,
+          mixers,
+          extras,
+          base,
+          mixer,
+        });
 
         try {
           const created = await createClienteCombo(toClienteComboApiPayload(entry));

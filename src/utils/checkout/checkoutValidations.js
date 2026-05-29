@@ -40,6 +40,11 @@ export function validateCheckoutForm(values) {
       telefono: String(values.telefono ?? "").trim(),
       email: String(values.email ?? "").trim(),
       direccion: String(values.direccion ?? "").trim(),
+      pisoDepto: String(values.pisoDepto ?? "").trim(),
+      direccionLat:
+        Number.isFinite(values.direccionLat) ? Number(values.direccionLat) : null,
+      direccionLng:
+        Number.isFinite(values.direccionLng) ? Number(values.direccionLng) : null,
       deliveryType: values.deliveryType ?? "RETIRO",
       paymentMethod: values.paymentMethod ?? "efectivo",
       when: values.when ?? "CUANTO_ANTES",

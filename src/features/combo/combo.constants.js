@@ -3,7 +3,6 @@ import { isExtrasCategoryProduct } from "@/features/combo/comboExtrasCategory";
 
 /** @deprecated Precios vienen del catálogo; no usar en totales ni pedidos. */
 export const ICE_BAG_PRICE = 2500;
-export const AUTO_ADVANCE_MS = 280;
 export const PRODUCTS_PER_PAGE = 5;
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";

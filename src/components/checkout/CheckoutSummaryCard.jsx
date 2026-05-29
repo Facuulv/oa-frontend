@@ -1,5 +1,6 @@
 "use client";
 
+import CheckoutDiscountCodeTeaser from "@/components/checkout/CheckoutDiscountCodeTeaser";
 import { formatPrice } from "@/utils/format/price";
 import { cn } from "@/lib/cn";
 import {
@@ -62,6 +63,7 @@ export default function CheckoutSummaryCard({
         </div>
       ) : (
         <div className="px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
+          <CheckoutDiscountCodeTeaser className="mb-4" />
           <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
             Total del pedido
           </p>

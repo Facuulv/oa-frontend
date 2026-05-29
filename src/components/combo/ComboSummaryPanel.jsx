@@ -1,8 +1,13 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import ComboSummaryItemRow from "@/components/combo/ComboSummaryItemRow";
 import { formatPrice } from "@/utils/format/price";
 import { cn } from "@/lib/cn";
+import {
+  formatSelectionMapSummary,
+  getSelectionMapEntries,
+} from "@/features/combo/comboBuilder";
 import {
   COMBO_ACTION_BAR_SURFACE_CLASS,
   COMBO_SUMMARY_PANEL_CLASS,
@@ -10,9 +15,9 @@ import {
 } from "@/constants/homeTheme";
 
 const PANEL_SUBTITLES = {
-  1: "Elegí una base para empezar",
+  1: "Elegí una o más bases",
   2: "Sumá el mix ideal",
-  3: "Revisá y creá tu combo",
+  3: "Revisá y agregá al carrito",
 };
 
 function SummaryLine({ label, value, pending }) {
@@ -31,6 +36,32 @@ function SummaryLine({ label, value, pending }) {
   );
 }
 
+function EditableSummarySection({ label, entries, onInc, onDec, emptyLabel }) {
+  if (entries.length === 0) {
+    return <SummaryLine label={label} value={emptyLabel} pending />;
+  }
+
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        {label}
+      </p>
+      <ul className="space-y-1.5" aria-label={label}>
+        {entries.map(({ id, product, cantidad }) => (
+          <ComboSummaryItemRow
+            key={id}
+            product={product}
+            cantidad={cantidad}
+            onInc={() => onInc(product)}
+            onDec={() => onDec(product)}
+            compact
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * Panel lateral desktop: resumen del combo + total + CTA (presentacional).
  */
@@ -41,19 +72,25 @@ export default function ComboSummaryPanel({
   primaryActionLabel,
   nextDisabled,
   onPrimaryAction,
-  selectedBase,
-  selectedMixer,
-  ingredientList,
+  bases = {},
+  mixers = {},
+  extras = {},
+  onIncBase,
+  onDecBase,
+  onIncMixer,
+  onDecMixer,
+  onIncExtra,
+  onDecExtra,
   className,
 }) {
   const showSparkles = currentStep === 3;
+  const isEditableSummary = currentStep === 3;
   const panelSubtitle = PANEL_SUBTITLES[currentStep] ?? "";
-  const extraLines =
-    ingredientList.length > 2
-      ? ingredientList.slice(2)
-      : ingredientList.length > 0 && selectedBase && selectedMixer
-        ? []
-        : ingredientList;
+  const baseSummary = formatSelectionMapSummary(bases);
+  const mixerSummary = formatSelectionMapSummary(mixers);
+  const baseEntries = getSelectionMapEntries(bases);
+  const mixerEntries = getSelectionMapEntries(mixers);
+  const extraEntries = getSelectionMapEntries(extras);
 
   return (
     <aside
@@ -69,33 +106,63 @@ export default function ComboSummaryPanel({
         </div>
 
         <div className="space-y-2.5" aria-label="Selección actual">
-          <SummaryLine
-            label="Base"
-            value={selectedBase?.nombre ?? "Sin elegir"}
-            pending={!selectedBase}
-          />
-          <SummaryLine
-            label="Mix"
-            value={selectedMixer?.nombre ?? "Sin elegir"}
-            pending={!selectedMixer}
-          />
-          {extraLines.length > 0 ? (
-            <div className="pt-1">
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Extras
-              </p>
-              <ul className="space-y-1">
-                {extraLines.map((line, idx) => (
-                  <li
-                    key={`${line}-${idx}`}
-                    className="text-sm leading-snug text-zinc-700 break-words"
-                  >
-                    {line}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          {isEditableSummary ? (
+            <>
+              <EditableSummarySection
+                label="Base"
+                entries={baseEntries}
+                onInc={onIncBase}
+                onDec={onDecBase}
+                emptyLabel="Sin elegir"
+              />
+              <EditableSummarySection
+                label="Mix"
+                entries={mixerEntries}
+                onInc={onIncMixer}
+                onDec={onDecMixer}
+                emptyLabel="Sin elegir"
+              />
+              {extraEntries.length > 0 ? (
+                <EditableSummarySection
+                  label="Extras"
+                  entries={extraEntries}
+                  onInc={onIncExtra}
+                  onDec={onDecExtra}
+                  emptyLabel="Sin extras"
+                />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <SummaryLine
+                label="Base"
+                value={baseSummary ?? "Sin elegir"}
+                pending={!baseSummary}
+              />
+              <SummaryLine
+                label="Mix"
+                value={mixerSummary ?? "Sin elegir"}
+                pending={!mixerSummary}
+              />
+              {extraEntries.length > 0 ? (
+                <div className="pt-1">
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                    Extras
+                  </p>
+                  <ul className="space-y-1">
+                    {extraEntries.map(({ id, product, cantidad }) => (
+                      <li
+                        key={id}
+                        className="break-words text-sm leading-snug text-zinc-700"
+                      >
+                        {cantidad}× {product.nombre}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </>
+          )}
         </div>
 
         <div className="mt-5 border-t border-zinc-100/90 pt-4">

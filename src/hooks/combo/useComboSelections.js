@@ -1,51 +1,48 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useComboBuilderStore } from "@/store/useComboBuilderStore";
 
 /**
- * Selección del wizard /arma-tu-combo: base, mix y extras.
+ * Hook de selección del wizard /arma-tu-combo (wrapper del store Zustand).
  *
- * Cuidado: extras es `{ [productId]: { product, cantidad } }`; no cambiar el shape (carrito/checkout).
+ * Cada paso usa mapas `{ [productId]: { product, cantidad } }`.
  */
 export function useComboSelections() {
-  const [selectedBase, setSelectedBase] = useState(null);
-  const [selectedMixer, setSelectedMixer] = useState(null);
-  const [extras, setExtras] = useState({});
+  const bases = useComboBuilderStore((s) => s.bases);
+  const mixers = useComboBuilderStore((s) => s.mixers);
+  const extras = useComboBuilderStore((s) => s.extras);
 
-  const incExtra = useCallback((product) => {
-    setExtras((prev) => {
-      const current = prev[product.id]?.cantidad ?? 0;
-      return { ...prev, [product.id]: { product, cantidad: current + 1 } };
-    });
-  }, []);
+  const selectBase = useComboBuilderStore((s) => s.selectBase);
+  const incBase = useComboBuilderStore((s) => s.incBase);
+  const decBase = useComboBuilderStore((s) => s.decBase);
 
-  const decExtra = useCallback((product) => {
-    setExtras((prev) => {
-      const current = prev[product.id]?.cantidad ?? 0;
-      if (current <= 1) {
-        const next = { ...prev };
-        delete next[product.id];
-        return next;
-      }
-      return { ...prev, [product.id]: { product, cantidad: current - 1 } };
-    });
-  }, []);
+  const selectMixer = useComboBuilderStore((s) => s.selectMixer);
+  const incMixer = useComboBuilderStore((s) => s.incMixer);
+  const decMixer = useComboBuilderStore((s) => s.decMixer);
 
-  const resetSelections = useCallback(() => {
-    setSelectedBase(null);
-    setSelectedMixer(null);
-    setExtras({});
-  }, []);
+  const incExtra = useComboBuilderStore((s) => s.incExtra);
+  const decExtra = useComboBuilderStore((s) => s.decExtra);
+
+  const setBases = useComboBuilderStore((s) => s.setBases);
+  const setMixers = useComboBuilderStore((s) => s.setMixers);
+  const setExtras = useComboBuilderStore((s) => s.setExtras);
+  const resetSelections = useComboBuilderStore((s) => s.resetSelections);
 
   return {
-    selectedBase,
-    setSelectedBase,
-    selectedMixer,
-    setSelectedMixer,
+    bases,
+    mixers,
     extras,
-    setExtras,
+    selectBase,
+    incBase,
+    decBase,
+    selectMixer,
+    incMixer,
+    decMixer,
     incExtra,
     decExtra,
+    setBases,
+    setMixers,
+    setExtras,
     resetSelections,
   };
 }
