@@ -329,3 +329,43 @@ export const CHECKOUT_ITEM_CARD_CLASS = cn(
   HOME_CARD_SURFACE_CLASS,
   "overflow-hidden rounded-2xl border border-zinc-100/90 bg-white p-3.5 sm:p-4",
 );
+
+/** /mi-cuenta, /mis-pedidos: misma base visual que Home/Promociones/Checkout. */
+export const ACCOUNT_PAGE_CLASS = CHECKOUT_PAGE_CLASS;
+export const ACCOUNT_CONTENT_CLASS = CHECKOUT_CONTENT_CLASS;
+
+/** Sin pb-28: las pantallas de cuenta no tienen barra fija inferior. */
+export const ACCOUNT_SECTION_CLASS = PROMO_SECTION_CLASS;
+
+export const ACCOUNT_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "overflow-hidden rounded-2xl border border-zinc-100/90 bg-white",
+);
+
+export const ACCOUNT_DARK_HERO_CLASS = cn(
+  "relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-primary-dark/55 text-white shadow-xl",
+);
+
+export const ACCOUNT_OPTION_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  PUBLIC_PRESSABLE_CLASS,
+  PUBLIC_CARD_LIFT_CLASS,
+  "w-full rounded-2xl border border-zinc-100/90 bg-white p-4 text-left",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+);
+
+export const ACCOUNT_LOGOUT_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "w-full rounded-2xl border border-red-100/90 bg-white p-4 text-left",
+);
+
+export const ACCOUNT_OPTIONS_GRID_CLASS = "flex flex-col gap-3 md:gap-4";
+
+export const ACCOUNT_FORM_GRID_CLASS =
+  "grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-5 md:gap-y-4";
+
+export const PUBLIC_FORM_INPUT_CLASS = cn(
+  "h-11 w-full rounded-xl border border-zinc-200/90 bg-white px-3 text-sm text-foreground outline-none transition",
+  "placeholder:text-zinc-400",
+  "focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus-visible:outline-none",
+);

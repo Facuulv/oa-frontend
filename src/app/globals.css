@@ -691,9 +691,17 @@ body.has-public-navbar {
   }
 }
 
-/* Barra global "Ver mi pedido" (AppShell): safe-area inferior en PWA */
+/* Barra global "Ver mi pedido" (AppShell): pegada al borde; safe-area solo en PWA */
 .cart-global-bar {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  background-color: var(--primary);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (min-width: 768px) {
+  .cart-global-bar {
+    background-color: transparent;
+    padding-bottom: 0;
+  }
 }
 
 /* /arma-tu-combo: barra de acción en flujo + safe-area inferior (PWA) */

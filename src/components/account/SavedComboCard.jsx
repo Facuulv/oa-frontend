@@ -96,8 +96,8 @@ export default function SavedComboCard({ combo, onDelete }) {
               data-modal-initial-focus
               className={cn(
                 PUBLIC_PRESSABLE_CLASS,
-                "inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-60 sm:w-auto",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2",
+                "home-cta-primary-shadow inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary to-primary-dark px-4 text-sm font-bold text-white disabled:opacity-60 sm:w-auto",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               )}
             >
               {deleting ? "Eliminando…" : "Eliminar combo"}
