@@ -5,6 +5,7 @@ import ComboExtraRow from "@/components/combo/ComboExtraRow";
 import ComboListPagination from "@/components/combo/ComboListPagination";
 import ComboSearchInput from "@/components/combo/ComboSearchInput";
 import ComboSectionList from "@/components/combo/ComboSectionList";
+import ComboStepNextButton from "@/components/combo/ComboStepNextButton";
 import ComboSummaryCard from "@/components/combo/ComboSummaryCard";
 import { ComboEmptyState } from "@/components/combo/ComboStatusCard";
 
@@ -23,10 +24,18 @@ export default function ComboStepExtrasSection({
   listTopRef,
   comboName,
   onComboNameChange,
-  ingredientList,
+  bases,
+  mixers,
+  onIncBase,
+  onDecBase,
+  onIncMixer,
+  onDecMixer,
   saveOnFinalize,
   onSaveToggle,
   canSaveCombo,
+  nextLabel,
+  nextDisabled,
+  onNext,
 }) {
   return (
     <section className="card-fade-in">
@@ -86,10 +95,24 @@ export default function ComboStepExtrasSection({
         />
       )}
 
+      <ComboStepNextButton
+        label={nextLabel}
+        disabled={nextDisabled}
+        onClick={onNext}
+      />
+
       <ComboSummaryCard
         comboName={comboName}
         onComboNameChange={onComboNameChange}
-        ingredientList={ingredientList}
+        bases={bases}
+        mixers={mixers}
+        extras={extras}
+        onIncBase={onIncBase}
+        onDecBase={onDecBase}
+        onIncMixer={onIncMixer}
+        onDecMixer={onDecMixer}
+        onIncExtra={onIncExtra}
+        onDecExtra={onDecExtra}
         saveOnFinalize={saveOnFinalize}
         onSaveToggle={onSaveToggle}
         canSaveCombo={canSaveCombo}

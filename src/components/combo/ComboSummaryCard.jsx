@@ -1,27 +1,54 @@
 "use client";
 
 import { Save, Sparkles } from "lucide-react";
+import ComboSummaryItemRow from "@/components/combo/ComboSummaryItemRow";
 import {
   COMBO_SAVE_OPTION_ACTIVE_CLASS,
   COMBO_SAVE_OPTION_IDLE_CLASS,
   COMBO_SUMMARY_CARD_CLASS,
   COMBO_SUMMARY_INPUT_CLASS,
 } from "@/constants/homeTheme";
+import { getSelectionMapEntries } from "@/features/combo/comboBuilder";
 import { cn } from "@/lib/cn";
 
 /**
- * Resumen final del wizard: nombre, ingredientes y guardar en Mis Combos (presentacional).
+ * Resumen final del wizard: nombre, ingredientes editables y guardar en Mis Combos.
  */
 export default function ComboSummaryCard({
   comboName,
   onComboNameChange,
-  ingredientList,
+  bases = {},
+  mixers = {},
+  extras = {},
+  onIncBase,
+  onDecBase,
+  onIncMixer,
+  onDecMixer,
+  onIncExtra,
+  onDecExtra,
   saveOnFinalize,
   onSaveToggle,
   canSaveCombo,
   className,
 }) {
-  const hasIngredients = ingredientList.length > 0;
+  const ingredientEntries = [
+    ...getSelectionMapEntries(bases).map((entry) => ({
+      ...entry,
+      onInc: onIncBase,
+      onDec: onDecBase,
+    })),
+    ...getSelectionMapEntries(mixers).map((entry) => ({
+      ...entry,
+      onInc: onIncMixer,
+      onDec: onDecMixer,
+    })),
+    ...getSelectionMapEntries(extras).map((entry) => ({
+      ...entry,
+      onInc: onIncExtra,
+      onDec: onDecExtra,
+    })),
+  ];
+  const hasIngredients = ingredientEntries.length > 0;
 
   return (
     <section
@@ -73,17 +100,14 @@ export default function ComboSummaryCard({
             Tu pedido
           </p>
           <ul className="flex flex-col gap-1.5" aria-label="Ingredientes del combo">
-            {ingredientList.map((line, idx) => (
-              <li
-                key={`${line}-${idx}`}
-                className="flex items-start gap-2 rounded-lg bg-zinc-50/90 px-2.5 py-1.5 text-sm leading-snug text-zinc-700 ring-1 ring-zinc-100/80"
-              >
-                <span
-                  className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
-                  aria-hidden
-                />
-                <span className="min-w-0 flex-1 break-words">{line}</span>
-              </li>
+            {ingredientEntries.map(({ id, product, cantidad, onInc, onDec }) => (
+              <ComboSummaryItemRow
+                key={id}
+                product={product}
+                cantidad={cantidad}
+                onInc={() => onInc(product)}
+                onDec={() => onDec(product)}
+              />
             ))}
           </ul>
         </div>

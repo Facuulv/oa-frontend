@@ -10,7 +10,7 @@ import { persist } from "zustand/middleware";
  * Forma del estado:
  * {
  *   profile: { nombre, telefono, email },
- *   addresses: [{ id, direccion, alias, savedAt }],
+ *   addresses: [{ id, direccion, lat, lng, alias, savedAt }],
  * }
  */
 const MAX_ADDRESSES = 5;
@@ -29,11 +29,13 @@ export const useUserDataStore = create(
        * Snapshot del usuario tras confirmar un pedido.
        * Persiste nombre/teléfono/email y agrega la dirección al historial.
        */
-      saveFromOrder: ({ nombre, telefono, email, direccion }) => {
+      saveFromOrder: ({ nombre, telefono, email, direccion, lat, lng }) => {
         const cleanNombre = safeString(nombre);
         const cleanTel = safeString(telefono);
         const cleanEmail = safeString(email);
         const cleanDir = safeString(direccion);
+        const safeLat = Number.isFinite(lat) ? Number(lat) : null;
+        const safeLng = Number.isFinite(lng) ? Number(lng) : null;
 
         set((state) => {
           const nextProfile = {
@@ -49,6 +51,8 @@ export const useUserDataStore = create(
               const entry = {
                 id: `addr-${Date.now()}`,
                 direccion: cleanDir,
+                lat: safeLat,
+                lng: safeLng,
                 alias: "",
                 savedAt: Date.now(),
               };

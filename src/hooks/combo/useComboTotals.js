@@ -7,61 +7,60 @@ import {
   getComboSummaryLabel,
   getNextDisabled,
   getPrimaryActionLabel,
+  getFirstProductFromMap,
 } from "@/features/combo/comboBuilder";
 import { resolveComboName } from "@/store/useSavedCombosStore";
 
 /**
  * Totales y labels derivados (barra, panel, carrito). Solo memos; sin side effects.
  *
- * Cuidado: `resolvedComboName` usa `resolveComboName` del store; llamar después de tener `comboName`.
- *
  * @param {object} opts
  * @param {number} opts.currentStep
- * @param {object | null} opts.selectedBase
- * @param {object | null} opts.selectedMixer
+ * @param {Record<string, { product: object, cantidad: number }>} opts.bases
+ * @param {Record<string, { product: object, cantidad: number }>} opts.mixers
  * @param {Record<string, { product: object, cantidad: number }>} opts.extras
  * @param {string} opts.comboName
  */
 export function useComboTotals({
   currentStep,
-  selectedBase,
-  selectedMixer,
+  bases = {},
+  mixers = {},
   extras = {},
   comboName = "",
 } = {}) {
   const total = useMemo(
-    () => computeComboTotal(selectedBase, selectedMixer, extras),
-    [selectedBase, selectedMixer, extras]
+    () => computeComboTotal(bases, mixers, extras),
+    [bases, mixers, extras]
   );
 
   const comboSummaryLabel = useMemo(
     () =>
       getComboSummaryLabel({
-        selectedBase,
-        selectedMixer,
+        bases,
+        mixers,
         currentStep,
       }),
-    [selectedBase, selectedMixer, currentStep]
+    [bases, mixers, currentStep]
   );
 
   const resolvedComboName = useMemo(
     () =>
       resolveComboName({
         name: comboName,
-        base: selectedBase,
-        mixer: selectedMixer,
+        base: getFirstProductFromMap(bases),
+        mixer: getFirstProductFromMap(mixers),
       }),
-    [comboName, selectedBase, selectedMixer]
+    [comboName, bases, mixers]
   );
 
   const ingredientList = useMemo(
-    () => buildIngredientList(selectedBase, selectedMixer, extras),
-    [selectedBase, selectedMixer, extras]
+    () => buildIngredientList(bases, mixers, extras),
+    [bases, mixers, extras]
   );
 
   const nextDisabled = useMemo(
-    () => getNextDisabled(currentStep, selectedBase, selectedMixer),
-    [currentStep, selectedBase, selectedMixer]
+    () => getNextDisabled(currentStep, bases, mixers, extras),
+    [currentStep, bases, mixers, extras]
   );
 
   const nextLabel = useMemo(

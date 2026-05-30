@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
+import CheckoutDiscountCodeTeaser from "@/components/checkout/CheckoutDiscountCodeTeaser";
 import UltimoAntojoSection from "@/components/checkout/UltimoAntojoSection";
 import AddressAutocompleteInput from "@/components/checkout/AddressAutocompleteInput";
 import { formatPrice } from "@/utils/format/price";
@@ -207,10 +208,36 @@ export default function CheckoutFinalizarPage() {
               <AddressAutocompleteInput
                 value={formValues.direccion}
                 onChange={(value) => updateField("direccion", value)}
+                location={
+                  Number.isFinite(formValues.direccionLat) &&
+                  Number.isFinite(formValues.direccionLng)
+                    ? { lat: formValues.direccionLat, lng: formValues.direccionLng }
+                    : null
+                }
+                onLocationChange={(coords) => {
+                  updateField("direccionLat", coords?.lat ?? null);
+                  updateField("direccionLng", coords?.lng ?? null);
+                }}
                 error={fieldErrors.direccion}
                 savedAddresses={savedAddresses}
                 required
               />
+              <div className="mt-1">
+                <label
+                  htmlFor="checkout-pisoDepto"
+                  className="mb-1 block text-xs font-semibold text-zinc-700"
+                >
+                  Piso / Departamento <span className="text-zinc-400">(opcional)</span>
+                </label>
+                <input
+                  id="checkout-pisoDepto"
+                  name="pisoDepto"
+                  value={formValues.pisoDepto}
+                  onChange={(e) => updateField("pisoDepto", e.target.value)}
+                  placeholder="Ej. Piso 3, Depto B"
+                  className={inputClass("pisoDepto")}
+                />
+              </div>
             </div>
           )}
         </section>
@@ -265,6 +292,8 @@ export default function CheckoutFinalizarPage() {
 
         {/* Sugerencias (compactas) — antes del resumen */}
         <UltimoAntojoSection />
+
+        <CheckoutDiscountCodeTeaser className="mb-3" />
 
         {/* Resumen de pago */}
         <section className="rounded-2xl border border-zinc-200 bg-white p-4">

@@ -1,4 +1,4 @@
-const SW_VERSION = "oa-pwa-v1";
+const SW_VERSION = "oa-pwa-v2";
 const STATIC_CACHE = `${SW_VERSION}-static`;
 
 const CORE_ASSETS = [
@@ -52,6 +52,12 @@ function isSensitiveRequest(url, request) {
   }
 
   if (request.mode === "navigate" || request.destination === "document") {
+    return true;
+  }
+
+  // Nunca cacheamos los bundles de Next: están versionados por hash y la caché
+  // cache-first puede servir JS viejo y "congelar" cambios. Siempre a la red.
+  if (url.pathname.startsWith("/_next/")) {
     return true;
   }
 

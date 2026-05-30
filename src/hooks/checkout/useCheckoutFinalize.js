@@ -35,6 +35,9 @@ export const INITIAL_CHECKOUT_FORM = {
   telefono: "",
   email: "",
   direccion: "",
+  pisoDepto: "",
+  direccionLat: null,
+  direccionLng: null,
   deliveryType: "RETIRO",
   paymentMethod: "efectivo",
   when: "CUANTO_ANTES",
@@ -118,6 +121,12 @@ export function useCheckoutFinalize() {
         telefono: authUser.telefono ?? "",
         email: authUser.email ?? "",
         direccion: prev.direccion || savedAddresses[0]?.direccion || "",
+        direccionLat:
+          prev.direccionLat ??
+          (Number.isFinite(savedAddresses[0]?.lat) ? savedAddresses[0].lat : null),
+        direccionLng:
+          prev.direccionLng ??
+          (Number.isFinite(savedAddresses[0]?.lng) ? savedAddresses[0].lng : null),
       }));
       return;
     }
@@ -128,6 +137,12 @@ export function useCheckoutFinalize() {
       telefono: prev.telefono || savedProfile.telefono || "",
       email: prev.email || savedProfile.email || "",
       direccion: prev.direccion || savedAddresses[0]?.direccion || "",
+      direccionLat:
+        prev.direccionLat ??
+        (Number.isFinite(savedAddresses[0]?.lat) ? savedAddresses[0].lat : null),
+      direccionLng:
+        prev.direccionLng ??
+        (Number.isFinite(savedAddresses[0]?.lng) ? savedAddresses[0].lng : null),
     }));
   }, [
     mounted,
@@ -214,6 +229,13 @@ export function useCheckoutFinalize() {
       return { ok: false };
     }
 
+    // El piso/depto se carga aparte; lo sumamos a la dirección final para delivery.
+    if (normalized.deliveryType === "DELIVERY" && normalized.pisoDepto) {
+      normalized.direccion = [normalized.direccion, normalized.pisoDepto]
+        .filter(Boolean)
+        .join(" - ");
+    }
+
     setIsSubmitting(true);
     try {
       const { payload, error: payloadError } = buildCheckoutPayload({ normalized, items });
@@ -233,6 +255,8 @@ export function useCheckoutFinalize() {
         telefono: normalized.telefono,
         email: normalized.email,
         direccion: isDelivery ? normalized.direccion : "",
+        lat: isDelivery ? normalized.direccionLat : null,
+        lng: isDelivery ? normalized.direccionLng : null,
       });
 
       const message = buildWhatsappMessage({

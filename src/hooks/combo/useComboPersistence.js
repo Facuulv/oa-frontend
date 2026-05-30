@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { buildComboCartItem } from "@/features/combo/comboBuilder";
+import {
+  buildComboCartItem,
+  hasSelectionInMap,
+} from "@/features/combo/comboBuilder";
 import { useCartStore } from "@/store/useCartStore";
 import { useSavedCombosStore } from "@/store/useSavedCombosStore";
 import {
@@ -10,37 +13,34 @@ import {
 } from "@/store/useAuthStore";
 import { toast } from "@/lib/toast";
 
+function mapFromLegacyProduct(product) {
+  if (!product?.id) return {};
+  return { [product.id]: { product, cantidad: 1 } };
+}
+
+function normalizeSavedSelections(saved) {
+  const bases =
+    saved?.bases && typeof saved.bases === "object"
+      ? saved.bases
+      : mapFromLegacyProduct(saved?.base);
+  const mixers =
+    saved?.mixers && typeof saved.mixers === "object"
+      ? saved.mixers
+      : mapFromLegacyProduct(saved?.mixer);
+  return { bases, mixers, extras: saved?.extras ?? {} };
+}
+
 /**
  * Persistencia: nombre, guardar en Mis Combos, carga `?combo=`, finalizar y reset del wizard.
- *
- * Cuidado: tras `useComboTotals`, el orquestador debe asignar `finalizeSnapshotRef.current`
- * (total, labels, selección). Si `saveOnFinalize` y no hay sesión, no agrega al carrito.
- * `loadedComboRef` evita doble carga del mismo id.
- *
- * @param {object} opts
- * @param {boolean} opts.mounted
- * @param {string | null} opts.comboId — query ?combo=
- * @param {object | null} opts.selectedBase
- * @param {object | null} opts.selectedMixer
- * @param {Record<string, { product: object, cantidad: number }>} opts.extras
- * @param {(value: object | null) => void} opts.setSelectedBase
- * @param {(value: object | null) => void} opts.setSelectedMixer
- * @param {(value: Record<string, object>) => void} opts.setExtras
- * @param {() => void} opts.resetSelections
- * @param {(step: number) => void} opts.setCurrentStep
- * @param {(value: string) => void} opts.setSearchBase
- * @param {(value: string) => void} opts.setSearchMixer
- * @param {(value: string) => void} opts.setSearchExtras
- * @param {(value: object) => void} opts.setListPage
  */
 export function useComboPersistence({
   mounted,
   comboId,
-  selectedBase,
-  selectedMixer,
+  bases,
+  mixers,
   extras,
-  setSelectedBase,
-  setSelectedMixer,
+  setBases,
+  setMixers,
   setExtras,
   resetSelections,
   setCurrentStep,
@@ -57,8 +57,8 @@ export function useComboPersistence({
     total: 0,
     ingredientList: [],
     resolvedComboName: "",
-    selectedBase: null,
-    selectedMixer: null,
+    bases: {},
+    mixers: {},
     extras: {},
   });
 
@@ -66,7 +66,8 @@ export function useComboPersistence({
   const saveComboForCliente = useSavedCombosStore((s) => s.saveComboForCliente);
   const getComboById = useSavedCombosStore((s) => s.getComboById);
 
-  const canSaveCombo = Boolean(selectedBase && selectedMixer);
+  const canSaveCombo =
+    hasSelectionInMap(bases) && hasSelectionInMap(mixers);
 
   useEffect(() => {
     if (!mounted || !comboId || loadedComboRef.current === comboId) return;
@@ -74,14 +75,20 @@ export function useComboPersistence({
     const applySavedCombo = () => {
       const saved = getComboById(comboId);
       if (!saved) return false;
-      if (!saved.base || !saved.mixer) {
+
+      const normalized = normalizeSavedSelections(saved);
+      if (
+        !hasSelectionInMap(normalized.bases) ||
+        !hasSelectionInMap(normalized.mixers)
+      ) {
         toast.error("Este combo guardado está incompleto. Armá uno nuevo.");
         return false;
       }
+
       loadedComboRef.current = comboId;
-      setSelectedBase(saved.base);
-      setSelectedMixer(saved.mixer);
-      setExtras(saved.extras ?? {});
+      setBases(normalized.bases);
+      setMixers(normalized.mixers);
+      setExtras(normalized.extras);
       setComboName(saved.name ?? "");
       setCurrentStep(3);
       toast.success("Combo cargado desde Tus combos");
@@ -113,19 +120,20 @@ export function useComboPersistence({
     mounted,
     comboId,
     getComboById,
-    setSelectedBase,
-    setSelectedMixer,
+    setBases,
+    setMixers,
     setExtras,
     setCurrentStep,
   ]);
 
   const handleFinalize = useCallback(async () => {
     const snap = finalizeSnapshotRef.current;
-    const base = snap.selectedBase;
-    const mixer = snap.selectedMixer;
 
-    if (!base || !mixer) {
-      toast.error("Elegí una base y un acompañante para armar tu combo");
+    if (
+      !hasSelectionInMap(snap.bases) ||
+      !hasSelectionInMap(snap.mixers)
+    ) {
+      toast.error("Elegí al menos una base y un acompañante para armar tu combo");
       return;
     }
 
@@ -137,8 +145,8 @@ export function useComboPersistence({
 
       const result = await saveComboForCliente({
         name: comboName,
-        base,
-        mixer,
+        bases: snap.bases,
+        mixers: snap.mixers,
         extras: snap.extras,
       });
 
@@ -155,8 +163,8 @@ export function useComboPersistence({
     addItem(
       buildComboCartItem({
         resolvedComboName: snap.resolvedComboName,
-        selectedBase: base,
-        selectedMixer: mixer,
+        bases: snap.bases,
+        mixers: snap.mixers,
         extras: snap.extras,
         total: snap.total,
         ingredientList: snap.ingredientList,

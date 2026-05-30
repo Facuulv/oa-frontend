@@ -51,29 +51,31 @@ function ArmaTuComboContent() {
   const onFinalizeRef = useRef(null);
 
   const {
-    selectedBase,
-    setSelectedBase,
-    selectedMixer,
-    setSelectedMixer,
+    bases,
+    mixers,
     extras,
-    setExtras,
+    selectBase,
+    incBase,
+    decBase,
+    selectMixer,
+    incMixer,
+    decMixer,
     incExtra,
     decExtra,
+    setBases,
+    setMixers,
+    setExtras,
     resetSelections,
   } = useComboSelections();
 
   const {
     currentStep,
     setCurrentStep,
-    handleSelectBase,
-    handleSelectMixer,
     handleBack,
     handleNext,
   } = useComboWizard({
-    selectedBase,
-    selectedMixer,
-    setSelectedBase,
-    setSelectedMixer,
+    bases,
+    mixers,
     onFinalize: () => onFinalizeRef.current?.(),
     router,
   });
@@ -121,11 +123,11 @@ function ArmaTuComboContent() {
   const persistence = useComboPersistence({
     mounted,
     comboId,
-    selectedBase,
-    selectedMixer,
+    bases,
+    mixers,
     extras,
-    setSelectedBase,
-    setSelectedMixer,
+    setBases,
+    setMixers,
     setExtras,
     resetSelections,
     setCurrentStep,
@@ -158,8 +160,8 @@ function ArmaTuComboContent() {
 
   const totals = useComboTotals({
     currentStep,
-    selectedBase,
-    selectedMixer,
+    bases,
+    mixers,
     extras,
     comboName,
   });
@@ -176,8 +178,8 @@ function ArmaTuComboContent() {
     total,
     ingredientList,
     resolvedComboName,
-    selectedBase,
-    selectedMixer,
+    bases,
+    mixers,
     extras,
   };
   onFinalizeRef.current = handleFinalize;
@@ -217,8 +219,13 @@ function ArmaTuComboContent() {
                       page={listPage[1]}
                       onPageChange={(p) => goToListPage(1, p)}
                       listAnchorRef={listTopRef}
-                      selectedProduct={selectedBase}
-                      onSelectProduct={handleSelectBase}
+                      selections={bases}
+                      onSelectProduct={selectBase}
+                      onIncProduct={incBase}
+                      onDecProduct={decBase}
+                      nextLabel={nextLabel}
+                      nextDisabled={nextDisabled}
+                      onNext={handleNext}
                     />
                   )}
                   {currentStep === 2 && (
@@ -229,8 +236,13 @@ function ArmaTuComboContent() {
                       page={listPage[2]}
                       onPageChange={(p) => goToListPage(2, p)}
                       listAnchorRef={listTopRef}
-                      selectedProduct={selectedMixer}
-                      onSelectProduct={handleSelectMixer}
+                      selections={mixers}
+                      onSelectProduct={selectMixer}
+                      onIncProduct={incMixer}
+                      onDecProduct={decMixer}
+                      nextLabel={nextLabel}
+                      nextDisabled={nextDisabled}
+                      onNext={handleNext}
                     />
                   )}
                   {currentStep === 3 && (
@@ -246,10 +258,20 @@ function ArmaTuComboContent() {
                       listTopRef={listTopRef}
                       comboName={comboName}
                       onComboNameChange={setComboName}
-                      ingredientList={ingredientList}
+                      bases={bases}
+                      mixers={mixers}
+                      onIncBase={incBase}
+                      onDecBase={decBase}
+                      onIncMixer={incMixer}
+                      onDecMixer={decMixer}
+                      onIncExtra={incExtra}
+                      onDecExtra={decExtra}
                       saveOnFinalize={saveOnFinalize}
                       onSaveToggle={setSaveOnFinalize}
                       canSaveCombo={canSaveCombo}
+                      nextLabel={nextLabel}
+                      nextDisabled={nextDisabled}
+                      onNext={handleNext}
                     />
                   )}
                 </>
@@ -285,9 +307,15 @@ function ArmaTuComboContent() {
               primaryActionLabel={nextLabel}
               nextDisabled={nextDisabled}
               onPrimaryAction={handleNext}
-              selectedBase={selectedBase}
-              selectedMixer={selectedMixer}
-              ingredientList={ingredientList}
+              bases={bases}
+              mixers={mixers}
+              extras={extras}
+              onIncBase={incBase}
+              onDecBase={decBase}
+              onIncMixer={incMixer}
+              onDecMixer={decMixer}
+              onIncExtra={incExtra}
+              onDecExtra={decExtra}
             />
           ) : (
             <ComboSummaryPanelSkeleton />

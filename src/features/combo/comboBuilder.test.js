@@ -8,30 +8,49 @@ import {
   getPrimaryActionLabel,
   getNextDisabled,
   buildComboCartItem,
+  hasSelectionInMap,
 } from "./comboBuilder.js";
 
 const base = { id: 10, nombre: "Fernet", precio: 5000, imagen_url: "/fernet.jpg" };
 const mixer = { id: 20, nombre: "Coca", precio: 2000, imagen_url: null };
 const extraProduct = { id: 30, nombre: "Hielo 2.5kg", precio: 2500 };
 
+const bases = { 10: { product: base, cantidad: 1 } };
+const mixers = { 20: { product: mixer, cantidad: 1 } };
+const multiBases = {
+  10: { product: base, cantidad: 2 },
+  11: { product: { id: 11, nombre: "Gin", precio: 4500 }, cantidad: 1 },
+};
+
+describe("hasSelectionInMap", () => {
+  it("true cuando hay cantidad > 0", () => {
+    assert.equal(hasSelectionInMap(bases), true);
+    assert.equal(hasSelectionInMap({}), false);
+  });
+});
+
 describe("computeComboTotal", () => {
   it("total con base + mixer sin extras", () => {
-    assert.equal(computeComboTotal(base, mixer, {}), 7000);
+    assert.equal(computeComboTotal(bases, mixers, {}), 7000);
   });
 
   it("total con base + mixer + extras", () => {
     const extras = { 30: { product: extraProduct, cantidad: 1 } };
-    assert.equal(computeComboTotal(base, mixer, extras), 9500);
+    assert.equal(computeComboTotal(bases, mixers, extras), 9500);
+  });
+
+  it("múltiples bases y cantidades", () => {
+    assert.equal(computeComboTotal(multiBases, mixers, {}), 16500);
   });
 
   it("extras con cantidad mayor a 1", () => {
     const extras = { 30: { product: extraProduct, cantidad: 3 } };
-    assert.equal(computeComboTotal(base, mixer, extras), 14500);
+    assert.equal(computeComboTotal(bases, mixers, extras), 14500);
   });
 
   it("sin base ni mixer solo suma extras", () => {
     const extras = { 30: { product: extraProduct, cantidad: 2 } };
-    assert.equal(computeComboTotal(null, null, extras), 5000);
+    assert.equal(computeComboTotal({}, {}, extras), 5000);
   });
 });
 
@@ -41,7 +60,7 @@ describe("buildIngredientList", () => {
       30: { product: extraProduct, cantidad: 1 },
       31: { product: { id: 31, nombre: "Papas", precio: 1000 }, cantidad: 2 },
     };
-    const list = buildIngredientList(base, mixer, extras);
+    const list = buildIngredientList(bases, mixers, extras);
     assert.deepEqual(list, [
       "1× Fernet",
       "1× Coca",
@@ -51,65 +70,67 @@ describe("buildIngredientList", () => {
   });
 
   it("solo base cuando no hay mixer", () => {
-    assert.deepEqual(buildIngredientList(base, null, {}), ["1× Fernet"]);
+    assert.deepEqual(buildIngredientList(bases, {}, {}), ["1× Fernet"]);
   });
 });
 
 describe("getComboSummaryLabel", () => {
   it("Total cuando hay base y mixer", () => {
     assert.equal(
-      getComboSummaryLabel({ selectedBase: base, selectedMixer: mixer, currentStep: 3 }),
+      getComboSummaryLabel({ bases, mixers, currentStep: 3 }),
       "Total"
     );
   });
 
   it("Elegí tu mix con solo base", () => {
     assert.equal(
-      getComboSummaryLabel({ selectedBase: base, selectedMixer: null, currentStep: 1 }),
+      getComboSummaryLabel({ bases, mixers: {}, currentStep: 1 }),
       "Elegí tu mix"
     );
   });
 
   it("Elegí tu base en paso 2 con mixer sin base", () => {
     assert.equal(
-      getComboSummaryLabel({ selectedBase: null, selectedMixer: mixer, currentStep: 2 }),
+      getComboSummaryLabel({ bases: {}, mixers, currentStep: 2 }),
       "Elegí tu base"
     );
   });
 
   it("Armá tu combo por defecto", () => {
     assert.equal(
-      getComboSummaryLabel({ selectedBase: null, selectedMixer: null, currentStep: 1 }),
+      getComboSummaryLabel({ bases: {}, mixers: {}, currentStep: 1 }),
       "Armá tu combo"
     );
   });
 });
 
 describe("getPrimaryActionLabel", () => {
-  it("Siguiente en pasos 1 y 2", () => {
-    assert.equal(getPrimaryActionLabel(1), "Siguiente");
-    assert.equal(getPrimaryActionLabel(2), "Siguiente");
+  it("Siguiente paso en pasos 1 y 2", () => {
+    assert.equal(getPrimaryActionLabel(1), "Siguiente paso");
+    assert.equal(getPrimaryActionLabel(2), "Siguiente paso");
   });
 
-  it("Crear mi Combo en paso 3", () => {
-    assert.equal(getPrimaryActionLabel(3), "Crear mi Combo");
+  it("Agregar al Carrito en paso 3", () => {
+    assert.equal(getPrimaryActionLabel(3), "Agregar al Carrito");
   });
 });
 
 describe("getNextDisabled", () => {
   it("paso 1 deshabilitado sin base", () => {
-    assert.equal(getNextDisabled(1, null, null), true);
-    assert.equal(getNextDisabled(1, base, null), false);
+    assert.equal(getNextDisabled(1, {}, {}), true);
+    assert.equal(getNextDisabled(1, bases, {}), false);
   });
 
   it("paso 2 deshabilitado sin mixer", () => {
-    assert.equal(getNextDisabled(2, base, null), true);
-    assert.equal(getNextDisabled(2, base, mixer), false);
+    assert.equal(getNextDisabled(2, bases, {}), true);
+    assert.equal(getNextDisabled(2, bases, mixers), false);
   });
 
-  it("paso 3 nunca deshabilitado por selección base/mix", () => {
-    assert.equal(getNextDisabled(3, null, null), false);
-    assert.equal(getNextDisabled(3, base, mixer), false);
+  it("paso 3 deshabilitado sin base o mixer", () => {
+    assert.equal(getNextDisabled(3, {}, {}), true);
+    assert.equal(getNextDisabled(3, bases, {}), true);
+    assert.equal(getNextDisabled(3, {}, mixers), true);
+    assert.equal(getNextDisabled(3, bases, mixers), false);
   });
 });
 
@@ -121,8 +142,8 @@ describe("buildComboCartItem", () => {
   it("mantiene shape crítico para carrito y checkout", () => {
     const item = buildComboCartItem({
       resolvedComboName: "Combo Fernet + Coca",
-      selectedBase: base,
-      selectedMixer: mixer,
+      bases,
+      mixers,
       extras,
       total: 9500,
       ingredientList,
@@ -131,6 +152,8 @@ describe("buildComboCartItem", () => {
 
     assert.equal(item.lineKind, CUSTOM_COMBO_LINE_KIND);
     assert.equal(item.comboComponents.displayName, "Combo Fernet + Coca");
+    assert.deepEqual(item.comboComponents.bases, bases);
+    assert.deepEqual(item.comboComponents.mixers, mixers);
     assert.equal(item.comboComponents.base, base);
     assert.equal(item.comboComponents.mixer, mixer);
     assert.deepEqual(item.comboComponents.extras, extras);
@@ -156,8 +179,8 @@ describe("buildComboCartItem", () => {
     const mixerConImg = { ...mixer, imagen_url: "/coca.jpg" };
     const item = buildComboCartItem({
       resolvedComboName: "Combo Test",
-      selectedBase: baseSinImg,
-      selectedMixer: mixerConImg,
+      bases: { 10: { product: baseSinImg, cantidad: 1 } },
+      mixers: { 20: { product: mixerConImg, cantidad: 1 } },
       extras: {},
       total: 7000,
       ingredientList: ["1× Fernet", "1× Coca"],

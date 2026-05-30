@@ -31,9 +31,7 @@ export function buildWhatsappMessage({
     lineas.push(`• ${it.nombre ?? "Producto"} x${cantidad}`);
   });
 
-  lineas.push("");
-  lineas.push(`*Total:* ${formatPrice(total)}`);
-  lineas.push("");
+  lineas.push("", `*TOTAL:* *${formatPrice(total)}*`, "");
 
   const entregaLabel = deliveryType === "DELIVERY" ? "Delivery" : "Retiro en local";
   lineas.push(`*Entrega:* ${entregaLabel}`);
@@ -48,6 +46,23 @@ export function buildWhatsappMessage({
     lineas.push("");
     lineas.push(`*Notas:* ${notes}`);
   }
+
+  const isTransferencia =
+    String(paymentMethod ?? "").trim().toLowerCase() === "transferencia";
+
+  if (isTransferencia) {
+    lineas.push(
+      "",
+      `*Datos para la transferencia:*
+Alias: oa.bebidas
+Nombre: Vinobar S.a.s.
+CVU: 0000003100085103564817
+
+*Esperamos el comprobante de transferencia por este medio para empezar a preparar tu pedido.*`,
+    );
+  }
+
+  lineas.push("", `*¡Muchas gracias por tu pedido a OA! Bebidas!*`);
 
   return lineas.join("\n");
 }
