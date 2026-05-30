@@ -330,6 +330,41 @@ export const CHECKOUT_ITEM_CARD_CLASS = cn(
   "overflow-hidden rounded-2xl border border-zinc-100/90 bg-white p-3.5 sm:p-4",
 );
 
+/** /checkout/finalizar: sin barra de carrito; menos padding inferior en mobile. */
+export const CHECKOUT_FINALIZE_PAGE_CLASS = cn(
+  PUBLIC_CONTENT_MIN_HEIGHT_CLASS,
+  "home-page pb-4 lg:pb-6",
+);
+export const CHECKOUT_FINALIZE_CONTENT_CLASS = CHECKOUT_CONTENT_CLASS;
+export const CHECKOUT_FINALIZE_SECTION_CLASS = cn(PROMO_SECTION_CLASS, "pb-4 lg:pb-6");
+export const CHECKOUT_FINALIZE_LAYOUT_CLASS = CHECKOUT_LAYOUT_CLASS;
+export const CHECKOUT_FINALIZE_SUMMARY_PANEL_CLASS = CHECKOUT_SUMMARY_PANEL_CLASS;
+
+export const CHECKOUT_FINALIZE_SELECTOR_BASE_CLASS = cn(
+  "flex-1 rounded-xl border py-2.5 text-sm font-semibold transition",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+);
+export const CHECKOUT_FINALIZE_SELECTOR_ACTIVE_CLASS = COMBO_SAVE_OPTION_ACTIVE_CLASS;
+export const CHECKOUT_FINALIZE_SELECTOR_IDLE_CLASS = COMBO_SAVE_OPTION_IDLE_CLASS;
+
+export const CHECKOUT_FINALIZE_EXTRAS_GRID_CLASS = cn(
+  "grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4",
+);
+
+/** /checkout/finalizar — estado de éxito post-pedido. */
+export const CHECKOUT_SUCCESS_LAYOUT_CLASS = cn(
+  "flex w-full flex-col items-center justify-center",
+  "min-h-[calc(100dvh-var(--app-header-total-height)-2.5rem)] py-6 sm:py-8",
+);
+
+export const CHECKOUT_SUCCESS_CARD_CLASS = cn(
+  HOME_CARD_SURFACE_CLASS,
+  "w-full max-w-lg rounded-3xl border border-zinc-100/90 bg-white p-6 text-center shadow-sm sm:p-8",
+);
+
+export const CHECKOUT_FINALIZE_SUCCESS_SECTION_CLASS =
+  "flex w-full flex-col items-center justify-center pb-4 lg:pb-6";
+
 /** /mi-cuenta, /mis-pedidos: misma base visual que Home/Promociones/Checkout. */
 export const ACCOUNT_PAGE_CLASS = CHECKOUT_PAGE_CLASS;
 export const ACCOUNT_CONTENT_CLASS = CHECKOUT_CONTENT_CLASS;
@@ -341,6 +376,8 @@ export const ACCOUNT_CARD_CLASS = cn(
   HOME_CARD_SURFACE_CLASS,
   "overflow-hidden rounded-2xl border border-zinc-100/90 bg-white",
 );
+
+export const CHECKOUT_FINALIZE_CARD_CLASS = cn(ACCOUNT_CARD_CLASS, "p-4 md:p-5");
 
 export const ACCOUNT_DARK_HERO_CLASS = cn(
   "relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-primary-dark/55 text-white shadow-xl",

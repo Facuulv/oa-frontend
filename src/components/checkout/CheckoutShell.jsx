@@ -10,13 +10,24 @@ import { cn } from "@/lib/cn";
  * @param {object} props
  * @param {React.ReactNode} props.children
  * @param {string} [props.className]
+ * @param {string} [props.pageClassName] — override del contenedor raíz
+ * @param {string} [props.sectionClassName] — override del `<section>` interior
  * @param {string} [props.ariaLabel]
  */
-export default function CheckoutShell({ children, className, ariaLabel = "Mi carrito" }) {
+export default function CheckoutShell({
+  children,
+  className,
+  pageClassName,
+  sectionClassName,
+  ariaLabel = "Mi carrito",
+}) {
   return (
-    <div className={cn(CHECKOUT_PAGE_CLASS, className)}>
+    <div className={cn(pageClassName ?? CHECKOUT_PAGE_CLASS, className)}>
       <div className={CHECKOUT_CONTENT_CLASS}>
-        <section className={CHECKOUT_SECTION_CLASS} aria-label={ariaLabel}>
+        <section
+          className={cn(sectionClassName ?? CHECKOUT_SECTION_CLASS)}
+          aria-label={ariaLabel}
+        >
           {children}
         </section>
       </div>

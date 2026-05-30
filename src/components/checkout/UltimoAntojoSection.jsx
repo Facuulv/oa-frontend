@@ -4,13 +4,18 @@ import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import ImageWithFade from "@/components/ImageWithFade";
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
-import { OA_BRAND_PRIMARY_HEX } from "@/constants/layout";
+import {
+  CHECKOUT_FINALIZE_CARD_CLASS,
+  CHECKOUT_FINALIZE_EXTRAS_GRID_CLASS,
+  HOME_CARD_SURFACE_CLASS,
+} from "@/constants/homeTheme";
 import { isExtrasCategoryProduct } from "@/features/combo/comboExtrasCategory";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { mapProduct } from "@/lib/mappers/catalogMapper";
 import { getProductsByCategory } from "@/services/catalogService";
 import { useCartStore } from "@/store/useCartStore";
 import { formatPrice } from "@/utils/format/price";
+import { cn } from "@/lib/cn";
 
 const EXTRAS_LIMIT = 5;
 const SKELETON_COUNT = 5;
@@ -18,11 +23,14 @@ const SKELETON_COUNT = 5;
 function UltimoAntojoCardSkeleton() {
   return (
     <div
-      className="relative flex w-24 shrink-0 flex-col items-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-sm"
+      className={cn(
+        HOME_CARD_SURFACE_CLASS,
+        "relative flex flex-col items-center rounded-2xl border border-zinc-100/90 bg-white p-2.5",
+      )}
       aria-hidden
     >
       <div className="mb-1.5 h-14 w-14 animate-pulse rounded-full bg-zinc-200" />
-      <div className="h-2.5 w-16 animate-pulse rounded bg-zinc-200" />
+      <div className="h-2.5 w-full max-w-16 animate-pulse rounded bg-zinc-200" />
       <div className="mt-1.5 h-3.5 w-10 animate-pulse rounded bg-zinc-200" />
     </div>
   );
@@ -34,7 +42,12 @@ function UltimoAntojoCard({ product, onAdd }) {
     PLACEHOLDER_PRODUCT_CARD;
 
   return (
-    <div className="relative flex w-24 shrink-0 flex-col items-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-sm">
+    <div
+      className={cn(
+        HOME_CARD_SURFACE_CLASS,
+        "relative flex flex-col items-center rounded-2xl border border-zinc-100/90 bg-white p-2.5",
+      )}
+    >
       <div className="mb-1.5 h-14 w-14 overflow-hidden rounded-full bg-zinc-100 ring-1 ring-zinc-100/80">
         <ImageWithFade
           src={imgSrc}
@@ -46,25 +59,21 @@ function UltimoAntojoCard({ product, onAdd }) {
         />
       </div>
       <p
-        className="line-clamp-1 w-full text-center text-[11px] font-medium text-zinc-700"
+        className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight text-zinc-700"
         title={product.nombre}
       >
         {product.nombre}
       </p>
-      <p
-        className="mt-0.5 text-sm font-bold tabular-nums"
-        style={{ color: OA_BRAND_PRIMARY_HEX }}
-      >
+      <p className="mt-1 text-sm font-bold tabular-nums text-primary">
         {formatPrice(product.precio)}
       </p>
       <button
         type="button"
         onClick={() => onAdd(product)}
         aria-label={`Agregar ${product.nombre} al carrito`}
-        className="absolute -right-1.5 -top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-white shadow-md transition active:scale-95"
-        style={{ backgroundColor: OA_BRAND_PRIMARY_HEX }}
+        className="absolute -right-1 -top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white shadow-md transition hover:bg-primary-dark active:scale-95"
       >
-        <Plus size={16} strokeWidth={2.5} />
+        <Plus size={14} strokeWidth={2.5} />
       </button>
     </div>
   );
@@ -72,7 +81,6 @@ function UltimoAntojoCard({ product, onAdd }) {
 
 /**
  * Sugerencias compactas para el final del checkout.
- * Scroll horizontal: foto pequeña, precio y botón "+" circular rojo.
  */
 export default function UltimoAntojoSection() {
   const addItem = useCartStore((s) => s.addItem);
@@ -132,13 +140,15 @@ export default function UltimoAntojoSection() {
   if (!isLoading && extras.length === 0) return null;
 
   return (
-    <section>
-      <div className="mb-2 flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-bold text-zinc-900">No te olvides nada</h2>
-        <span className="text-xs font-medium text-zinc-500">Sumalo con un toque</span>
+    <section className={CHECKOUT_FINALIZE_CARD_CLASS} aria-label="No te olvides nada">
+      <div className="mb-4">
+        <h2 className="home-section-header__accent text-sm font-bold text-foreground md:text-base">
+          No te olvides nada
+        </h2>
+        <p className="mt-1 text-xs text-zinc-500 sm:text-sm">Sumalo con un toque</p>
       </div>
 
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+      <div className={CHECKOUT_FINALIZE_EXTRAS_GRID_CLASS}>
         {isLoading
           ? Array.from({ length: SKELETON_COUNT }, (_, idx) => (
               <UltimoAntojoCardSkeleton key={`ultimo-antojo-skeleton-${idx}`} />

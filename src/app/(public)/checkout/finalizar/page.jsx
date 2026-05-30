@@ -1,12 +1,44 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check } from "lucide-react";
+import CheckoutShell from "@/components/checkout/CheckoutShell";
+import CheckoutOrderSuccessPanel from "@/components/checkout/CheckoutOrderSuccessPanel";
 import CheckoutDiscountCodeTeaser from "@/components/checkout/CheckoutDiscountCodeTeaser";
+import CheckoutFinalizeSummaryPanel from "@/components/checkout/CheckoutFinalizeSummaryPanel";
 import UltimoAntojoSection from "@/components/checkout/UltimoAntojoSection";
 import AddressAutocompleteInput from "@/components/checkout/AddressAutocompleteInput";
-import { formatPrice } from "@/utils/format/price";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
 import { useCheckoutFinalize } from "@/hooks/checkout/useCheckoutFinalize";
+import { cn } from "@/lib/cn";
+import {
+  ACCOUNT_FORM_GRID_CLASS,
+  CHECKOUT_FINALIZE_CARD_CLASS,
+  CHECKOUT_FINALIZE_LAYOUT_CLASS,
+  CHECKOUT_FINALIZE_PAGE_CLASS,
+  CHECKOUT_FINALIZE_SECTION_CLASS,
+  CHECKOUT_FINALIZE_SUCCESS_SECTION_CLASS,
+  CHECKOUT_FINALIZE_SELECTOR_ACTIVE_CLASS,
+  CHECKOUT_FINALIZE_SELECTOR_BASE_CLASS,
+  CHECKOUT_FINALIZE_SELECTOR_IDLE_CLASS,
+  CHECKOUT_FINALIZE_SUMMARY_PANEL_CLASS,
+  COMBO_SUMMARY_INPUT_CLASS,
+  PUBLIC_FORM_INPUT_CLASS,
+} from "@/constants/homeTheme";
+
+function FieldLabel({ htmlFor, children, required, optional }) {
+  return (
+    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-zinc-700">
+      {children}
+      {required ? <span className="text-primary"> *</span> : null}
+      {optional ? <span className="text-zinc-400"> (opcional)</span> : null}
+    </label>
+  );
+}
+
+function FieldError({ message }) {
+  if (!message) return null;
+  return <p className="mt-1 text-xs font-medium text-primary">{message}</p>;
+}
 
 export default function CheckoutFinalizarPage() {
   const router = useRouter();
@@ -32,312 +64,282 @@ export default function CheckoutFinalizarPage() {
     nextOpeningText,
   } = useCheckoutFinalize();
 
-  if (authLoading || !isAuthenticatedCliente || authUser?.origen === "ADMIN") {
-    return (
-      <div className="min-h-screen bg-white px-4 py-10 text-zinc-900">
-        <div className="mx-auto max-w-md animate-pulse space-y-4">
-          <div className="h-6 w-40 rounded bg-zinc-200" />
-          <div className="h-24 rounded-2xl bg-zinc-100" />
-          <div className="h-24 rounded-2xl bg-zinc-100" />
-          <div className="h-24 rounded-2xl bg-zinc-100" />
-          <div className="h-12 rounded-xl bg-zinc-200" />
-        </div>
-      </div>
-    );
-  }
-
-  if (orderSent) {
-    return (
-      <div className="flex flex-col items-center justify-center bg-white px-6 py-16 text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-          <Check size={28} strokeWidth={3} />
-        </div>
-        <h2 className="mb-2 text-lg font-bold text-zinc-900">¡Pedido registrado!</h2>
-        <p className="mb-1 text-sm font-semibold text-[#C1121F]">Pedido #{orderSent.orderId}</p>
-        <p className="mb-1 text-sm text-zinc-700">
-          {orderSent.whatsappOpened
-            ? "Confirmá el pedido enviando el mensaje al local."
-            : "No pudimos abrir WhatsApp automáticamente en este dispositivo."}
-        </p>
-        <p className="mb-6 text-sm text-zinc-500">
-          {orderSent.whatsappOpened
-            ? "Si la pestaña no se abrió, tocá el botón de abajo."
-            : "Tu pedido quedó guardado. Tocá el botón para abrir WhatsApp manualmente."}
-        </p>
-        {orderSent.url ? (
-          <a
-            href={orderSent.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-xl bg-[#C1121F] px-6 py-2.5 text-sm font-bold text-white"
-          >
-            Abrir WhatsApp
-          </a>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="mt-3 rounded-xl border border-zinc-200 px-6 py-2.5 text-sm font-semibold text-zinc-700"
-        >
-          Volver al inicio
-        </button>
-      </div>
-    );
-  }
-
-  const baseInputClass =
-    "h-11 w-full rounded-xl border bg-white px-3 text-sm font-medium text-zinc-900 outline-none transition placeholder:font-normal placeholder:text-zinc-400";
-
   const inputClass = (field) =>
-    `${baseInputClass} ${
-      fieldErrors[field]
-        ? "border-[#C1121F] ring-2 ring-[#C1121F]/15 focus:border-[#C1121F]"
-        : "border-zinc-200 focus:border-[#C1121F]/40 focus:ring-2 focus:ring-[#C1121F]/15"
-    }`;
+    cn(
+      PUBLIC_FORM_INPUT_CLASS,
+      fieldErrors[field] &&
+        "border-primary ring-2 ring-primary/15 focus:border-primary",
+    );
+
+  const selectorClass = (selected, disabled = false) =>
+    cn(
+      CHECKOUT_FINALIZE_SELECTOR_BASE_CLASS,
+      selected
+        ? CHECKOUT_FINALIZE_SELECTOR_ACTIVE_CLASS
+        : CHECKOUT_FINALIZE_SELECTOR_IDLE_CLASS,
+      selected ? "text-primary" : "bg-white text-zinc-700",
+      !selected && !disabled && "hover:border-zinc-300",
+      disabled && "cursor-not-allowed opacity-50",
+    );
 
   const paymentOptions = [
     { value: "efectivo", label: "Efectivo" },
     { value: "transferencia", label: "Transferencia" },
   ];
 
+  const summaryProps = {
+    items,
+    total,
+    isSubmitting,
+    isFormReady,
+    checkoutBlocked,
+    checkoutBlockedReason,
+    nextOpeningText,
+    storeStatusLoading,
+    configLoading,
+    isDelivery,
+    onConfirm: () => void submit(),
+  };
+
+  const shellProps = {
+    pageClassName: CHECKOUT_FINALIZE_PAGE_CLASS,
+    sectionClassName: CHECKOUT_FINALIZE_SECTION_CLASS,
+  };
+
+  if (authLoading || !isAuthenticatedCliente || authUser?.origen === "ADMIN") {
+    return (
+      <CheckoutShell ariaLabel="Finalizar pedido" {...shellProps}>
+        <div className="mx-auto max-w-md animate-pulse space-y-4 py-6">
+          <div className="h-8 w-48 rounded bg-zinc-200" />
+          <div className="h-32 rounded-2xl bg-zinc-100" />
+          <div className="h-32 rounded-2xl bg-zinc-100" />
+          <div className="h-32 rounded-2xl bg-zinc-100" />
+          <div className="h-12 rounded-xl bg-zinc-200" />
+        </div>
+      </CheckoutShell>
+    );
+  }
+
+  if (orderSent) {
+    return (
+      <CheckoutShell
+        ariaLabel="Pedido registrado"
+        pageClassName={CHECKOUT_FINALIZE_PAGE_CLASS}
+        sectionClassName={CHECKOUT_FINALIZE_SUCCESS_SECTION_CLASS}
+      >
+        <CheckoutOrderSuccessPanel
+          orderId={orderSent.orderId}
+          whatsappOpened={orderSent.whatsappOpened}
+          url={orderSent.url}
+          onGoHome={() => router.push("/")}
+        />
+      </CheckoutShell>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-white pb-6 text-zinc-900">
-      <div className="flex items-center gap-2 px-4 pb-2 pt-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          aria-label="Volver"
-          className="rounded-xl p-1.5 text-zinc-700 transition hover:bg-zinc-100"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-lg font-extrabold tracking-tight text-zinc-900">
-          Finalizar pedido
-        </h1>
-      </div>
+    <CheckoutShell ariaLabel="Finalizar pedido" {...shellProps}>
+      <PublicPageHeader
+        title="Finalizar pedido"
+        subtitle="Completá tus datos para confirmar el pedido por WhatsApp."
+        className="mb-4 md:mb-5"
+      />
 
-      <div className="space-y-6 px-4">
-        {/* Datos personales */}
-        <section>
-          <h2 className="mb-1 text-sm font-bold text-zinc-900">Tus datos</h2>
-          <p className="mb-3 text-xs text-zinc-500">
-            Usamos esta información para confirmarte el pedido por WhatsApp.
-          </p>
-          <div className="space-y-3">
-            <div>
-              <label htmlFor="checkout-nombre" className="mb-1 block text-xs font-semibold text-zinc-700">
-                Nombre <span className="text-[#C1121F]">*</span>
-              </label>
-              <input
-                id="checkout-nombre"
-                name="nombre"
-                autoComplete="name"
-                value={formValues.nombre}
-                onChange={(e) => updateField("nombre", e.target.value)}
-                placeholder="Cómo te llamamos"
-                className={inputClass("nombre")}
-              />
-              {fieldErrors.nombre && (
-                <p className="mt-1 text-xs font-medium text-[#C1121F]">{fieldErrors.nombre}</p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="checkout-telefono" className="mb-1 block text-xs font-semibold text-zinc-700">
-                Teléfono <span className="text-[#C1121F]">*</span>
-              </label>
-              <input
-                id="checkout-telefono"
-                name="telefono"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                value={formValues.telefono}
-                onChange={(e) => updateField("telefono", e.target.value)}
-                placeholder="Ej. 351 123 4567"
-                className={inputClass("telefono")}
-              />
-              {fieldErrors.telefono && (
-                <p className="mt-1 text-xs font-medium text-[#C1121F]">{fieldErrors.telefono}</p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="checkout-email" className="mb-1 block text-xs font-semibold text-zinc-700">
-                Email <span className="text-zinc-400">(opcional)</span>
-              </label>
-              <input
-                id="checkout-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={formValues.email}
-                onChange={(e) => updateField("email", e.target.value)}
-                placeholder="tucorreo@ejemplo.com"
-                className={inputClass("email")}
-              />
-              {fieldErrors.email && (
-                <p className="mt-1 text-xs font-medium text-[#C1121F]">{fieldErrors.email}</p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Entrega */}
-        <section>
-          <h2 className="mb-3 text-sm font-bold text-zinc-900">Entrega</h2>
-          <div className="flex gap-2">
-            {["RETIRO", "DELIVERY"].map((type) => {
-              const selected = formValues.deliveryType === type;
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => updateField("deliveryType", type)}
-                  className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${
-                    selected
-                      ? "border-[#C1121F] bg-[#C1121F]/5 text-[#C1121F]"
-                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
-                  }`}
-                >
-                  {type === "RETIRO" ? "Retiro en local" : "Delivery"}
-                </button>
-              );
-            })}
-          </div>
-          {isDelivery && (
-            <div className="mt-3">
-              <AddressAutocompleteInput
-                value={formValues.direccion}
-                onChange={(value) => updateField("direccion", value)}
-                location={
-                  Number.isFinite(formValues.direccionLat) &&
-                  Number.isFinite(formValues.direccionLng)
-                    ? { lat: formValues.direccionLat, lng: formValues.direccionLng }
-                    : null
-                }
-                onLocationChange={(coords) => {
-                  updateField("direccionLat", coords?.lat ?? null);
-                  updateField("direccionLng", coords?.lng ?? null);
-                }}
-                error={fieldErrors.direccion}
-                savedAddresses={savedAddresses}
-                required
-              />
-              <div className="mt-1">
-                <label
-                  htmlFor="checkout-pisoDepto"
-                  className="mb-1 block text-xs font-semibold text-zinc-700"
-                >
-                  Piso / Departamento <span className="text-zinc-400">(opcional)</span>
-                </label>
+      <div className={CHECKOUT_FINALIZE_LAYOUT_CLASS}>
+        <div className="flex min-w-0 flex-col gap-4 md:gap-5">
+          {/* Tus datos */}
+          <section className={CHECKOUT_FINALIZE_CARD_CLASS} aria-labelledby="checkout-datos-heading">
+            <h2
+              id="checkout-datos-heading"
+              className="home-section-header__accent mb-1 text-sm font-bold text-foreground md:text-base"
+            >
+              Tus datos
+            </h2>
+            <p className="mb-4 text-xs text-zinc-500 sm:text-sm">
+              Usamos esta información para confirmarte el pedido por WhatsApp.
+            </p>
+            <div className={ACCOUNT_FORM_GRID_CLASS}>
+              <div className="md:col-span-2">
+                <FieldLabel htmlFor="checkout-nombre" required>
+                  Nombre
+                </FieldLabel>
                 <input
-                  id="checkout-pisoDepto"
-                  name="pisoDepto"
-                  value={formValues.pisoDepto}
-                  onChange={(e) => updateField("pisoDepto", e.target.value)}
-                  placeholder="Ej. Piso 3, Depto B"
-                  className={inputClass("pisoDepto")}
+                  id="checkout-nombre"
+                  name="nombre"
+                  autoComplete="name"
+                  value={formValues.nombre}
+                  onChange={(e) => updateField("nombre", e.target.value)}
+                  placeholder="Cómo te llamamos"
+                  className={inputClass("nombre")}
                 />
+                <FieldError message={fieldErrors.nombre} />
+              </div>
+              <div>
+                <FieldLabel htmlFor="checkout-telefono" required>
+                  Teléfono
+                </FieldLabel>
+                <input
+                  id="checkout-telefono"
+                  name="telefono"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={formValues.telefono}
+                  onChange={(e) => updateField("telefono", e.target.value)}
+                  placeholder="Ej. 351 123 4567"
+                  className={inputClass("telefono")}
+                />
+                <FieldError message={fieldErrors.telefono} />
+              </div>
+              <div>
+                <FieldLabel htmlFor="checkout-email" optional>
+                  Email
+                </FieldLabel>
+                <input
+                  id="checkout-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={formValues.email}
+                  onChange={(e) => updateField("email", e.target.value)}
+                  placeholder="tucorreo@ejemplo.com"
+                  className={inputClass("email")}
+                />
+                <FieldError message={fieldErrors.email} />
               </div>
             </div>
-          )}
-        </section>
+          </section>
 
-        {/* Método de pago */}
-        <section>
-          <h2 className="mb-3 text-sm font-bold text-zinc-900">Método de pago</h2>
-          <div className="flex gap-2">
-            {paymentOptions.map(({ value, label }) => {
-              const isCashOnDelivery = value === "efectivo" && isDelivery;
-              const disabled = isCashOnDelivery;
-              const selected = formValues.paymentMethod === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => !disabled && updateField("paymentMethod", value)}
-                  className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${
-                    selected
-                      ? "border-[#C1121F] bg-[#C1121F]/5 text-[#C1121F]"
-                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
-                  } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
-                  aria-disabled={disabled}
-                >
-                  {label}
-                </button>
-              );
-            })}
+          {/* Entrega */}
+          <section className={CHECKOUT_FINALIZE_CARD_CLASS} aria-labelledby="checkout-entrega-heading">
+            <h2
+              id="checkout-entrega-heading"
+              className="home-section-header__accent mb-4 text-sm font-bold text-foreground md:text-base"
+            >
+              Entrega
+            </h2>
+            <div className="flex gap-2">
+              {["RETIRO", "DELIVERY"].map((type) => {
+                const selected = formValues.deliveryType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => updateField("deliveryType", type)}
+                    className={selectorClass(selected)}
+                  >
+                    {type === "RETIRO" ? "Retiro en local" : "Delivery"}
+                  </button>
+                );
+              })}
+            </div>
+            {isDelivery && (
+              <div className="mt-4 space-y-3">
+                <AddressAutocompleteInput
+                  value={formValues.direccion}
+                  onChange={(value) => updateField("direccion", value)}
+                  location={
+                    Number.isFinite(formValues.direccionLat) &&
+                    Number.isFinite(formValues.direccionLng)
+                      ? { lat: formValues.direccionLat, lng: formValues.direccionLng }
+                      : null
+                  }
+                  onLocationChange={(coords) => {
+                    updateField("direccionLat", coords?.lat ?? null);
+                    updateField("direccionLng", coords?.lng ?? null);
+                  }}
+                  error={fieldErrors.direccion}
+                  savedAddresses={savedAddresses}
+                  required
+                />
+                <div>
+                  <FieldLabel htmlFor="checkout-pisoDepto" optional>
+                    Piso / Departamento
+                  </FieldLabel>
+                  <input
+                    id="checkout-pisoDepto"
+                    name="pisoDepto"
+                    value={formValues.pisoDepto}
+                    onChange={(e) => updateField("pisoDepto", e.target.value)}
+                    placeholder="Ej. Piso 3, Depto B"
+                    className={inputClass("pisoDepto")}
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Método de pago */}
+          <section className={CHECKOUT_FINALIZE_CARD_CLASS} aria-labelledby="checkout-pago-heading">
+            <h2
+              id="checkout-pago-heading"
+              className="home-section-header__accent mb-4 text-sm font-bold text-foreground md:text-base"
+            >
+              Método de pago
+            </h2>
+            <div className="flex gap-2">
+              {paymentOptions.map(({ value, label }) => {
+                const isCashOnDelivery = value === "efectivo" && isDelivery;
+                const disabled = isCashOnDelivery;
+                const selected = formValues.paymentMethod === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => !disabled && updateField("paymentMethod", value)}
+                    className={selectorClass(selected, disabled)}
+                    aria-disabled={disabled}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {isDelivery && (
+              <p className="mt-3 text-xs text-zinc-500 sm:text-sm">
+                El pago en efectivo solo es válido para retiro en local.
+              </p>
+            )}
+          </section>
+
+          {/* Notas */}
+          <section className={CHECKOUT_FINALIZE_CARD_CLASS} aria-labelledby="checkout-notas-heading">
+            <label
+              id="checkout-notas-heading"
+              htmlFor="checkout-notes"
+              className="home-section-header__accent mb-3 block text-sm font-bold text-foreground md:text-base"
+            >
+              Notas
+            </label>
+            <textarea
+              id="checkout-notes"
+              value={formValues.notes}
+              onChange={(e) => updateField("notes", e.target.value)}
+              placeholder="Alguna indicación adicional..."
+              maxLength={300}
+              className={cn(
+                COMBO_SUMMARY_INPUT_CLASS,
+                "min-h-[5rem] resize-none py-2.5 font-normal",
+              )}
+            />
+          </section>
+
+          <UltimoAntojoSection />
+
+          <CheckoutDiscountCodeTeaser />
+
+          {/* Resumen mobile */}
+          <div className="lg:hidden">
+            <CheckoutFinalizeSummaryPanel {...summaryProps} />
           </div>
-          {isDelivery && (
-            <p className="mt-2 text-xs text-zinc-500">
-              El pago en efectivo solo es válido para retiro en local.
-            </p>
-          )}
-        </section>
+        </div>
 
-        {/* Notas */}
-        <section>
-          <label htmlFor="checkout-notes" className="mb-2 block text-sm font-bold text-zinc-900">
-            Notas
-          </label>
-          <textarea
-            id="checkout-notes"
-            value={formValues.notes}
-            onChange={(e) => updateField("notes", e.target.value)}
-            placeholder="Alguna indicación adicional..."
-            maxLength={300}
-            className="h-20 w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-[#C1121F]/40 focus:ring-2 focus:ring-[#C1121F]/15"
-          />
-        </section>
-
-        {/* Sugerencias (compactas) — antes del resumen */}
-        <UltimoAntojoSection />
-
-        <CheckoutDiscountCodeTeaser className="mb-3" />
-
-        {/* Resumen de pago */}
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-700">
-              Total ({items.length} {items.length === 1 ? "producto" : "productos"})
-            </span>
-            <span className="text-xl font-extrabold tabular-nums text-[#C1121F]">
-              {formatPrice(total)}
-            </span>
-          </div>
-        </section>
-
-        <button
-          type="button"
-          onClick={() => void submit()}
-          disabled={
-            isSubmitting ||
-            items.length === 0 ||
-            !isFormReady ||
-            checkoutBlocked
-          }
-          className="min-h-[48px] w-full rounded-xl bg-[#C1121F] px-6 py-3.5 text-base font-bold text-white shadow-lg transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 disabled:shadow-none"
-        >
-          {isSubmitting
-            ? "Procesando..."
-            : storeStatusLoading || configLoading
-              ? "Verificando horario..."
-              : "Confirmar pedido"}
-        </button>
-
-        {checkoutBlocked && !storeStatusLoading && !configLoading && checkoutBlockedReason ? (
-          <p className="text-center text-xs font-medium text-amber-800">
-            {checkoutBlockedReason}
-            {nextOpeningText ? ` ${nextOpeningText}` : ""}
-          </p>
-        ) : null}
-
-        {!isFormReady && !checkoutBlocked && (
-          <p className="text-center text-xs font-medium text-zinc-500">
-            Completá nombre, teléfono{isDelivery ? " y dirección" : ""} para continuar.
-          </p>
-        )}
+        {/* Resumen desktop sticky */}
+        <div className={CHECKOUT_FINALIZE_SUMMARY_PANEL_CLASS}>
+          <CheckoutFinalizeSummaryPanel {...summaryProps} />
+        </div>
       </div>
-    </div>
+    </CheckoutShell>
   );
 }

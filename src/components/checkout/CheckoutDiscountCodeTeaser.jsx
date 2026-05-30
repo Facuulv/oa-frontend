@@ -10,7 +10,7 @@ export default function CheckoutDiscountCodeTeaser({ className }) {
     <div
       className={cn(
         "relative rounded-xl border border-dashed border-[#C1121F] bg-red-50/90 px-3 py-3.5 sm:px-4 sm:py-4",
-        "cursor-not-allowed opacity-75 pointer-events-none select-none",
+        "pointer-events-none cursor-not-allowed select-none opacity-75",
         className,
       )}
       aria-hidden="true"
