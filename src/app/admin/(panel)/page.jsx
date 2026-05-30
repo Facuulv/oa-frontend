@@ -1,8 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { Package, Grid3X3, Tag, Users } from "lucide-react";
-import { useAuthStore, selectAuthUser, selectCanManageUsers } from "@/store/useAuthStore";
+import { Package, Grid3X3, Tag, Users, Settings } from "lucide-react";
+import {
+  useAuthStore,
+  selectAuthUser,
+  selectCanManageUsers,
+  selectIsAdminRole,
+} from "@/store/useAuthStore";
 import AdminWelcomeCard from "@/components/admin/AdminWelcomeCard";
 import AdminQuickLinkCard from "@/components/admin/AdminQuickLinkCard";
 
@@ -39,6 +44,14 @@ const QUICK_LINKS_ALL = [
     themeKey: "usuarios",
     requiresUserAdmin: true,
   },
+  {
+    href: "/admin/configuracion",
+    label: "Configuración",
+    hint: "Carta online, horarios y WhatsApp",
+    icon: Settings,
+    themeKey: "configuracion",
+    requiresAdminRole: true,
+  },
 ];
 
 const QUICK_LINK_STAGGER_MS = 48;
@@ -46,13 +59,16 @@ const QUICK_LINK_STAGGER_MS = 48;
 export default function AdminDashboard() {
   const user = useAuthStore(selectAuthUser);
   const canManageUsers = useAuthStore(selectCanManageUsers);
+  const isAdminRole = useAuthStore(selectIsAdminRole);
   const greetName = (user?.nombre ?? user?.name ?? "").trim() || "Admin";
   const quickLinks = useMemo(
     () =>
-      QUICK_LINKS_ALL.filter((l) => !l.requiresUserAdmin || canManageUsers).map(
-        ({ requiresUserAdmin: _r, ...link }) => link
-      ),
-    [canManageUsers]
+      QUICK_LINKS_ALL.filter((l) => {
+        if (l.requiresUserAdmin && !canManageUsers) return false;
+        if (l.requiresAdminRole && !isAdminRole) return false;
+        return true;
+      }).map(({ requiresUserAdmin: _u, requiresAdminRole: _a, ...link }) => link),
+    [canManageUsers, isAdminRole]
   );
 
   return (

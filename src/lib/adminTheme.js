@@ -36,6 +36,14 @@ export const ADMIN_MODULE_THEMES = {
     iconHover:
       "group-hover:bg-sky-100 group-hover:text-sky-800 group-hover:ring-sky-300/60 group-hover:shadow-[0_4px_12px_-2px_rgba(2,132,199,0.18)]",
   },
+  configuracion: {
+    card: "bg-emerald-50/40 ring-emerald-100/50",
+    cardHover:
+      "hover:bg-emerald-50/55 hover:ring-emerald-200/60 hover:shadow-[0_8px_24px_-6px_rgba(5,150,105,0.12)]",
+    icon: "bg-emerald-100/70 text-emerald-700 ring-emerald-200/50 shadow-[0_2px_8px_-2px_rgba(5,150,105,0.14)]",
+    iconHover:
+      "group-hover:bg-emerald-100 group-hover:text-emerald-800 group-hover:ring-emerald-300/60 group-hover:shadow-[0_4px_12px_-2px_rgba(5,150,105,0.18)]",
+  },
 };
 
 /** Superficie base compartida por cards del admin */
