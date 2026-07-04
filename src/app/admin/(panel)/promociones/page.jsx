@@ -56,6 +56,8 @@ import { findCategoriaPromocionesId } from "@/utils/admin/findCategoriaPromocion
 const LIST_STAGGER_MS = 48;
 /** Listado admin mobile-first: 1 card por fila, 4 por página. */
 const PAGE_SIZE = 4;
+/** Mínimo de caracteres para buscar productos componente del combo. */
+const PICKER_SEARCH_MIN_LEN = 2;
 
 const ORDENAR_OPTIONS = [
   { value: "orden_asc", label: "Orden (asc)" },
@@ -359,15 +361,23 @@ export default function AdminPromocionesPage() {
     };
   }, []);
 
+  const editingProductId = editing?.id != null ? Number(editing.id) : null;
+
   useEffect(() => {
     if (!formModalOpen) return;
+    if (pickerDebounced.length < PICKER_SEARCH_MIN_LEN) {
+      setPickerOptions([]);
+      setPickerError(null);
+      setPickerLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       setPickerLoading(true);
       setPickerError(null);
       try {
         const { productos } = await listProductosParaComponentes({
-          busqueda: pickerDebounced || undefined,
+          busqueda: pickerDebounced,
           page: 1,
           limit: 120,
         });
@@ -376,13 +386,17 @@ export default function AdminPromocionesPage() {
         const onlyProduct = rows.filter(
           (p) => (p?.tipo_producto ?? TIPO_PRODUCTO.PRODUCTO) === TIPO_PRODUCTO.PRODUCTO,
         );
+        const parentId =
+          editingProductId != null && Number.isFinite(editingProductId) ? editingProductId : null;
         setPickerOptions(
-          onlyProduct.map((p) => ({
-            id: p.id,
-            nombre: p.nombre ?? `Producto ${p.id}`,
-            precio: p.precio,
-            stock: p.stock,
-          })),
+          onlyProduct
+            .filter((p) => parentId == null || Number(p.id) !== parentId)
+            .map((p) => ({
+              id: p.id,
+              nombre: p.nombre ?? `Producto ${p.id}`,
+              precio: p.precio,
+              stock: p.stock,
+            })),
         );
       } catch (e) {
         if (!cancelled) {
@@ -396,7 +410,7 @@ export default function AdminPromocionesPage() {
     return () => {
       cancelled = true;
     };
-  }, [formModalOpen, pickerDebounced]);
+  }, [formModalOpen, pickerDebounced, editingProductId]);
 
   useEffect(() => {
     if (!formModalOpen || editing) return;
@@ -941,6 +955,8 @@ export default function AdminPromocionesPage() {
           pickerLoading={pickerLoading}
           pickerError={pickerError}
           pickerQuery={pickerQuery}
+          pickerDebounced={pickerDebounced}
+          pickerSearchMinLen={PICKER_SEARCH_MIN_LEN}
           onPickerQueryChange={setPickerQuery}
         />
       </Modal>

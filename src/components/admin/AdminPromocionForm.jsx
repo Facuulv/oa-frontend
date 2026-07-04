@@ -1,11 +1,12 @@
 "use client";
 
 import { z } from "zod";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Controller, useFieldArray, useWatch } from "react-hook-form";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import ImageUploader from "@/components/admin/ImageUploader";
+import AdminQuantityStepper from "@/components/admin/AdminQuantityStepper";
 import {
   productFormSchema,
   defaultProductFormValues,
@@ -17,7 +18,6 @@ import {
   computeCombosDisponiblesFromComponentes,
 } from "@/utils/admin/promocionesMetrics";
 import { formatPrice } from "@/utils/format/price";
-import AppSelect from "@/components/ui/AppSelect";
 
 export const promocionFormSchema = productFormSchema
   .omit({ stock: true })
@@ -99,6 +99,19 @@ const fieldBase =
 const fieldOk = "border-zinc-200 bg-white";
 const fieldErr = "border-red-300 bg-red-50/30 ring-red-200/60";
 
+function formatProductMeta(precio, stock) {
+  const parts = [];
+  if (precio != null && Number.isFinite(Number(precio))) {
+    parts.push(`${formatPrice(Number(precio))} c/u`);
+  } else {
+    parts.push("Precio no disponible");
+  }
+  if (stock != null && Number.isFinite(Number(stock))) {
+    parts.push(`stock ${Number(stock)}`);
+  }
+  return parts.join(" · ");
+}
+
 /**
  * @param {{
  *   form: import("react-hook-form").UseFormReturn<any>,
@@ -111,6 +124,8 @@ const fieldErr = "border-red-300 bg-red-50/30 ring-red-200/60";
  *   pickerLoading: boolean,
  *   pickerError: string | null,
  *   pickerQuery: string,
+ *   pickerDebounced: string,
+ *   pickerSearchMinLen?: number,
  *   onPickerQueryChange: (q: string) => void,
  * }} props
  */
@@ -125,6 +140,8 @@ export default function AdminPromocionForm({
   pickerLoading,
   pickerError,
   pickerQuery,
+  pickerDebounced,
+  pickerSearchMinLen = 2,
   onPickerQueryChange,
 }) {
   const busy = saving || imageUploading;
@@ -136,11 +153,34 @@ export default function AdminPromocionForm({
     name: "componentes",
   });
 
-  const [pickerProductId, setPickerProductId] = useState("");
-  const [pickerCantidad, setPickerCantidad] = useState(1);
+  const [pickerQtyByProductId, setPickerQtyByProductId] = useState({});
 
   const watchedPrecio = useWatch({ control: form.control, name: "precio" });
   const watchedComponentes = useWatch({ control: form.control, name: "componentes" }) ?? [];
+
+  const addedProductIds = useMemo(() => {
+    const set = new Set();
+    for (const c of watchedComponentes) {
+      if (c?.producto_id != null) set.add(Number(c.producto_id));
+    }
+    return set;
+  }, [watchedComponentes]);
+
+  const pickerHasSearch = pickerDebounced.trim().length >= pickerSearchMinLen;
+
+  const getPickerQty = useCallback(
+    (productId) => {
+      const stored = pickerQtyByProductId[productId];
+      const n = Math.floor(Number(stored));
+      return Number.isFinite(n) && n > 0 ? n : 1;
+    },
+    [pickerQtyByProductId],
+  );
+
+  const setPickerQty = useCallback((productId, qty) => {
+    const next = Math.max(1, Math.floor(Number(qty) || 1));
+    setPickerQtyByProductId((prev) => ({ ...prev, [productId]: next }));
+  }, []);
 
   const precioPromoNum = useMemo(() => {
     const n = Number.parseFloat(String(watchedPrecio ?? "").replace(",", "."));
@@ -168,13 +208,10 @@ export default function AdminPromocionForm({
     return computeCombosDisponiblesFromComponentes(rows);
   }, [watchedComponentes]);
 
-  const addComponente = () => {
-    const id = Number(pickerProductId);
-    if (!Number.isFinite(id) || id <= 0) {
-      form.setError("root", { type: "manual", message: "Elegí un producto de la lista." });
-      return;
-    }
-    const qty = Math.max(1, Math.floor(Number(pickerCantidad) || 1));
+  const addComponente = (productId, qtyOverride) => {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0) return;
+    const qty = Math.max(1, Math.floor(Number(qtyOverride ?? getPickerQty(id)) || 1));
     const opt = pickerOptions.find((p) => Number(p.id) === id);
     const idx = fields.findIndex((f) => Number(f.producto_id) === id);
     if (idx >= 0) {
@@ -184,19 +221,27 @@ export default function AdminPromocionForm({
         cantidad: (Number(prev.cantidad) || 0) + qty,
       });
       form.clearErrors("root");
+      form.clearErrors("componentes");
       toast.message("Cantidad actualizada", {
         description: "Ese producto ya estaba en el combo; sumamos las unidades.",
       });
-      return;
+    } else {
+      append({
+        producto_id: id,
+        cantidad: qty,
+        nombre: opt?.nombre ?? "",
+        precio: opt != null && opt.precio != null ? Number(opt.precio) : undefined,
+        stock: opt != null && opt.stock != null ? Number(opt.stock) : undefined,
+      });
+      form.clearErrors("root");
+      form.clearErrors("componentes");
     }
-    append({
-      producto_id: id,
-      cantidad: qty,
-      nombre: opt?.nombre ?? "",
-      precio: opt != null && opt.precio != null ? Number(opt.precio) : undefined,
-      stock: opt != null && opt.stock != null ? Number(opt.stock) : undefined,
-    });
-    form.clearErrors("root");
+    setPickerQty(id, 1);
+  };
+
+  const updateAddedCantidad = (index, nextQty) => {
+    const qty = Math.max(1, Math.floor(Number(nextQty) || 1));
+    form.setValue(`componentes.${index}.cantidad`, qty, { shouldDirty: true, shouldValidate: true });
   };
 
   return (
@@ -337,7 +382,7 @@ export default function AdminPromocionForm({
           <h3 className="text-sm font-semibold text-zinc-900">Componentes del combo</h3>
 
           <div className="mt-3 space-y-3">
-            <label htmlFor="promo-picker-search" className="sr-only">
+            <label htmlFor="promo-picker-search" className="block text-sm font-semibold text-zinc-700">
               Buscar producto
             </label>
             <input
@@ -345,132 +390,156 @@ export default function AdminPromocionForm({
               type="search"
               value={pickerQuery}
               onChange={(e) => onPickerQueryChange(e.target.value)}
-              placeholder="Buscar por nombre…"
+              placeholder="Buscar producto por nombre..."
               className={`${fieldBase} ${fieldOk}`}
               autoComplete="off"
             />
-            <div className="space-y-1">
-              <label htmlFor="promo-picker-prod" className="block text-sm font-semibold text-zinc-700">
-                Producto
-              </label>
-              <AppSelect
-                id="promo-picker-prod"
-                value={pickerProductId ? String(pickerProductId) : undefined}
-                onValueChange={(v) => setPickerProductId(v)}
-                disabled={busy || pickerLoading || pickerOptions.length === 0}
-                placeholder={
-                  pickerLoading ? "Cargando…" : pickerOptions.length === 0 ? "Sin resultados" : "Seleccioná…"
-                }
-                options={pickerOptions.map((p) => ({
-                  value: String(p.id),
-                  label: p.nombre ?? `Producto ${p.id}`,
-                }))}
-              />
+
+            <div className="space-y-2" aria-live="polite">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Resultados</p>
+
+              {!pickerHasSearch ? (
+                <p className="rounded-xl border border-dashed border-violet-200/80 bg-white/60 px-3 py-3 text-sm text-zinc-600">
+                  Buscá productos para agregarlos al combo.
+                </p>
+              ) : pickerLoading ? (
+                <p className="flex items-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-3 py-3 text-sm text-zinc-600">
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />
+                  Buscando productos…
+                </p>
+              ) : pickerError ? (
+                <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800" role="alert">
+                  {pickerError}
+                </p>
+              ) : pickerOptions.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-zinc-200 bg-white/60 px-3 py-3 text-sm text-zinc-600">
+                  No encontramos productos para &lsquo;{pickerDebounced}&rsquo;. Probá con otro nombre o revisá si el
+                  producto está activo.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {pickerOptions.map((p) => {
+                    const pid = Number(p.id);
+                    const qty = getPickerQty(pid);
+                    const yaAgregado = addedProductIds.has(pid);
+                    const precioNum = p.precio != null ? Number(p.precio) : null;
+                    return (
+                      <li
+                        key={pid}
+                        className="w-full space-y-2.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-zinc-900">{p.nombre ?? `Producto ${pid}`}</p>
+                          <p className="mt-0.5 text-xs text-zinc-500">{formatProductMeta(precioNum, p.stock)}</p>
+                          {yaAgregado ? (
+                            <p className="mt-1 text-xs font-medium text-violet-700">Ya agregado al combo</p>
+                          ) : null}
+                        </div>
+                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                              Cantidad
+                            </span>
+                            <AdminQuantityStepper
+                              quantity={qty}
+                              disabled={busy}
+                              decrementDisabled={qty <= 1}
+                              onDecrement={() => setPickerQty(pid, qty - 1)}
+                              onIncrement={() => setPickerQty(pid, qty + 1)}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => addComponente(pid, qty)}
+                            disabled={busy}
+                            className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-105 active:scale-[0.99] disabled:opacity-50 sm:min-w-[8.5rem] sm:w-auto"
+                          >
+                            {yaAgregado ? "Sumar" : "Agregar"}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
-            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-end">
-              <div className="w-full space-y-1 sm:max-w-[9rem]">
-                <label htmlFor="promo-picker-qty" className="block text-sm font-semibold text-zinc-700">
-                  Cantidad
-                </label>
-                <input
-                  id="promo-picker-qty"
-                  type="number"
-                  min={1}
-                  value={pickerCantidad}
-                  onChange={(e) => setPickerCantidad(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-                  className={`${fieldBase} ${fieldOk}`}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={addComponente}
-                disabled={busy || pickerLoading}
-                className="inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-105 active:scale-[0.99] disabled:opacity-50 sm:w-auto"
-              >
-                <Plus size={18} aria-hidden />
-                Agregar componente
-              </button>
-            </div>
-            {pickerError ? (
-              <p className="text-xs font-medium text-red-600" role="alert">
-                {pickerError}
-              </p>
-            ) : null}
           </div>
 
           {errs.componentes && typeof errs.componentes.message === "string" ? (
             <p className="mt-2 text-xs font-medium text-red-600">{errs.componentes.message}</p>
           ) : null}
 
-          {fields.length > 0 ? (
-            <ul className="mt-4 space-y-2">
-              {fields.map((field, index) => {
-                const rowErrs = errs.componentes?.[index];
-                return (
-                  <li
-                    key={field.id}
-                    className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-zinc-900">
-                        {form.watch(`componentes.${index}.nombre`) ||
-                          `Producto #${form.watch(`componentes.${index}.producto_id`)}`}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {form.watch(`componentes.${index}.precio`) != null &&
-                        Number.isFinite(Number(form.watch(`componentes.${index}.precio`)))
-                          ? `${formatPrice(Number(form.watch(`componentes.${index}.precio`)))} c/u`
-                          : "Precio no disponible"}
-                        {form.watch(`componentes.${index}.stock`) != null &&
-                        Number.isFinite(Number(form.watch(`componentes.${index}.stock`)))
-                          ? ` · stock ${form.watch(`componentes.${index}.stock`)}`
-                          : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <label
-                        className="text-xs font-semibold uppercase tracking-wide text-zinc-500"
-                        htmlFor={`promo-cant-${index}`}
-                      >
-                        Cantidad
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          id={`promo-cant-${index}`}
-                          type="number"
-                          min={1}
-                          className="h-11 w-20 rounded-lg border border-zinc-200 px-2 text-center text-sm font-semibold"
-                          {...form.register(`componentes.${index}.cantidad`, {
-                            setValueAs: (v) => {
-                              const n = Math.floor(Number(v));
-                              return Number.isFinite(n) && n > 0 ? n : 1;
-                            },
-                          })}
-                        />
+          <div className="mt-5 border-t border-violet-200/70 pt-4">
+            <h4 className="text-sm font-semibold text-zinc-900">Componentes agregados</h4>
+
+            {fields.length > 0 ? (
+              <ul className="mt-3 space-y-2">
+                {fields.map((field, index) => {
+                  const rowErrs = errs.componentes?.[index];
+                  const nombre = form.watch(`componentes.${index}.nombre`);
+                  const productoId = form.watch(`componentes.${index}.producto_id`);
+                  const precio = form.watch(`componentes.${index}.precio`);
+                  const stock = form.watch(`componentes.${index}.stock`);
+                  const cantidad = Number(form.watch(`componentes.${index}.cantidad`)) || 1;
+                  const precioNum = precio != null && Number.isFinite(Number(precio)) ? Number(precio) : null;
+                  const subtotal =
+                    precioNum != null && cantidad > 0 ? precioNum * cantidad : null;
+
+                  return (
+                    <li
+                      key={field.id}
+                      className="w-full space-y-2.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-zinc-900">
+                          {nombre || `Producto #${productoId}`}
+                        </p>
+                        <p className="mt-0.5 text-xs text-zinc-500">{formatProductMeta(precioNum, stock)}</p>
+                        {subtotal != null ? (
+                          <p className="mt-1.5 text-sm text-zinc-700">
+                            Subtotal: <span className="font-semibold text-zinc-900">{formatPrice(subtotal)}</span>
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                            Cantidad
+                          </span>
+                          <AdminQuantityStepper
+                            quantity={cantidad}
+                            disabled={busy}
+                            decrementDisabled={cantidad <= 1}
+                            onDecrement={() => updateAddedCantidad(index, cantidad - 1)}
+                            onIncrement={() => updateAddedCantidad(index, cantidad + 1)}
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => remove(index)}
                           disabled={busy}
-                          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-800 transition hover:bg-red-100 disabled:opacity-50"
-                          aria-label="Quitar componente"
+                          className="inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-800 transition hover:bg-red-100 disabled:opacity-50 sm:min-w-[8.5rem] sm:w-auto"
                         >
                           <Trash2 size={18} aria-hidden />
+                          Eliminar
                         </button>
                       </div>
-                    </div>
-                    {rowErrs?.cantidad && (
-                      <p className="w-full text-xs text-red-600">{rowErrs.cantidad.message}</p>
-                    )}
-                    {rowErrs?.producto_id && (
-                      <p className="w-full text-xs text-red-600">{rowErrs.producto_id.message}</p>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-500">Todavía no agregaste componentes.</p>
-          )}
+                      {rowErrs?.cantidad && (
+                        <p className="w-full text-xs text-red-600">{rowErrs.cantidad.message}</p>
+                      )}
+                      {rowErrs?.producto_id && (
+                        <p className="w-full text-xs text-red-600">{rowErrs.producto_id.message}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="mt-3 rounded-xl border border-dashed border-zinc-200/90 bg-white/50 px-3 py-3 text-sm text-zinc-500">
+                Todavía no agregaste componentes.
+              </p>
+            )}
+          </div>
         </div>
 
         <div

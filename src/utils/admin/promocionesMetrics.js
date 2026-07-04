@@ -69,13 +69,16 @@ export function computePrecioSeparadoFromComponentes(componentes) {
 export function computeCombosDisponiblesFromComponentes(componentes) {
   if (!Array.isArray(componentes) || componentes.length === 0) return null;
   let min = Infinity;
+  let anyWithStock = false;
   for (const c of componentes) {
     const stock = Number(c.stock);
     const qty = Number(c.cantidad);
     if (!Number.isFinite(qty) || qty <= 0) return null;
-    if (!Number.isFinite(stock) || stock < 0) return null;
+    if (!Number.isFinite(stock) || stock < 0) continue;
+    anyWithStock = true;
     min = Math.min(min, Math.floor(stock / qty));
   }
+  if (!anyWithStock) return null;
   if (!Number.isFinite(min) || min === Infinity) return null;
   return Math.max(0, min);
 }
