@@ -14,9 +14,11 @@ import {
   X,
   LogOut,
   Store,
+  User,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import AppViewport from "@/components/layout/AppViewport";
+import AdminUserMenu from "@/components/admin/AdminUserMenu";
 import {
   useAuthStore,
   selectCanManageUsers,
@@ -44,57 +46,6 @@ const NAV_ITEMS = [
 function navItemActive(pathname, href) {
   if (href === "/admin") return pathname === "/admin";
   return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function userDisplayName(user) {
-  const name = (user?.nombre ?? user?.name ?? "").trim();
-  return name || "Admin";
-}
-
-function userInitials(user) {
-  const name = (user?.nombre ?? user?.name ?? "").trim();
-  if (!name) return "A";
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
-}
-
-function userRoleLabel(user) {
-  const rol = user?.rol ?? user?.role;
-  if (!rol) return "Administrador";
-  return String(rol).replace(/_/g, " ");
-}
-
-function AdminUserBadge({ user, compact = false }) {
-  return (
-    <div
-      className={`flex min-w-0 items-center rounded-lg border border-zinc-200/80 bg-zinc-50/60 ${
-        compact
-          ? "max-w-[9.5rem] gap-1.5 px-1.5 py-0.5 sm:max-w-[11rem]"
-          : "gap-2 px-2.5 py-1"
-      }`}
-      title={`${userDisplayName(user)} · ${userRoleLabel(user)}`}
-    >
-      <span
-        className={`flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ring-1 ring-primary/15 ${
-          compact ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-xs"
-        }`}
-        aria-hidden
-      >
-        {userInitials(user)}
-      </span>
-      <div className="min-w-0 flex-1 leading-tight">
-        <p className={`truncate font-semibold text-zinc-900 ${compact ? "text-[11px]" : "text-xs"}`}>
-          {userDisplayName(user)}
-        </p>
-        <p
-          className={`truncate capitalize text-zinc-500 ${compact ? "text-[10px]" : "text-[11px]"}`}
-        >
-          {userRoleLabel(user)}
-        </p>
-      </div>
-    </div>
-  );
 }
 
 function AdminNavLink({ href, label, icon: Icon, active, onNavigate }) {
@@ -225,22 +176,37 @@ export default function AdminAppShell({ children }) {
 
       <div className="shrink-0 space-y-2 border-t border-zinc-200/80 p-4">
         <Link
-          href="/"
+          href="/admin/perfil"
           onClick={closeDrawer}
-          className="admin-pressable flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-3 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 active:bg-zinc-100"
+          className={`admin-pressable flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium shadow-sm transition-colors ${
+            pathname?.startsWith("/admin/perfil")
+              ? "border-primary/25 bg-primary/10 text-primary ring-1 ring-primary/20"
+              : "border-zinc-200/90 bg-white text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100"
+          }`}
         >
-          <Store size={18} strokeWidth={2} aria-hidden />
-          Ir a la carta pública
+          <User size={18} strokeWidth={2} aria-hidden />
+          Mi perfil
         </Link>
 
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="admin-pressable flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-3 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 active:bg-zinc-950"
-        >
-          <LogOut size={18} strokeWidth={2} aria-hidden />
-          Cerrar sesión
-        </button>
+        <div className="space-y-2 border-t border-zinc-200/80 pt-2">
+          <Link
+            href="/"
+            onClick={closeDrawer}
+            className="admin-pressable flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-3 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 active:bg-zinc-100"
+          >
+            <Store size={18} strokeWidth={2} aria-hidden />
+            Ir a la carta pública
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="admin-pressable flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-3 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 active:bg-zinc-950"
+          >
+            <LogOut size={18} strokeWidth={2} aria-hidden />
+            Cerrar sesión
+          </button>
+        </div>
       </div>
     </>
   );
@@ -264,16 +230,8 @@ export default function AdminAppShell({ children }) {
           </button>
           <BrandLogo href="/admin" className="min-w-0" ariaLabel="Panel" />
         </div>
-        <div className="flex min-w-0 shrink items-center gap-1.5">
-          <AdminUserBadge user={user} compact />
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="admin-pressable flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-600 shadow-sm active:bg-zinc-100 active:shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
-            aria-label="Cerrar sesión"
-          >
-            <LogOut size={20} strokeWidth={2.25} />
-          </button>
+        <div className="flex min-w-0 shrink items-center">
+          <AdminUserMenu user={user} compact onLogout={() => void handleLogout()} />
         </div>
       </header>
 
@@ -304,16 +262,8 @@ export default function AdminAppShell({ children }) {
         <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
           <header className={`${topbarClass} hidden lg:flex`} aria-label="Administración">
             <BrandLogo href="/admin" className="min-w-0" ariaLabel="Panel" />
-            <div className="ml-auto flex items-center gap-2">
-              <AdminUserBadge user={user} />
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="admin-pressable flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-600 shadow-sm active:bg-zinc-100 active:shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
-                aria-label="Cerrar sesión"
-              >
-                <LogOut size={20} strokeWidth={2.25} />
-              </button>
+            <div className="ml-auto flex items-center">
+              <AdminUserMenu user={user} onLogout={() => void handleLogout()} />
             </div>
           </header>
 

@@ -65,6 +65,8 @@ export const apiPaths = {
     promocionProductoEstadoById: (id) => `/admin/promociones-producto/${encodeURIComponent(id)}/estado`,
     /** Personal del panel (`usuarios` en backend). Base `/users`. */
     usuarios: "/users",
+    usuariosMe: "/users/me",
+    usuariosMePassword: "/users/me/password",
     usuarioById: (id) => `/users/${encodeURIComponent(id)}`,
     usuarioPasswordById: (id) => `/users/${encodeURIComponent(id)}/password`,
     configuracion: "/admin/configuracion",

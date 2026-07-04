@@ -34,7 +34,12 @@ apiClient.interceptors.response.use(
       console.warn("[API] error", status, url, error.response?.data);
     }
     if (error.response?.status === 401) {
-      if (typeof window !== "undefined") {
+      const code =
+        error.response?.data && typeof error.response.data === "object"
+          ? error.response.data.code
+          : undefined;
+      const isWrongCurrentPassword = code === "CURRENT_PASSWORD_INVALID";
+      if (!isWrongCurrentPassword && typeof window !== "undefined") {
         const now = Date.now();
         if (now - lastUnauthorizedDispatchAt >= UNAUTHORIZED_DISPATCH_DEBOUNCE_MS) {
           lastUnauthorizedDispatchAt = now;

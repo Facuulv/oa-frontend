@@ -443,6 +443,13 @@ export default function AdminUsuariosPage() {
   };
 
   const openEdit = (row) => {
+    if (currentUserId != null && Number(row.id) === currentUserId) {
+      toast.error("Gestioná tu cuenta desde Mi perfil.", {
+        description: "No podés editarte desde el listado de usuarios.",
+      });
+      router.push("/admin/perfil");
+      return;
+    }
     setEditingRow(row);
     editForm.reset(mapUsuarioToEditForm(row));
     editForm.clearErrors();
@@ -456,6 +463,13 @@ export default function AdminUsuariosPage() {
   };
 
   const openPassword = (row) => {
+    if (currentUserId != null && Number(row.id) === currentUserId) {
+      toast.error("Cambiá tu contraseña desde Mi perfil.", {
+        description: "Ahí tenés que ingresar tu contraseña actual.",
+      });
+      router.push("/admin/perfil");
+      return;
+    }
     setPasswordRow(row);
     passwordForm.reset({ password: "", confirmPassword: "" });
     passwordForm.clearErrors();
@@ -582,6 +596,12 @@ export default function AdminUsuariosPage() {
           toast.error(e.message || "No podés desactivar tu propia cuenta");
           return;
         }
+        if (e.code === ADMIN_USUARIO_CODES.SELF_EDIT_USE_PROFILE) {
+          toast.error(e.message || "Usá Mi perfil para editar tu cuenta");
+          closeEdit();
+          router.push("/admin/perfil");
+          return;
+        }
         if (isUnauthorizedApi(e)) {
           toast.error("No tenés permiso", { description: e.message });
           return;
@@ -617,6 +637,12 @@ export default function AdminUsuariosPage() {
         }
         if (isUnauthorizedApi(e)) {
           toast.error("No tenés permiso", { description: e.message });
+          return;
+        }
+        if (e.code === ADMIN_USUARIO_CODES.SELF_PASSWORD_USE_PROFILE) {
+          toast.error(e.message || "Usá Mi perfil para cambiar tu contraseña");
+          closePassword();
+          router.push("/admin/perfil");
           return;
         }
         toast.error(errorMessage(e, "No se pudo cambiar la contraseña"));
@@ -859,24 +885,36 @@ export default function AdminUsuariosPage() {
                       </div>
 
                       <div className="mt-4 flex flex-col gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(row)}
-                          disabled={busy}
-                          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 transition motion-safe:active:scale-[0.985] enabled:active:bg-zinc-50 disabled:opacity-50"
-                        >
-                          <Pencil size={18} aria-hidden />
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openPassword(row)}
-                          disabled={busy}
-                          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 transition motion-safe:active:scale-[0.985] enabled:active:bg-zinc-50 disabled:opacity-50"
-                        >
-                          <KeyRound size={18} aria-hidden />
-                          Cambiar contraseña
-                        </button>
+                        {selfRow ? (
+                          <Link
+                            href="/admin/perfil"
+                            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
+                          >
+                            <Pencil size={18} aria-hidden />
+                            Gestionar mi perfil
+                          </Link>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openEdit(row)}
+                              disabled={busy}
+                              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 transition motion-safe:active:scale-[0.985] enabled:active:bg-zinc-50 disabled:opacity-50"
+                            >
+                              <Pencil size={18} aria-hidden />
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openPassword(row)}
+                              disabled={busy}
+                              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 transition motion-safe:active:scale-[0.985] enabled:active:bg-zinc-50 disabled:opacity-50"
+                            >
+                              <KeyRound size={18} aria-hidden />
+                              Cambiar contraseña
+                            </button>
+                          </>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleToggleActivo(row)}
