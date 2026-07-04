@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ImagePlus, Loader2, Trash2, Camera } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { uploadImageToCloudinary, isCloudinaryUploadConfigured } from "@/lib/cloudinaryUpload";
+import { uploadImageToFileServer } from "@/lib/fileUpload";
 import { PLACEHOLDER_PRODUCT_CARD } from "@/constants/images";
 
 /**
- * Subida directa a Cloudinary (preset sin firma, solo fetch).
- * Controlado: `value` / `onChange` guardan la `secure_url` (p. ej. imagen_url en el formulario).
+ * Subida vía backend OA! → disco en VPS → URL pública files.oabebidas.com.
+ * Controlado: `value` / `onChange` guardan la imagen_url.
  */
 export default function ImageUploader({
   value = "",
@@ -26,8 +26,7 @@ export default function ImageUploader({
   const [uploadError, setUploadError] = useState(null);
   const [localPreview, setLocalPreview] = useState(null);
 
-  const configured = isCloudinaryUploadConfigured();
-  const blocked = disabled || !configured;
+  const blocked = disabled;
   const previewSrc = localPreview || value || null;
 
   const revokeBlob = useCallback(() => {
@@ -67,7 +66,7 @@ export default function ImageUploader({
       setLocalPreview(objectUrl);
 
       setUploadingState(true);
-      const { url } = await uploadImageToCloudinary(file);
+      const { url } = await uploadImageToFileServer(file);
       onChange?.(url);
       toast.success("Imagen subida");
       revokeBlob();
@@ -97,16 +96,13 @@ export default function ImageUploader({
         <label htmlFor={inputId} className="text-sm font-medium text-zinc-800">
           {label}
         </label>
-        {!configured && (
-          <span className="text-xs text-amber-700">Cloudinary no configurado</span>
-        )}
       </div>
 
       <input
         ref={fileRef}
         id={inputId}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         className="sr-only"
         aria-label={`${label}: elegir archivo de imagen`}
         disabled={blocked || uploading}
@@ -177,14 +173,7 @@ export default function ImageUploader({
       </div>
 
       {helperText && <p className="text-xs text-zinc-500">{helperText}</p>}
-      {!configured && (
-        <p className="text-xs text-zinc-600">
-          Agregá en <code className="rounded bg-zinc-200 px-1">.env.local</code> las variables{" "}
-          <code className="rounded bg-zinc-200 px-1">NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</code> y{" "}
-          <code className="rounded bg-zinc-200 px-1">NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</code>{" "}
-          (preset sin firma, solo subida).
-        </p>
-      )}
+      <p className="text-xs text-zinc-500">JPG, PNG o WebP. Máximo 5 MB.</p>
     </div>
   );
 }

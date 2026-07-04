@@ -52,6 +52,7 @@ export const apiPaths = {
   admin: {
     dashboard: "/admin/dashboard",
     settings: "/admin/settings",
+    uploadImagen: "/admin/upload-imagen",
     categorias: "/admin/categorias",
     categoriaById: (id) => `/admin/categorias/${encodeURIComponent(id)}`,
     categoriaEstadoById: (id) => `/admin/categorias/${encodeURIComponent(id)}/estado`,
