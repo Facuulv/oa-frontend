@@ -2,10 +2,10 @@
 export const CORDOBA_CAPITAL_CENTER = [-31.4201, -64.1888];
 
 /**
- * Esquina Obispo Salguero y Rondeau (Nueva Córdoba) — local Oa!
- * Coordenadas verificadas contra OSM / Nominatim en el área de la intersección.
+ * Rondeau 401 (Nueva Córdoba) — local Oa!
+ * Coordenadas verificadas contra OSM / Nominatim en la esquina de Rondeau 401.
  */
-export const LOCAL_OA_POSITION = [-31.4243, -64.1810];
+export const LOCAL_OA_POSITION = [-31.423586, -64.1811728];
 
 /** Viewbox Nominatim: min_lon, max_lat, max_lon, min_lat */
 export const CORDOBA_CAPITAL_VIEWBOX = "-64.28,-31.35,-64.10,-31.52";

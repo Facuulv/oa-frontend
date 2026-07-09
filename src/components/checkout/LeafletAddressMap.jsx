@@ -83,7 +83,7 @@ export default function LeafletAddressMap({ userLocation, zoom = 15 }) {
       />
       <Marker position={userLocation} />
       <Marker position={LOCAL_OA_POSITION} icon={localIcon}>
-        <Popup>📍 Local Oa! Bebidas — Obispo Salguero y Rondeau</Popup>
+        <Popup>📍 Local Oa! Bebidas — Rondeau 401</Popup>
       </Marker>
       <MapBoundsController />
       <MapUpdater coordinates={userLocation} />
